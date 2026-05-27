@@ -8,6 +8,7 @@ const props = defineProps({
     savedPaper: Object,
     preview: Object,
     headerTemplates: Array,
+    pdfUrl: String,
 });
 
 const layout = ref({ ...props.preview.layout });
@@ -24,6 +25,7 @@ watch(
 );
 
 const printPaper = () => window.open(route('editor.print', props.savedPaper.id), '_blank');
+const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
 </script>
 
 <template>
@@ -35,6 +37,14 @@ const printPaper = () => window.open(route('editor.print', props.savedPaper.id),
                 <h2 class="text-xl font-semibold text-gray-800">{{ savedPaper.title }}</h2>
                 <div class="flex gap-2">
                     <button class="rounded bg-green-600 px-4 py-2 text-sm text-white" @click="printPaper">Print</button>
+                    <button class="rounded bg-indigo-600 px-4 py-2 text-sm text-white" @click="requestPdf">Generate PDF</button>
+                    <a
+                        v-if="pdfUrl"
+                        :href="pdfUrl"
+                        class="rounded bg-gray-900 px-4 py-2 text-sm text-white"
+                        target="_blank"
+                        rel="noopener"
+                    >Download PDF</a>
                     <Link :href="route('dashboard')" class="rounded bg-gray-200 px-4 py-2 text-sm">Back</Link>
                 </div>
             </div>
@@ -82,6 +92,30 @@ const printPaper = () => window.open(route('editor.print', props.savedPaper.id),
                     Dual Column (use Landscape)
                 </label>
 
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-sm">Orientation</label>
+                        <select v-model="layout.orientation" class="mt-1 w-full rounded border-gray-300">
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm">Scale (%)</label>
+                        <input v-model.number="layout.scale" type="number" min="50" max="120" class="mt-1 w-full rounded border" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium">Page margins (mm)</label>
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <input v-model.number="layout.margins.top" type="number" min="0" class="rounded border" placeholder="Top" />
+                        <input v-model.number="layout.margins.right" type="number" min="0" class="rounded border" placeholder="Right" />
+                        <input v-model.number="layout.margins.bottom" type="number" min="0" class="rounded border" placeholder="Bottom" />
+                        <input v-model.number="layout.margins.left" type="number" min="0" class="rounded border" placeholder="Left" />
+                    </div>
+                </div>
+
                 <label class="flex items-center gap-2 text-sm">
                     <input v-model="layout.enable_omr" type="checkbox" />
                     OMR Sheet
@@ -98,6 +132,16 @@ const printPaper = () => window.open(route('editor.print', props.savedPaper.id),
                         Watermark
                     </label>
                     <input v-if="layout.enable_watermark" v-model="layout.watermark_text" class="mt-2 w-full rounded border" placeholder="CONFIDENTIAL" />
+                    <div v-if="layout.enable_watermark" class="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-600">Opacity (0.05–0.30)</label>
+                            <input v-model.number="layout.watermark_opacity" type="number" min="0.05" max="0.3" step="0.01" class="mt-1 w-full rounded border" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-600">Angle (0–60)</label>
+                            <input v-model.number="layout.watermark_angle" type="number" min="0" max="60" class="mt-1 w-full rounded border" />
+                        </div>
+                    </div>
                 </div>
             </div>
 

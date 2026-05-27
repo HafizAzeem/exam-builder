@@ -48,6 +48,11 @@ const showingNavigationDropdown = ref(false);
                                 >Institute</NavLink>
                                 <NavLink
                                     v-if="$page.props.auth.user?.roles?.includes('institution_admin')"
+                                    :href="route('admin.question-bank.index')"
+                                    :active="route().current('admin.question-bank.*')"
+                                >Question Bank</NavLink>
+                                <NavLink
+                                    v-if="$page.props.auth.user?.roles?.includes('institution_admin')"
                                     :href="route('admin.logs')"
                                     :active="route().current('admin.logs')"
                                 >Logs</NavLink>

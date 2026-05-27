@@ -5,7 +5,7 @@ import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { computed, ref, watch } from 'vue';
 
-const props = defineProps({ grades: Array });
+const props = defineProps({ grades: Array, teacherPermissions: Object });
 
 const step = ref(1);
 const gradeId = ref(null);
@@ -16,9 +16,13 @@ const dualMedium = ref(false);
 const subjects = ref([]);
 const chapters = ref([]);
 const questions = ref([]);
+const manualPaginator = ref(null);
 const selectedIds = ref([]);
 const mode = ref('manual');
 const randomConfig = ref({ mcq: 5, short: 2, long: 0 });
+const manualType = ref('');
+const manualSearch = ref('');
+const perPage = ref(15);
 const paperTitle = ref('Mid Term Examination');
 const examMeta = ref({ class: '', subject: '', time: '2 Hours', marks: '50' });
 const settings = ref({
@@ -27,7 +31,29 @@ const settings = ref({
     enable_omr: true,
     enable_answer_key: true,
     enable_watermark: false,
+    show_past_paper_tags: false,
 });
+
+const allowedCategories = computed(() => props.teacherPermissions?.allowed_categories ?? null);
+const allowedSources = computed(() => {
+    // If no explicit category restriction, allow all.
+    if (!Array.isArray(allowedCategories.value) || !allowedCategories.value.length) {
+        return ['exercise', 'additional', 'past_paper'];
+    }
+    return allowedCategories.value;
+});
+
+watch(
+    allowedSources,
+    (allowed) => {
+        // Ensure currently selected sources are permitted.
+        sources.value = sources.value.filter((s) => allowed.includes(s));
+        if (!sources.value.length) {
+            sources.value = [allowed[0]];
+        }
+    },
+    { immediate: true },
+);
 
 const loadSubjects = async () => {
     if (!gradeId.value) return;
@@ -46,8 +72,30 @@ const loadChapters = async () => {
 const loadQuestions = async () => {
     if (!chapterIds.value.length) return;
     const { data } = await axios.get('/api/builder/questions', {
-        params: { chapter_ids: chapterIds.value, sources: sources.value },
+        params: {
+            chapter_ids: chapterIds.value,
+            sources: sources.value,
+            type: manualType.value || undefined,
+            search: manualSearch.value || undefined,
+            per_page: perPage.value,
+        },
     });
+    manualPaginator.value = data;
+    questions.value = data.data ?? data;
+};
+
+const loadPage = async (url) => {
+    if (!url) return;
+    const { data } = await axios.get(url, {
+        params: {
+            chapter_ids: chapterIds.value,
+            sources: sources.value,
+            type: manualType.value || undefined,
+            search: manualSearch.value || undefined,
+            per_page: perPage.value,
+        },
+    });
+    manualPaginator.value = data;
     questions.value = data.data ?? data;
 };
 
@@ -93,6 +141,7 @@ const savePaper = () => {
                 enable_omr: settings.value.enable_omr,
                 enable_answer_key: settings.value.enable_answer_key,
                 enable_watermark: settings.value.enable_watermark,
+                show_past_paper_tags: settings.value.show_past_paper_tags,
             },
         },
     });
@@ -144,13 +193,17 @@ const savePaper = () => {
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-4">
-                    <label v-for="src in ['exercise', 'additional', 'past_paper']" :key="src" class="flex items-center gap-2 text-sm">
+                    <label v-for="src in allowedSources" :key="src" class="flex items-center gap-2 text-sm">
                         <input v-model="sources" type="checkbox" :value="src" />
                         {{ src }}
                     </label>
                     <label class="flex items-center gap-2 text-sm">
                         <input v-model="dualMedium" type="checkbox" />
                         Dual Medium (EN + UR)
+                    </label>
+                    <label v-if="sources.includes('past_paper')" class="flex items-center gap-2 text-sm">
+                        <input v-model="settings.show_past_paper_tags" type="checkbox" />
+                        Show Board Name &amp; Year
                     </label>
                 </div>
                 <button class="rounded-md bg-indigo-600 px-4 py-2 text-white" @click="step = 2">Next</button>
@@ -170,7 +223,29 @@ const savePaper = () => {
                 </div>
 
                 <div v-else class="mb-4">
-                    <button class="rounded bg-gray-800 px-3 py-1 text-sm text-white" @click="loadQuestions">Load Questions</button>
+                    <div class="grid gap-3 md:grid-cols-4">
+                        <input
+                            v-model="manualSearch"
+                            class="rounded border-gray-300"
+                            placeholder="Search questions..."
+                            @keyup.enter="loadQuestions"
+                        />
+                        <select v-model="manualType" class="rounded border-gray-300">
+                            <option value="">All types</option>
+                            <option value="mcq">MCQ</option>
+                            <option value="short">Short</option>
+                            <option value="long">Long</option>
+                            <option value="fill">Fill</option>
+                            <option value="truefalse">True/False</option>
+                        </select>
+                        <select v-model.number="perPage" class="rounded border-gray-300">
+                            <option :value="10">10 / page</option>
+                            <option :value="15">15 / page</option>
+                            <option :value="20">20 / page</option>
+                            <option :value="30">30 / page</option>
+                        </select>
+                        <button class="rounded bg-gray-800 px-3 py-2 text-sm text-white" @click="loadQuestions">Search</button>
+                    </div>
                 </div>
 
                 <p class="mb-2 text-sm text-gray-600">Selected: {{ selectedIds.length }} questions</p>
@@ -183,10 +258,30 @@ const savePaper = () => {
                         :class="selectedIds.includes(q.id) ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200'"
                         @click="toggleQuestion(q.id)"
                     >
-                        <span class="rounded bg-gray-200 px-2 py-0.5 text-xs uppercase">{{ q.type }}</span>
+                        <div class="flex items-start justify-between gap-4">
+                            <span class="rounded bg-gray-200 px-2 py-0.5 text-xs uppercase">{{ q.type }}</span>
+                            <img
+                                v-if="q.image_path"
+                                :src="`/storage/${q.image_path}`"
+                                alt="Question image"
+                                class="h-12 w-12 rounded object-cover ring-1 ring-gray-200"
+                            />
+                        </div>
                         <p class="mt-1">{{ q.text_en }}</p>
                         <p v-if="dualMedium && q.text_ur" class="question-ur mt-1">{{ q.text_ur }}</p>
                     </div>
+                </div>
+
+                <div v-if="manualPaginator?.links && mode === 'manual'" class="mt-4 flex flex-wrap gap-2">
+                    <button
+                        v-for="(lnk, idx) in manualPaginator.links"
+                        :key="idx"
+                        class="rounded border px-3 py-1 text-sm"
+                        :class="lnk.active ? 'bg-indigo-600 text-white' : 'bg-white'"
+                        :disabled="!lnk.url"
+                        v-html="lnk.label"
+                        @click="loadPage(lnk.url)"
+                    />
                 </div>
 
                 <div class="mt-4 flex gap-2">

@@ -12,8 +12,11 @@ class CheckLicenceExpiry
     protected array $blockedPrefixes = [
         'builder',
         'builder/*',
+        'api/builder/*',
         'papers',
         'papers/*',
+        'editor/*',
+        'admin/*',
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -30,9 +33,17 @@ class CheckLicenceExpiry
 
         foreach ($this->blockedPrefixes as $prefix) {
             if ($request->is($prefix)) {
+                // Allow reading/printing existing papers.
+                if ($request->is('editor/*') && $request->method() === 'GET') {
+                    return $next($request);
+                }
+                if ($request->is('editor/*/print') && $request->method() === 'GET') {
+                    return $next($request);
+                }
+
                 return redirect()
                     ->route('dashboard')
-                    ->with('error', 'Your institution licence has expired. You can view saved papers but cannot create new ones.');
+                    ->with('error', 'Your institution licence has expired. You can view/print saved papers but cannot create or edit new papers.');
             }
         }
 

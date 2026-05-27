@@ -54,6 +54,7 @@ class PaperExportService
             'line_height' => 1.5,
             'dual_column' => false,
             'dual_medium' => false,
+            'show_past_paper_tags' => false,
             'enable_omr' => false,
             'enable_answer_key' => false,
             'enable_watermark' => false,

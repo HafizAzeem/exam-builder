@@ -9,7 +9,13 @@ use Illuminate\Support\Facades\Cache;
 
 class QuestionBankService
 {
-    public function manualFetch(array $chapterIds, ?string $type, array $sources, int $perPage = 20): LengthAwarePaginator
+    public function manualFetch(
+        array $chapterIds,
+        ?string $type,
+        array $sources,
+        ?string $search = null,
+        int $perPage = 20
+    ): LengthAwarePaginator
     {
         $query = Question::query()
             ->with(['mcqOptions', 'pastPaperTag', 'chapter.subject.grade'])
@@ -23,6 +29,14 @@ class QuestionBankService
 
         if ($sources) {
             $query->whereIn('source', $sources);
+        }
+
+        if ($search) {
+            $search = trim($search);
+            $query->where(function ($q) use ($search) {
+                $q->where('text_en', 'like', "%{$search}%")
+                    ->orWhere('text_ur', 'like', "%{$search}%");
+            });
         }
 
         return $query->latest('id')->paginate($perPage);

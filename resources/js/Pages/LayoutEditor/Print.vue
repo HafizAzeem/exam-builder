@@ -3,7 +3,7 @@ import PaperPreview from '@/Components/PaperPreview.vue';
 import { Head } from '@inertiajs/vue3';
 import { onMounted } from 'vue';
 
-defineProps({ preview: Object });
+const props = defineProps({ preview: Object, institutionOverride: Object });
 
 onMounted(() => {
     setTimeout(() => window.print(), 500);
@@ -18,7 +18,7 @@ onMounted(() => {
     <PaperPreview
         :title="preview.paper.title"
         :layout="preview.layout"
-        :institution="preview.institution"
+        :institution="institutionOverride || preview.institution"
         :sections="preview.sections"
         :dual-medium="preview.layout.dual_medium"
         :omr-rows="preview.omr_rows"

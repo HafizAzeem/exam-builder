@@ -11,12 +11,14 @@ class SavedPaper extends Model
         'institution_id',
         'user_id',
         'title',
+        'institute_snapshot',
         'config_snapshot',
         'layout_snapshot',
         'status',
     ];
 
     protected $casts = [
+        'institute_snapshot' => 'array',
         'config_snapshot' => 'array',
         'layout_snapshot' => 'array',
     ];
