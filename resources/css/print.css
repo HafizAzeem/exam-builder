@@ -1,0 +1,55 @@
+@media print {
+    .sidebar,
+    .toolbar,
+    .navbar,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    .paper-preview {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    @page {
+        margin: var(--print-margin-top, 15mm) var(--print-margin-right, 15mm)
+            var(--print-margin-bottom, 15mm) var(--print-margin-left, 15mm);
+    }
+
+    .section-break {
+        page-break-before: always;
+    }
+
+    .question-block {
+        page-break-inside: avoid;
+        orphans: 3;
+        widows: 3;
+    }
+
+    .questions-container.dual-col {
+        column-count: 2;
+        column-gap: 20px;
+    }
+
+    .watermark-layer {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(var(--wm-angle, 45deg));
+        opacity: var(--wm-opacity, 0.1);
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .omr-sheet {
+        page-break-before: always;
+    }
+
+    .question-ur {
+        direction: rtl;
+        text-align: right;
+        font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+    }
+}
