@@ -54,6 +54,7 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
         Route::post('/question-bank', [QuestionBankController::class, 'store'])->name('admin.question-bank.store');
         Route::patch('/question-bank/{question}', [QuestionBankController::class, 'update'])->name('admin.question-bank.update');
         Route::delete('/question-bank/{question}', [QuestionBankController::class, 'destroy'])->name('admin.question-bank.destroy');
+        Route::post('/question-bank/bulk-delete', [QuestionBankController::class, 'bulkDestroy'])->name('admin.question-bank.bulkDestroy');
         Route::get('/question-bank/import', [QuestionBankController::class, 'importForm'])->name('admin.question-bank.importForm');
         Route::post('/question-bank/import', [QuestionBankController::class, 'import'])->name('admin.question-bank.import');
     });

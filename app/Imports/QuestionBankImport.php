@@ -8,11 +8,10 @@ use App\Models\McqOption;
 use App\Models\PastPaperTag;
 use App\Models\Question;
 use App\Models\Subject;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Collection;
+use App\Services\QuestionImageImportService;
 
 /**
  * Supported columns (heading row):
@@ -31,6 +30,12 @@ use Illuminate\Support\Collection;
  */
 class QuestionBankImport implements ToCollection, WithHeadingRow
 {
+    /** @param  array<string, string>  $imageMap  filename => storage path */
+    public function __construct(
+        protected array $imageMap = [],
+        protected QuestionImageImportService $imageResolver = new QuestionImageImportService,
+    ) {}
+
     public function collection(Collection $rows)
     {
         // Map parent_key => parent Question
@@ -97,7 +102,7 @@ class QuestionBankImport implements ToCollection, WithHeadingRow
                     'source' => $source,
                     'text_en' => $row['text_en'] ?? null,
                     'text_ur' => $row['text_ur'] ?? null,
-                    'image_path' => $row['image_path'] ?? null,
+                    'image_path' => $this->resolveRowImage($row),
                     'has_parts' => $parentKey !== '' && $type === 'long',
                     'is_active' => true,
                 ]);
@@ -169,6 +174,16 @@ class QuestionBankImport implements ToCollection, WithHeadingRow
                 'year' => $year,
                 'session' => $session,
             ]
+        );
+    }
+
+    protected function resolveRowImage($row): ?string
+    {
+        $value = $row['image_path'] ?? $row['image_filename'] ?? null;
+
+        return $this->imageResolver->resolveImagePath(
+            $value !== null ? (string) $value : null,
+            $this->imageMap,
         );
     }
 }

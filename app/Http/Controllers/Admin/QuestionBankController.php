@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Imports\QuestionBankImport;
 use App\Models\Chapter;
+use App\Services\QuestionImageImportService;
 use App\Models\Grade;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
@@ -28,6 +29,11 @@ class QuestionBankController extends Controller
             $chaptersQuery->where('subject_id', $request->integer('subject_id'));
         }
         $chapters = $chaptersQuery->get(['id', 'number', 'title_en', 'subject_id']);
+        $allChapters = Chapter::query()
+            ->with('subject:id,name_en,grade_id')
+            ->orderBy('subject_id')
+            ->orderBy('number')
+            ->get(['id', 'number', 'title_en', 'subject_id']);
 
         $q = Question::query()
             ->with(['chapter.subject.grade', 'mcqOptions', 'pastPaperTag', 'parts'])
@@ -53,6 +59,7 @@ class QuestionBankController extends Controller
             'grades' => $grades,
             'subjects' => $subjects,
             'chapters' => $chapters,
+            'allChapters' => $allChapters,
             'questions' => $q,
             'filters' => $request->only(['grade_id', 'subject_id', 'chapter_id', 'type', 'source', 'search']),
         ]);
@@ -226,7 +233,33 @@ class QuestionBankController extends Controller
     {
         abort_if($question->parent_question_id, 400);
 
-        // Delete parts + related records automatically (FK cascades do part of this).
+        $this->deleteQuestion($question);
+
+        return back()->with('success', 'Question deleted.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:questions,id'],
+        ]);
+
+        $deleted = 0;
+
+        foreach ($validated['ids'] as $id) {
+            $question = Question::query()->whereNull('parent_question_id')->find($id);
+            if ($question) {
+                $this->deleteQuestion($question);
+                $deleted++;
+            }
+        }
+
+        return back()->with('success', "{$deleted} question(s) deleted.");
+    }
+
+    protected function deleteQuestion(Question $question): void
+    {
         Question::query()->where('parent_question_id', $question->id)->delete();
         McqOption::query()->where('question_id', $question->id)->delete();
         PastPaperTag::query()->where('question_id', $question->id)->delete();
@@ -236,8 +269,6 @@ class QuestionBankController extends Controller
         }
 
         $question->delete();
-
-        return back()->with('success', 'Question deleted.');
     }
 
     public function importForm(): Response
@@ -245,15 +276,40 @@ class QuestionBankController extends Controller
         return Inertia::render('Admin/QuestionBank/Import');
     }
 
-    public function import(Request $request)
+    public function import(Request $request, QuestionImageImportService $imageImport)
     {
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:20480', 'mimes:csv,txt,xlsx,xls'],
+            'images_zip' => ['nullable', 'file', 'max:51200', 'mimes:zip'],
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'max:4096'],
         ]);
 
-        Excel::import(new QuestionBankImport(), $validated['file']);
+        $imageMap = [];
 
-        return redirect()->route('admin.question-bank.index')->with('success', 'Import completed.');
+        if ($request->hasFile('images_zip')) {
+            $imageMap = array_merge($imageMap, $imageImport->extractZip($request->file('images_zip')));
+        }
+
+        if ($request->hasFile('images')) {
+            $batchDir = 'questions/images/import-'.now()->format('YmdHis');
+            Storage::disk('public')->makeDirectory($batchDir);
+
+            foreach ($request->file('images') as $file) {
+                $original = strtolower($file->getClientOriginalName());
+                $path = $file->store($batchDir, 'public');
+                $imageMap[$original] = $path;
+                $imageMap[pathinfo($original, PATHINFO_FILENAME)] = $path;
+            }
+        }
+
+        Excel::import(new QuestionBankImport($imageMap, $imageImport), $validated['file']);
+
+        $imageCount = count($imageMap);
+
+        return redirect()
+            ->route('admin.question-bank.index')
+            ->with('success', 'Import completed.'.($imageCount ? " ({$imageCount} images mapped)" : ''));
     }
 }
 
