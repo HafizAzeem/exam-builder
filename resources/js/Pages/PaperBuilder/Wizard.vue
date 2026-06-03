@@ -5,7 +5,32 @@ import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { computed, ref, watch } from 'vue';
 
-const props = defineProps({ grades: Array, teacherPermissions: Object });
+const props = defineProps({ grades: Array, teacherPermissions: Object, institution: Object });
+
+const buildWatermarkText = (inst) => {
+    if (!inst) return '';
+    const name = (inst.name || '').toUpperCase();
+    const location = [inst.address, inst.city].filter(Boolean).join(', ');
+    const lines = [
+        name,
+        location ? location.toUpperCase() : null,
+        inst.phone ? `PH: ${inst.phone}` : null,
+    ].filter(Boolean);
+    return lines.join('\n');
+};
+
+const previewLayout = computed(() => ({
+    header_template: 1,
+    font_family: 'Arial',
+    font_size: 12,
+    line_height: 1.5,
+    dual_medium: dualMedium.value,
+    enable_watermark: settings.value.enable_watermark,
+    watermark_text: settings.value.enable_watermark ? buildWatermarkText(props.institution) : '',
+    watermark_opacity: 0.18,
+    watermark_angle: 45,
+    show_past_paper_tags: settings.value.show_past_paper_tags,
+}));
 
 const step = ref(1);
 const gradeId = ref(null);
@@ -18,8 +43,13 @@ const chapters = ref([]);
 const questions = ref([]);
 const manualPaginator = ref(null);
 const selectedIds = ref([]);
+const selectedQuestionById = ref({});
+const previewLoading = ref(false);
+const selectingAll = ref(false);
 const mode = ref('manual');
-const randomConfig = ref({ mcq: 5, short: 2, long: 0 });
+const randomConfig = ref({ mcq: 0, short: 0, long: 0 });
+const randomCacheKey = ref('');
+const randomizing = ref(false);
 const manualType = ref('');
 const manualSearch = ref('');
 const perPage = ref(15);
@@ -43,6 +73,16 @@ const allowedSources = computed(() => {
     return allowedCategories.value;
 });
 
+const allChaptersSelected = computed({
+    get() {
+        if (!chapters.value.length) return false;
+        return chapters.value.every((c) => chapterIds.value.includes(c.id));
+    },
+    set(value) {
+        chapterIds.value = value ? chapters.value.map((c) => c.id) : [];
+    },
+});
+
 watch(
     allowedSources,
     (allowed) => {
@@ -61,12 +101,14 @@ const loadSubjects = async () => {
     subjects.value = data;
     subjectId.value = null;
     chapters.value = [];
+    chapterIds.value = [];
 };
 
 const loadChapters = async () => {
     if (!subjectId.value) return;
     const { data } = await axios.get(`/api/builder/subjects/${subjectId.value}/chapters`);
     chapters.value = data;
+    chapterIds.value = [];
 };
 
 const loadQuestions = async () => {
@@ -82,6 +124,7 @@ const loadQuestions = async () => {
     });
     manualPaginator.value = data;
     questions.value = data.data ?? data;
+    syncSelectedFromList(questions.value);
 };
 
 const loadPage = async (url) => {
@@ -97,32 +140,170 @@ const loadPage = async (url) => {
     });
     manualPaginator.value = data;
     questions.value = data.data ?? data;
+    syncSelectedFromList(questions.value);
+};
+
+const normalizeQuestion = (q) => ({
+    ...q,
+    mcq_options: q.mcq_options ?? q.mcqOptions ?? null,
+    past_paper_tag: q.past_paper_tag ?? q.pastPaperTag ?? null,
+    parts: q.parts ?? [],
+});
+
+const syncSelectedFromList = (list) => {
+    const next = { ...selectedQuestionById.value };
+    for (const q of list) {
+        if (selectedIds.value.includes(q.id)) {
+            next[q.id] = normalizeQuestion(q);
+        }
+    }
+    selectedQuestionById.value = next;
 };
 
 const randomize = async (refresh = false) => {
-    const cacheKey = `random-${gradeId.value}-${subjectId.value}-${Date.now()}`;
-    const { data } = await axios.post('/api/builder/questions/random', {
-        chapter_ids: chapterIds.value,
-        config: randomConfig.value,
-        cache_key: cacheKey,
-        refresh,
-    });
-    selectedIds.value = data.map((q) => q.id);
-    questions.value = data;
+    if (!chapterIds.value.length) return [];
+    if (!randomCacheKey.value || refresh) {
+        randomCacheKey.value = `random-${gradeId.value}-${subjectId.value}-${Date.now()}`;
+    }
+    randomizing.value = true;
+    try {
+        const { data } = await axios.post('/api/builder/questions/random', {
+            chapter_ids: chapterIds.value,
+            sources: sources.value,
+            config: randomConfig.value,
+            cache_key: randomCacheKey.value,
+            refresh,
+        });
+        const normalized = data.map(normalizeQuestion);
+        selectedIds.value = normalized.map((q) => q.id);
+        questions.value = normalized;
+        selectedQuestionById.value = Object.fromEntries(normalized.map((q) => [q.id, q]));
+        return normalized;
+    } finally {
+        randomizing.value = false;
+    }
 };
+
+const randomTargetCount = computed(() =>
+    Number(randomConfig.value.mcq || 0)
+    + Number(randomConfig.value.short || 0)
+    + Number(randomConfig.value.long || 0),
+);
+
+const randomSelectionSummary = computed(() => {
+    const counts = { mcq: 0, short: 0, long: 0 };
+    for (const q of selectedQuestions.value) {
+        if (counts[q.type] !== undefined) counts[q.type]++;
+    }
+    return counts;
+});
+
+const randomSelectionStale = computed(
+    () => mode.value === 'random'
+        && randomTargetCount.value > 0
+        && selectedIds.value.length !== randomTargetCount.value,
+);
 
 watch(gradeId, loadSubjects);
 watch(subjectId, loadChapters);
 
 const toggleQuestion = (id) => {
     const idx = selectedIds.value.indexOf(id);
-    if (idx >= 0) selectedIds.value.splice(idx, 1);
-    else selectedIds.value.push(id);
+    if (idx >= 0) {
+        selectedIds.value.splice(idx, 1);
+        const next = { ...selectedQuestionById.value };
+        delete next[id];
+        selectedQuestionById.value = next;
+    } else {
+        selectedIds.value.push(id);
+        const q = questions.value.find((x) => x.id === id);
+        if (q) {
+            selectedQuestionById.value = {
+                ...selectedQuestionById.value,
+                [id]: normalizeQuestion(q),
+            };
+        }
+    }
 };
 
 const selectedQuestions = computed(() =>
-    questions.value.filter((q) => selectedIds.value.includes(q.id)),
+    selectedIds.value.map((id) => selectedQuestionById.value[id]).filter(Boolean),
 );
+
+const fillExamMetaDefaults = () => {
+    if (!examMeta.value.class && gradeId.value) {
+        const grade = props.grades?.find((g) => g.id === gradeId.value);
+        if (grade) examMeta.value.class = grade.label_en;
+    }
+    if (!examMeta.value.subject && subjectId.value) {
+        const subject = subjects.value.find((s) => s.id === subjectId.value);
+        if (subject) examMeta.value.subject = subject.name_en;
+    }
+};
+
+const loadSelectedQuestionsForPreview = async () => {
+    if (!selectedIds.value.length) return;
+    previewLoading.value = true;
+    try {
+        const { data } = await axios.post('/api/builder/questions/by-ids', {
+            ids: selectedIds.value,
+        });
+        const byId = Object.fromEntries(data.map((q) => [q.id, normalizeQuestion(q)]));
+        selectedQuestionById.value = Object.fromEntries(
+            selectedIds.value.filter((id) => byId[id]).map((id) => [id, byId[id]]),
+        );
+    } finally {
+        previewLoading.value = false;
+    }
+};
+
+const clearSelection = () => {
+    selectedIds.value = [];
+    selectedQuestionById.value = {};
+};
+
+const selectAllMatchingQuestions = async () => {
+    if (!chapterIds.value.length) return;
+    selectingAll.value = true;
+    try {
+        const { data } = await axios.get('/api/builder/questions/all', {
+            params: {
+                chapter_ids: chapterIds.value,
+                sources: sources.value,
+                type: manualType.value || undefined,
+                search: manualSearch.value || undefined,
+            },
+        });
+        const normalized = data.map(normalizeQuestion);
+        selectedIds.value = normalized.map((q) => q.id);
+        selectedQuestionById.value = Object.fromEntries(normalized.map((q) => [q.id, q]));
+    } finally {
+        selectingAll.value = false;
+    }
+};
+
+watch(step, async (s) => {
+    if (s === 4) {
+        if (mode.value === 'random' && randomSelectionStale.value) {
+            await randomize(true);
+        }
+        fillExamMetaDefaults();
+        await loadSelectedQuestionsForPreview();
+    }
+});
+
+const proceedToStep3 = async () => {
+    if (mode.value === 'random') {
+        if (randomTargetCount.value <= 0) return;
+        if (randomSelectionStale.value || !selectedIds.value.length) {
+            await randomize(true);
+        }
+        if (!selectedIds.value.length) return;
+    } else if (!selectedIds.value.length) {
+        return;
+    }
+    step.value = 3;
+};
 
 const savePaper = () => {
     router.post(route('builder.store'), {
@@ -137,10 +318,16 @@ const savePaper = () => {
             exam_meta: examMeta.value,
             settings: settings.value,
             layout: {
+                header_template: 1,
+                font_family: 'Arial',
+                font_size: 12,
                 dual_medium: dualMedium.value,
                 enable_omr: settings.value.enable_omr,
                 enable_answer_key: settings.value.enable_answer_key,
                 enable_watermark: settings.value.enable_watermark,
+                watermark_text: settings.value.enable_watermark ? buildWatermarkText(props.institution) : '',
+                watermark_opacity: 0.18,
+                watermark_angle: 45,
                 show_past_paper_tags: settings.value.show_past_paper_tags,
             },
         },
@@ -184,7 +371,16 @@ const savePaper = () => {
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium">Chapters</label>
+                    <div class="flex items-center justify-between gap-4">
+                        <label class="block text-sm font-medium">Chapters</label>
+                        <label
+                            v-if="chapters.length"
+                            class="flex items-center gap-2 text-sm font-medium text-indigo-600"
+                        >
+                            <input v-model="allChaptersSelected" type="checkbox" />
+                            Select all
+                        </label>
+                    </div>
                     <div class="mt-2 grid grid-cols-2 gap-2">
                         <label v-for="c in chapters" :key="c.id" class="flex items-center gap-2 text-sm">
                             <input v-model="chapterIds" type="checkbox" :value="c.id" />
@@ -212,14 +408,37 @@ const savePaper = () => {
             <div v-show="step === 2" class="rounded-lg bg-white p-6 shadow">
                 <div class="mb-4 flex gap-4">
                     <button :class="mode === 'manual' ? 'bg-indigo-600 text-white' : 'bg-gray-200'" class="rounded px-3 py-1" @click="mode = 'manual'; loadQuestions()">Manual</button>
-                    <button :class="mode === 'random' ? 'bg-indigo-600 text-white' : 'bg-gray-200'" class="rounded px-3 py-1" @click="mode = 'random'; randomize()">Random</button>
+                    <button :class="mode === 'random' ? 'bg-indigo-600 text-white' : 'bg-gray-200'" class="rounded px-3 py-1" @click="mode = 'random'">Random</button>
                 </div>
 
-                <div v-if="mode === 'random'" class="mb-4 flex gap-4">
-                    <label class="text-sm">MCQs <input v-model.number="randomConfig.mcq" type="number" class="w-16 rounded border" /></label>
-                    <label class="text-sm">Short <input v-model.number="randomConfig.short" type="number" class="w-16 rounded border" /></label>
-                    <label class="text-sm">Long <input v-model.number="randomConfig.long" type="number" class="w-16 rounded border" /></label>
-                    <button class="rounded bg-gray-800 px-3 py-1 text-sm text-white" @click="randomize(true)">Re-randomise</button>
+                <div v-if="mode === 'random'" class="mb-4 space-y-3">
+                    <div class="flex flex-wrap items-end gap-4">
+                        <label class="text-sm">MCQs <input v-model.number="randomConfig.mcq" type="number" min="0" class="w-20 rounded border" /></label>
+                        <label class="text-sm">Short <input v-model.number="randomConfig.short" type="number" min="0" class="w-20 rounded border" /></label>
+                        <label class="text-sm">Long <input v-model.number="randomConfig.long" type="number" min="0" class="w-20 rounded border" /></label>
+                        <button
+                            type="button"
+                            class="rounded bg-indigo-600 px-4 py-1.5 text-sm text-white disabled:opacity-50"
+                            :disabled="randomizing || randomTargetCount <= 0"
+                            @click="randomize(true)"
+                        >
+                            {{ randomizing ? 'Generating…' : 'Generate selection' }}
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Target: <strong>{{ randomTargetCount }}</strong> questions
+                        ({{ randomConfig.mcq || 0 }} MCQ + {{ randomConfig.short || 0 }} Short + {{ randomConfig.long || 0 }} Long)
+                        · Loaded: <strong>{{ selectedIds.length }}</strong>
+                        <span v-if="selectedIds.length">
+                            ({{ randomSelectionSummary.mcq }} MCQ, {{ randomSelectionSummary.short }} Short, {{ randomSelectionSummary.long }} Long)
+                        </span>
+                    </p>
+                    <p v-if="randomSelectionStale" class="text-sm text-amber-600">
+                        Counts changed — click <strong>Generate selection</strong> or press Next to apply before preview.
+                    </p>
+                    <p v-if="selectedIds.length && selectedIds.length < randomTargetCount" class="text-sm text-amber-600">
+                        Only {{ selectedIds.length }} of {{ randomTargetCount }} could be loaded. There may not be enough questions in the selected chapters/sources.
+                    </p>
                 </div>
 
                 <div v-else class="mb-4">
@@ -248,7 +467,28 @@ const savePaper = () => {
                     </div>
                 </div>
 
-                <p class="mb-2 text-sm text-gray-600">Selected: {{ selectedIds.length }} questions</p>
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-sm text-gray-600">Selected: {{ selectedIds.length }} questions</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            v-if="mode === 'manual'"
+                            type="button"
+                            class="rounded border border-indigo-600 px-3 py-1 text-sm text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
+                            :disabled="selectingAll || !chapterIds.length"
+                            @click="selectAllMatchingQuestions"
+                        >
+                            {{ selectingAll ? 'Loading…' : 'Select all matching questions' }}
+                        </button>
+                        <button
+                            v-if="selectedIds.length"
+                            type="button"
+                            class="rounded border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50"
+                            @click="clearSelection"
+                        >
+                            Clear selection
+                        </button>
+                    </div>
+                </div>
 
                 <div class="max-h-96 space-y-2 overflow-y-auto">
                     <div
@@ -286,7 +526,13 @@ const savePaper = () => {
 
                 <div class="mt-4 flex gap-2">
                     <button class="rounded bg-gray-300 px-4 py-2" @click="step = 1">Back</button>
-                    <button class="rounded bg-indigo-600 px-4 py-2 text-white" :disabled="!selectedIds.length" @click="step = 3">Next</button>
+                    <button
+                        class="rounded bg-indigo-600 px-4 py-2 text-white"
+                        :disabled="(mode === 'random' ? randomTargetCount <= 0 : !selectedIds.length) || randomizing"
+                        @click="proceedToStep3"
+                    >
+                        Next
+                    </button>
                 </div>
             </div>
 
@@ -300,24 +546,54 @@ const savePaper = () => {
                 </div>
                 <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_omr" type="checkbox" /> OMR Bubble Sheet</label>
                 <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_answer_key" type="checkbox" /> Teacher Answer Key</label>
+                <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_watermark" type="checkbox" /> Watermark</label>
+                <label class="flex items-center gap-2 text-sm"><input v-model="settings.show_past_paper_tags" type="checkbox" /> Show past paper board &amp; year</label>
                 <div class="flex gap-2">
                     <button class="rounded bg-gray-300 px-4 py-2" @click="step = 2">Back</button>
                     <button class="rounded bg-indigo-600 px-4 py-2 text-white" @click="step = 4">Preview</button>
                 </div>
             </div>
 
-            <div v-show="step === 4" class="grid gap-6 lg:grid-cols-2">
-                <div class="space-y-4">
+            <div v-show="step === 4" class="space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-4 py-3 shadow">
+                    <p class="text-sm text-gray-600">
+                        <span class="font-medium text-gray-900">{{ selectedQuestions.length }}</span>
+                        of
+                        <span class="font-medium text-gray-900">{{ selectedIds.length }}</span>
+                        selected question(s) in preview
+                    </p>
+                    <p v-if="previewLoading" class="text-sm text-indigo-600">Loading all questions…</p>
+                    <p
+                        v-else-if="selectedQuestions.length < selectedIds.length"
+                        class="text-sm text-amber-600"
+                    >
+                        Some questions could not be loaded.
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg bg-gray-100 p-4 md:p-6">
                     <PaperPreview
+                        v-if="selectedQuestions.length"
                         :title="paperTitle"
                         :questions="selectedQuestions"
                         :dual-medium="dualMedium"
                         :settings="settings"
+                        :exam-meta="examMeta"
+                        :layout="previewLayout"
+                        :institution="institution"
                     />
-                    <div class="flex gap-2">
-                        <button class="rounded bg-gray-300 px-4 py-2" @click="step = 3">Back</button>
-                        <button class="rounded bg-green-600 px-4 py-2 text-white" @click="savePaper">Save Paper</button>
-                    </div>
+                    <p v-else class="py-12 text-center text-gray-500">No questions selected. Go back to Step 2 and select questions.</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button class="rounded bg-gray-300 px-4 py-2" @click="step = 3">Back</button>
+                    <button
+                        class="rounded bg-green-600 px-4 py-2 text-white"
+                        :disabled="!selectedQuestions.length || previewLoading"
+                        @click="savePaper"
+                    >
+                        Save Paper
+                    </button>
                 </div>
             </div>
         </div>

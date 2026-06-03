@@ -28,10 +28,16 @@ class PaperExportService
 
         $mcqs = $questions->where('type', 'mcq')->values();
 
+        if (($layout['enable_watermark'] ?? false) && empty($layout['watermark_text'])) {
+            $layout['watermark_text'] = $this->buildWatermarkText($institution, $paper->institute_snapshot);
+        }
+
         return [
             'paper' => $paper,
             'institution' => $institution,
             'config' => $config,
+            'exam_meta' => $config['exam_meta'] ?? [],
+            'settings' => $config['settings'] ?? [],
             'layout' => $layout,
             'questions' => $questions,
             'sections' => $this->groupBySection($questions),
@@ -42,6 +48,26 @@ class PaperExportService
                 ? $this->buildAnswerKey($mcqs)
                 : [],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $snapshot
+     */
+    protected function buildWatermarkText(?Institution $institution, ?array $snapshot = null): string
+    {
+        $name = strtoupper((string) ($institution?->name ?? $snapshot['name'] ?? ''));
+        $address = trim((string) ($institution?->address ?? $snapshot['address'] ?? ''));
+        $city = trim((string) ($institution?->city ?? $snapshot['city'] ?? ''));
+        $phone = trim((string) ($institution?->phone ?? $snapshot['phone'] ?? ''));
+
+        $location = collect([$address, $city])->filter()->implode(', ');
+        $lines = array_filter([
+            $name,
+            $location !== '' ? strtoupper($location) : null,
+            $phone !== '' ? 'PH: '.$phone : null,
+        ]);
+
+        return implode("\n", $lines);
     }
 
     protected function defaultLayout(): array
@@ -59,7 +85,7 @@ class PaperExportService
             'enable_answer_key' => false,
             'enable_watermark' => false,
             'watermark_text' => '',
-            'watermark_opacity' => 0.1,
+            'watermark_opacity' => 0.18,
             'watermark_angle' => 45,
             'margins' => ['top' => 15, 'right' => 15, 'bottom' => 15, 'left' => 15],
             'paper_size' => 'A4',
@@ -80,11 +106,16 @@ class PaperExportService
 
         $grouped = [];
 
+        $sectionNumber = 1;
+
         foreach ($questions->groupBy('type') as $type => $items) {
+            $count = $items->count();
             $grouped[] = [
                 'type' => $type,
+                'number' => $sectionNumber++,
                 'title' => $labels[$type] ?? ucfirst($type),
                 'questions' => $items->values(),
+                'question_count' => $count,
             ];
         }
 

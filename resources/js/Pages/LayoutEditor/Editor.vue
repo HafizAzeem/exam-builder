@@ -11,7 +11,24 @@ const props = defineProps({
     pdfUrl: String,
 });
 
+const buildWatermarkText = (inst) => {
+    if (!inst) return '';
+    const name = (inst.name || '').toUpperCase();
+    const location = [inst.address, inst.city].filter(Boolean).join(', ');
+    const lines = [
+        name,
+        location ? location.toUpperCase() : null,
+        inst.phone ? `PH: ${inst.phone}` : null,
+    ].filter(Boolean);
+    return lines.join('\n');
+};
+
 const layout = ref({ ...props.preview.layout });
+
+if (layout.value.enable_watermark && !layout.value.watermark_text) {
+    layout.value.watermark_text = props.preview.layout?.watermark_text
+        || buildWatermarkText(props.preview.institution);
+}
 
 const form = useForm({ layout_snapshot: layout.value });
 
@@ -22,6 +39,15 @@ watch(
         form.patch(route('editor.update', props.savedPaper.id), { preserveScroll: true, preserveState: true });
     },
     { deep: true },
+);
+
+watch(
+    () => layout.value.enable_watermark,
+    (enabled) => {
+        if (enabled && !layout.value.watermark_text) {
+            layout.value.watermark_text = buildWatermarkText(props.preview.institution);
+        }
+    },
 );
 
 const printPaper = () => window.open(route('editor.print', props.savedPaper.id), '_blank');
@@ -150,6 +176,8 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                     :title="savedPaper.title"
                     :layout="layout"
                     :institution="preview.institution"
+                    :exam-meta="preview.exam_meta"
+                    :settings="preview.settings"
                     :sections="preview.sections"
                     :dual-medium="layout.dual_medium"
                     :omr-rows="preview.omr_rows"

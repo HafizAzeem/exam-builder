@@ -25,6 +25,8 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
         Route::get('/grades/{grade}/subjects', [QuestionSelectorController::class, 'subjects']);
         Route::get('/subjects/{subject}/chapters', [QuestionSelectorController::class, 'chapters']);
         Route::get('/questions', [QuestionSelectorController::class, 'questions']);
+        Route::get('/questions/all', [QuestionSelectorController::class, 'all']);
+        Route::match(['get', 'post'], '/questions/by-ids', [QuestionSelectorController::class, 'byIds']);
         Route::post('/questions/random', [QuestionSelectorController::class, 'random']);
     });
 

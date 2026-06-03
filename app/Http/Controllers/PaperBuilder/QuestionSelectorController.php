@@ -90,10 +90,41 @@ class QuestionSelectorController extends Controller
         );
     }
 
+    public function all(Request $request)
+    {
+        $validated = $request->validate([
+            'chapter_ids' => ['required', 'array'],
+            'chapter_ids.*' => ['integer'],
+            'sources' => ['array'],
+            'type' => ['nullable', 'string'],
+            'search' => ['nullable', 'string'],
+        ]);
+
+        $user = $request->user();
+        if ($user->hasRole('teacher')) {
+            $allowedCategories = $user->teacherPermission?->allowed_categories ?? null;
+            if (is_array($allowedCategories) && count($allowedCategories)) {
+                $requestedSources = $validated['sources'] ?? [];
+                foreach ($requestedSources as $src) {
+                    abort_if(! in_array($src, $allowedCategories, true), 403);
+                }
+            }
+        }
+
+        return $this->questionBank->fetchAll(
+            $validated['chapter_ids'],
+            $validated['type'] ?? null,
+            $validated['sources'] ?? [],
+            $validated['search'] ?? null,
+        );
+    }
+
     public function random(Request $request)
     {
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
+            'chapter_ids.*' => ['integer'],
+            'sources' => ['array'],
             'config' => ['required', 'array'],
             'cache_key' => ['required', 'string'],
             'refresh' => ['boolean'],
@@ -117,6 +148,19 @@ class QuestionSelectorController extends Controller
             $validated['chapter_ids'],
             $validated['config'],
             $validated['cache_key'],
+            $validated['sources'] ?? [],
         );
+    }
+
+    public function byIds(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $questions = $this->questionBank->fetchByIds($validated['ids']);
+
+        return $questions->sortBy(fn ($q) => array_search($q->id, $validated['ids']))->values();
     }
 }

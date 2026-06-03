@@ -1,3 +1,29 @@
+/* Watermark: visible on screen preview and when printing */
+.paper-preview .watermark-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transform: rotate(var(--wm-angle, 45deg));
+    opacity: var(--wm-opacity, 0.18);
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+}
+
+.paper-preview .watermark-line {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
 @media print {
     .sidebar,
     .toolbar,
@@ -7,13 +33,29 @@
         display: none !important;
     }
 
+    body {
+        margin: 0;
+        background: white;
+    }
+
     .paper-preview {
         width: 100%;
+        max-width: none;
         margin: 0;
         padding: 0;
+        border: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+        overflow: visible;
+    }
+
+    .paper-preview--tpl1 {
+        border: 2px solid #000 !important;
+        padding: 10mm 8mm !important;
     }
 
     @page {
+        size: A4 portrait;
         margin: var(--print-margin-top, 15mm) var(--print-margin-right, 15mm)
             var(--print-margin-bottom, 15mm) var(--print-margin-left, 15mm);
     }
@@ -22,6 +64,7 @@
         page-break-before: always;
     }
 
+    .tpl1-question,
     .question-block {
         page-break-inside: avoid;
         orphans: 3;
@@ -33,23 +76,42 @@
         column-gap: 20px;
     }
 
-    .watermark-layer {
+    .paper-preview .watermark-layer {
         position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) rotate(var(--wm-angle, 45deg));
-        opacity: var(--wm-opacity, 0.1);
-        z-index: -1;
-        pointer-events: none;
+        inset: 0;
+        display: flex;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .omr-sheet {
         page-break-before: always;
     }
 
-    .question-ur {
+    .question-ur,
+    .tpl1-section-heading-ur,
+    .tpl1-question-ur,
+    .tpl1-mcq-ur {
         direction: rtl;
         text-align: right;
         font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+    }
+
+    .tpl1-mcq-options {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .tpl1-mcq-cell {
+        border: 1px solid #000 !important;
+    }
+
+    .tpl1-header-dashed {
+        border: 2px dashed #000 !important;
+    }
+
+    .tpl1-info-table,
+    .tpl1-info-cell,
+    .tpl1-logo-cell {
+        border-color: #000 !important;
     }
 }

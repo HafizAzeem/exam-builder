@@ -26,9 +26,14 @@ class WizardController extends Controller
             }
         }
 
+        $institution = $user->institution_id
+            ? Institution::find($user->institution_id)
+            : null;
+
         return Inertia::render('PaperBuilder/Wizard', [
             'grades' => $gradesQuery->get(['id', 'number', 'label_en', 'label_ur']),
             'teacherPermissions' => $user->hasRole('teacher') ? ($user->teacherPermission?->toArray() ?? null) : null,
+            'institution' => $institution,
         ]);
     }
 
@@ -49,6 +54,7 @@ class WizardController extends Controller
             'institute_snapshot' => $institution ? [
                 'name' => $institution->name,
                 'logo_path' => $institution->logo_path,
+                'address' => $institution->address,
                 'city' => $institution->city,
                 'phone' => $institution->phone,
             ] : null,
