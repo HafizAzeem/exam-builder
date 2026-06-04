@@ -82,8 +82,9 @@ export function buildPaperContentFromPreview(preview, title = '') {
         header: {
             institute_name: inst?.name ?? '',
             institute_address: institutionAddressLine(inst),
-            paper_type: title || preview?.paper?.title || '',
+            paper_type: preview?.exam_meta?.paper_type || title || preview?.paper?.title || '',
             paper_time: preview?.exam_meta?.time ?? '',
+            paper_date: preview?.exam_meta?.paper_date ?? '',
             class: preview?.exam_meta?.class ?? '',
             subject: preview?.exam_meta?.subject ?? '',
             marks: preview?.exam_meta?.marks ?? '',

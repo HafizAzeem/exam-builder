@@ -52,8 +52,12 @@ const watermarkLines = computed(() => {
 });
 
 const showWatermark = computed(
-    () => props.layout?.enable_watermark && watermarkLines.value.length > 0,
+    () =>
+        (props.layout?.watermark_type === 'text' || props.layout?.enable_watermark)
+        && watermarkLines.value.length > 0,
 );
+
+const showSectionNote = computed(() => props.layout?.show_note !== false);
 
 const groupQuestionsByType = (list) => {
     const order = ['mcq', 'short', 'long', 'fill', 'truefalse'];
@@ -174,9 +178,11 @@ const pastPaperRefLegacy = (q) => {
         }"
         :style="{
             fontFamily: layout?.font_family || 'Arial',
-            fontSize: (layout?.font_size || 12) + 'pt',
+            fontSize: (layout?.font_size || 11) + 'pt',
+            fontWeight: layout?.font_weight === 'bold' ? '700' : '400',
             color: layout?.font_color || '#000',
             lineHeight: layout?.line_height || 1.5,
+            '--heading-font-size': (layout?.heading_font_size || 12) + 'pt',
             transform: layout?.scale ? `scale(${layout.scale / 100})` : undefined,
             transformOrigin: layout?.scale ? 'top left' : undefined,
             '--print-margin-top': (layout?.margins?.top ?? 15) + 'mm',
@@ -363,7 +369,7 @@ const pastPaperRefLegacy = (q) => {
                                     if (s) s.heading_en = t.replace(/^Q\d+\.\s*/i, '').trim();
                                 })"
                             >{{ section.heading_en }}</span>
-                            <span v-if="section.note" class="tpl1-section-note">{{ section.note }}</span>
+                            <span v-if="section.note && showSectionNote" class="tpl1-section-note">{{ section.note }}</span>
                             <span class="tpl1-section-marks">{{ section.marks }}</span>
                         </div>
                         <div
@@ -644,7 +650,7 @@ const pastPaperRefLegacy = (q) => {
 }
 
 .tpl1-institute-name {
-    font-size: 1.25rem;
+    font-size: var(--heading-font-size, 1.25rem);
     font-weight: 700;
     margin: 0;
     line-height: 1.3;
@@ -747,6 +753,7 @@ const pastPaperRefLegacy = (q) => {
     gap: 12px;
     margin-bottom: 10px;
     font-weight: 700;
+    font-size: var(--heading-font-size, 1rem);
 }
 
 .tpl1-section-heading-en {

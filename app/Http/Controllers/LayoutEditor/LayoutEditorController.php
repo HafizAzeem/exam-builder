@@ -42,12 +42,30 @@ class LayoutEditorController extends Controller
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);
 
         $validated = $request->validate([
+            'title' => ['sometimes', 'string', 'max:500'],
+            'exam_meta' => ['sometimes', 'array'],
+            'settings' => ['sometimes', 'array'],
             'layout_snapshot' => ['required', 'array'],
         ]);
 
-        $paper->update(['layout_snapshot' => $validated['layout_snapshot']]);
+        $config = $paper->config_snapshot ?? [];
 
-        ActivityLogger::log($request, 'paper.layout_updated', ['paper_id' => $paper->id]);
+        if (isset($validated['exam_meta'])) {
+            $config['exam_meta'] = array_merge($config['exam_meta'] ?? [], $validated['exam_meta']);
+        }
+
+        if (isset($validated['settings'])) {
+            $config['settings'] = array_merge($config['settings'] ?? [], $validated['settings']);
+        }
+
+        $paper->fill([
+            'title' => $validated['title'] ?? $paper->title,
+            'config_snapshot' => $config,
+            'layout_snapshot' => $validated['layout_snapshot'],
+        ]);
+        $paper->save();
+
+        ActivityLogger::log($request, 'paper.saved', ['paper_id' => $paper->id]);
 
         return back();
     }

@@ -110,6 +110,10 @@ class PaperExportService
             }
         }
 
+        if (($layout['watermark_type'] ?? 'none') === 'text') {
+            $layout['enable_watermark'] = true;
+        }
+
         return $layout;
     }
 
@@ -118,9 +122,13 @@ class PaperExportService
         return [
             'header_template' => 1,
             'font_family' => 'Arial',
-            'font_size' => 12,
+            'font_size' => 11,
+            'heading_font_size' => 12,
+            'font_weight' => 'normal',
             'font_color' => '#000000',
             'line_height' => 1.5,
+            'show_note' => true,
+            'watermark_type' => 'none',
             'dual_column' => false,
             'dual_medium' => false,
             'show_past_paper_tags' => false,
