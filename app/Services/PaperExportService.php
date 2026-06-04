@@ -16,7 +16,13 @@ class PaperExportService
     public function buildPreviewData(SavedPaper $paper, ?Institution $institution = null): array
     {
         $config = $paper->config_snapshot ?? [];
-        $layout = array_merge($this->defaultLayout(), $paper->layout_snapshot ?? []);
+        $savedLayout = $paper->layout_snapshot ?? [];
+        $layout = $this->mergeLayoutWithPaperConfig(
+            array_merge($this->defaultLayout(), $savedLayout),
+            $config,
+            $savedLayout,
+        );
+
         $questionIds = $config['question_ids'] ?? [];
 
         $questions = Question::query()
@@ -77,6 +83,34 @@ class PaperExportService
         ]);
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Most paper options come from the builder wizard (config_snapshot).
+     * Dual medium can also be toggled in the layout editor (saved in layout_snapshot).
+     *
+     * @param  array<string, mixed>  $layout
+     * @param  array<string, mixed>  $config
+     * @param  array<string, mixed>  $savedLayout
+     * @return array<string, mixed>
+     */
+    protected function mergeLayoutWithPaperConfig(array $layout, array $config, array $savedLayout): array
+    {
+        $settings = $config['settings'] ?? [];
+
+        if (array_key_exists('dual_medium', $savedLayout)) {
+            $layout['dual_medium'] = (bool) $savedLayout['dual_medium'];
+        } elseif (array_key_exists('dual_medium', $config)) {
+            $layout['dual_medium'] = (bool) $config['dual_medium'];
+        }
+
+        foreach (['show_past_paper_tags', 'enable_omr', 'enable_answer_key', 'enable_watermark'] as $key) {
+            if (array_key_exists($key, $settings)) {
+                $layout[$key] = (bool) $settings[$key];
+            }
+        }
+
+        return $layout;
     }
 
     protected function defaultLayout(): array

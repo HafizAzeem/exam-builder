@@ -1,6 +1,11 @@
 <script setup>
 import { computed } from 'vue';
-import { buildPaperContentFromPreview, clonePaperContent, toRoman } from '@/utils/paperContent';
+import {
+    buildPaperContentFromPreview,
+    clonePaperContent,
+    hydratePaperContentUrdu,
+    toRoman,
+} from '@/utils/paperContent';
 
 const props = defineProps({
     title: String,
@@ -77,19 +82,23 @@ const legacySections = computed(() => {
 });
 
 const content = computed(() => {
-    if (props.paperContent?.sections) {
-        return props.paperContent;
+    const previewPayload = {
+        sections: legacySections.value,
+        layout: props.layout,
+        institution: props.institution,
+        exam_meta: props.examMeta,
+        paper: { title: props.title },
+    };
+
+    let base = props.paperContent?.sections
+        ? clonePaperContent(props.paperContent)
+        : buildPaperContentFromPreview(previewPayload, props.title);
+
+    if (props.dualMedium) {
+        base = hydratePaperContentUrdu(base, previewPayload);
     }
-    return buildPaperContentFromPreview(
-        {
-            sections: legacySections.value,
-            layout: props.layout,
-            institution: props.institution,
-            exam_meta: props.examMeta,
-            paper: { title: props.title },
-        },
-        props.title,
-    );
+
+    return base;
 });
 
 const displaySections = computed(() => content.value.sections ?? []);
@@ -358,7 +367,7 @@ const pastPaperRefLegacy = (q) => {
                             <span class="tpl1-section-marks">{{ section.marks }}</span>
                         </div>
                         <div
-                            v-if="dualMedium && section.heading_ur"
+                            v-if="dualMedium"
                             class="tpl1-section-heading-ur question-ur"
                             :contenteditable="editable"
                             suppresscontenteditablewarning
@@ -404,7 +413,7 @@ const pastPaperRefLegacy = (q) => {
                                 </p>
                             </div>
                             <div
-                                v-if="dualMedium && (q.text_ur || editable)"
+                                v-if="dualMedium"
                                 class="tpl1-question-ur question-ur"
                             >
                                 <span
@@ -435,7 +444,7 @@ const pastPaperRefLegacy = (q) => {
                                     >{{ opt.en }}</span>
                                 </span>
                                 <span
-                                    v-if="dualMedium && (opt.ur || editable)"
+                                    v-if="dualMedium"
                                     class="question-ur tpl1-mcq-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -464,7 +473,7 @@ const pastPaperRefLegacy = (q) => {
                                     >{{ p.text_en }}</span>
                                 </div>
                                 <div
-                                    v-if="dualMedium && (p.text_ur || editable)"
+                                    v-if="dualMedium"
                                     class="tpl1-question-ur question-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -746,7 +755,8 @@ const pastPaperRefLegacy = (q) => {
 
 .tpl1-section-heading-ur {
     flex-shrink: 0;
-    max-width: 45%;
+    width: 45%;
+    min-width: 8rem;
     font-weight: 700;
 }
 
@@ -778,7 +788,8 @@ const pastPaperRefLegacy = (q) => {
 
 .tpl1-question-ur {
     flex-shrink: 0;
-    max-width: 45%;
+    width: 45%;
+    min-width: 8rem;
     text-align: right;
     display: flex;
     align-items: flex-start;

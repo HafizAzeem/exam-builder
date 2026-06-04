@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
-import { buildPaperContentFromPreview, clonePaperContent } from '@/utils/paperContent';
+import { buildPaperContentFromPreview, clonePaperContent, hydratePaperContentUrdu } from '@/utils/paperContent';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -24,18 +24,80 @@ const buildWatermarkText = (inst) => {
     return lines.join('\n');
 };
 
-const layout = ref({ ...props.preview.layout });
+const resolveInitialDualMedium = () =>
+    Boolean(
+        props.preview.layout?.dual_medium
+        ?? props.preview.config?.dual_medium
+        ?? false,
+    );
+
+/** Wizard-only options (read-only summary in sidebar). */
+const paperOptions = computed(() => {
+    const settings = props.preview.settings ?? {};
+    const serverLayout = props.preview.layout ?? {};
+
+    return {
+        showPastPaperTags: Boolean(serverLayout.show_past_paper_tags ?? settings.show_past_paper_tags ?? false),
+        enableOmr: Boolean(serverLayout.enable_omr ?? settings.enable_omr ?? false),
+        enableAnswerKey: Boolean(serverLayout.enable_answer_key ?? settings.enable_answer_key ?? false),
+        enableWatermark: Boolean(serverLayout.enable_watermark ?? settings.enable_watermark ?? false),
+    };
+});
+
+const layout = ref({
+    header_template: props.preview.layout?.header_template ?? 1,
+    font_family: props.preview.layout?.font_family ?? 'Arial',
+    font_size: props.preview.layout?.font_size ?? 12,
+    font_color: props.preview.layout?.font_color ?? '#000000',
+    line_height: props.preview.layout?.line_height ?? 1.5,
+    dual_medium: resolveInitialDualMedium(),
+    dual_column: props.preview.layout?.dual_column ?? false,
+    orientation: props.preview.layout?.orientation ?? 'portrait',
+    scale: props.preview.layout?.scale ?? 100,
+    paper_size: props.preview.layout?.paper_size ?? 'A4',
+    enable_watermark: paperOptions.value.enableWatermark,
+    watermark_text: props.preview.layout?.watermark_text ?? '',
+    watermark_opacity: props.preview.layout?.watermark_opacity ?? 0.18,
+    watermark_angle: props.preview.layout?.watermark_angle ?? 45,
+    paper_content: props.preview.layout?.paper_content,
+    margins: {
+        top: 15,
+        right: 15,
+        bottom: 15,
+        left: 15,
+        ...(props.preview.layout?.margins ?? {}),
+    },
+});
 
 if (layout.value.enable_watermark && !layout.value.watermark_text) {
     layout.value.watermark_text = props.preview.layout?.watermark_text
         || buildWatermarkText(props.preview.institution);
 }
 
-const initialContent = () =>
-    clonePaperContent(
+const previewLayout = computed(() => ({
+    ...layout.value,
+    show_past_paper_tags: paperOptions.value.showPastPaperTags,
+    enable_omr: paperOptions.value.enableOmr,
+    enable_answer_key: paperOptions.value.enableAnswerKey,
+}));
+
+const paperOptionLabels = computed(() => [
+    { label: 'Past paper board & year', on: paperOptions.value.showPastPaperTags },
+    { label: 'OMR answer sheet', on: paperOptions.value.enableOmr },
+    { label: 'Teacher answer key', on: paperOptions.value.enableAnswerKey },
+    { label: 'Watermark', on: paperOptions.value.enableWatermark },
+]);
+
+const initialContent = () => {
+    const base = clonePaperContent(
         layout.value.paper_content
             ?? buildPaperContentFromPreview(props.preview, props.savedPaper.title),
     );
+
+    return layout.value.dual_medium
+        ? hydratePaperContentUrdu(base, props.preview)
+        : base;
+};
 
 const paperContent = ref(initialContent());
 const editDraft = ref(null);
@@ -44,7 +106,7 @@ const savingPaper = ref(false);
 
 const activePaperContent = computed(() => (editingPaper.value ? editDraft.value : paperContent.value));
 
-const form = useForm({ layout_snapshot: layout.value });
+const form = useForm({ layout_snapshot: { ...layout.value } });
 
 let layoutSaveTimer = null;
 
@@ -68,6 +130,14 @@ watch(
         if (enabled && !layout.value.watermark_text) {
             layout.value.watermark_text = buildWatermarkText(props.preview.institution);
         }
+    },
+);
+
+watch(
+    () => layout.value.dual_medium,
+    (enabled) => {
+        if (!enabled) return;
+        paperContent.value = hydratePaperContentUrdu(paperContent.value, props.preview);
     },
 );
 
@@ -170,7 +240,29 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
 
         <div class="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-3">
             <div class="toolbar space-y-4 rounded-lg bg-white p-4 shadow lg:col-span-1">
-                <h3 class="font-semibold">Layout Controls</h3>
+                <h3 class="font-semibold">Print &amp; layout</h3>
+                <p class="text-xs text-gray-500">
+                    Fonts, margins, and template. Paper options (dual medium, OMR, etc.) were set in the builder wizard.
+                </p>
+
+                <div class="rounded-md border border-gray-200 bg-gray-50 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">From paper builder</p>
+                    <ul class="mt-2 space-y-1 text-sm text-gray-700">
+                        <li v-for="item in paperOptionLabels" :key="item.label" class="flex items-center gap-2">
+                            <span
+                                class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-xs"
+                                :class="item.on ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-500'"
+                            >{{ item.on ? '✓' : '—' }}</span>
+                            {{ item.label }}
+                        </li>
+                    </ul>
+                    <Link
+                        :href="route('builder')"
+                        class="mt-2 inline-block text-xs text-indigo-600 hover:underline"
+                    >
+                        Create a new paper to change these options
+                    </Link>
+                </div>
 
                 <div>
                     <label class="text-sm">Header Template</label>
@@ -206,11 +298,6 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                 </div>
 
                 <label class="flex items-center gap-2 text-sm">
-                    <input v-model="layout.dual_medium" type="checkbox" />
-                    Dual Medium (English + Urdu)
-                </label>
-
-                <label class="flex items-center gap-2 text-sm">
                     <input v-model="layout.dual_column" type="checkbox" />
                     Dual Column (use Landscape)
                 </label>
@@ -239,44 +326,40 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                     </div>
                 </div>
 
-                <label class="flex items-center gap-2 text-sm">
-                    <input v-model="layout.show_past_paper_tags" type="checkbox" />
-                    Show past paper references
-                </label>
-
-                <label class="flex items-center gap-2 text-sm">
-                    <input v-model="layout.enable_omr" type="checkbox" />
-                    OMR Sheet
-                </label>
-
-                <label class="flex items-center gap-2 text-sm">
-                    <input v-model="layout.enable_answer_key" type="checkbox" />
-                    Answer Key
-                </label>
-
-                <div>
-                    <label class="flex items-center gap-2 text-sm">
-                        <input v-model="layout.enable_watermark" type="checkbox" />
-                        Watermark
-                    </label>
-                    <input v-if="layout.enable_watermark" v-model="layout.watermark_text" class="mt-2 w-full rounded border" placeholder="CONFIDENTIAL" />
-                    <div v-if="layout.enable_watermark" class="mt-2 grid grid-cols-2 gap-2">
+                <div v-if="paperOptions.enableWatermark">
+                    <label class="text-sm font-medium">Watermark (text &amp; style)</label>
+                    <input v-model="layout.watermark_text" class="mt-2 w-full rounded border text-sm" />
+                    <div class="mt-2 grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-xs text-gray-600">Opacity (0.05–0.30)</label>
+                            <label class="text-xs text-gray-600">Opacity</label>
                             <input v-model.number="layout.watermark_opacity" type="number" min="0.05" max="0.3" step="0.01" class="mt-1 w-full rounded border" />
                         </div>
                         <div>
-                            <label class="text-xs text-gray-600">Angle (0–60)</label>
+                            <label class="text-xs text-gray-600">Angle</label>
                             <input v-model.number="layout.watermark_angle" type="number" min="0" max="60" class="mt-1 w-full rounded border" />
                         </div>
                     </div>
+                </div>
+
+                <div class="rounded-md border border-indigo-200 bg-indigo-50 p-3">
+                    <label class="flex items-center gap-2 text-sm font-medium text-indigo-900">
+                        <input
+                            v-model="layout.dual_medium"
+                            type="checkbox"
+                            class="rounded border-indigo-400 text-indigo-600"
+                        />
+                        Dual Medium (English + Urdu)
+                    </label>
+                    <p class="mt-1 text-xs text-indigo-700">
+                        Matches your wizard choice by default. Toggle here to show or hide Urdu on this paper.
+                    </p>
                 </div>
             </div>
 
             <div class="lg:col-span-2">
                 <PaperPreview
                     :title="savedPaper.title"
-                    :layout="layout"
+                    :layout="previewLayout"
                     :institution="preview.institution"
                     :exam-meta="preview.exam_meta"
                     :settings="preview.settings"

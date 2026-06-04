@@ -95,3 +95,53 @@ export function buildPaperContentFromPreview(preview, title = '') {
 export function clonePaperContent(content) {
     return JSON.parse(JSON.stringify(content ?? { header: {}, sections: [] }));
 }
+
+/**
+ * Fill missing Urdu fields in saved paper_content from live question data.
+ */
+export function hydratePaperContentUrdu(content, preview) {
+    const fresh = buildPaperContentFromPreview(preview);
+    const next = clonePaperContent(content);
+
+    for (const section of next.sections ?? []) {
+        const freshSection = fresh.sections?.find((s) => s.type === section.type);
+        if (!freshSection) continue;
+
+        if (!section.heading_ur && freshSection.heading_ur) {
+            section.heading_ur = freshSection.heading_ur;
+        }
+
+        for (const question of section.questions ?? []) {
+            const freshQuestion = freshSection.questions?.find((q) => q.id === question.id);
+            if (!freshQuestion) continue;
+
+            if (!question.text_ur && freshQuestion.text_ur) {
+                question.text_ur = freshQuestion.text_ur;
+            }
+
+            if (question.options && freshQuestion.options) {
+                for (const key of ['A', 'B', 'C', 'D']) {
+                    if (!question.options[key]) {
+                        question.options[key] = { en: '', ur: '' };
+                    }
+                    if (!question.options[key].ur && freshQuestion.options[key]?.ur) {
+                        question.options[key].ur = freshQuestion.options[key].ur;
+                    }
+                    if (!question.options[key].en && freshQuestion.options[key]?.en) {
+                        question.options[key].en = freshQuestion.options[key].en;
+                    }
+                }
+            }
+
+            if (question.parts?.length && freshQuestion.parts?.length) {
+                question.parts.forEach((part, idx) => {
+                    if (!part.text_ur && freshQuestion.parts[idx]?.text_ur) {
+                        part.text_ur = freshQuestion.parts[idx].text_ur;
+                    }
+                });
+            }
+        }
+    }
+
+    return next;
+}
