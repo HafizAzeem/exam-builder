@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { buildPaperContentFromPreview, clonePaperContent, toRoman } from '@/utils/paperContent';
 
 const props = defineProps({
     title: String,
@@ -12,37 +13,19 @@ const props = defineProps({
     sections: Array,
     omrRows: Array,
     answerKey: Array,
+    /** When set, renders from this JSON instead of raw question models */
+    paperContent: Object,
+    editable: Boolean,
 });
 
-const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv'];
+const emit = defineEmits(['update:paperContent']);
 
 const SECTION_COPY = {
-    mcq: {
-        en: 'Choose the correct option.',
-        ur: 'درست جواب کا انتخاب کریں۔',
-        marksPer: 1,
-    },
-    short: {
-        en: 'Write short answers of following questions.',
-        ur: 'مختصر سوالات کے جوابات لکھیں۔',
-        marksPer: 2,
-        note: '(Answer any 5)',
-    },
-    long: {
-        en: 'Write detailed answers of the following questions.',
-        ur: 'تفصیلی سوالات کے جوابات لکھیں۔',
-        marksPer: 5,
-    },
-    fill: {
-        en: 'Fill in the blanks.',
-        ur: 'خالی جگہ پُر کریں۔',
-        marksPer: 1,
-    },
-    truefalse: {
-        en: 'Mark True or False.',
-        ur: 'درست یا غلط نشان لگائیں۔',
-        marksPer: 1,
-    },
+    mcq: { en: 'Choose the correct option.', ur: 'درست جواب کا انتخاب کریں۔', marksPer: 1 },
+    short: { en: 'Write short answers of following questions.', ur: 'مختصر سوالات کے جوابات لکھیں۔', marksPer: 2, note: '(Answer any 5)' },
+    long: { en: 'Write detailed answers of the following questions.', ur: 'تفصیلی سوالات کے جوابات لکھیں۔', marksPer: 5 },
+    fill: { en: 'Fill in the blanks.', ur: 'خالی جگہ پُر کریں۔', marksPer: 1 },
+    truefalse: { en: 'Mark True or False.', ur: 'درست یا غلط نشان لگائیں۔', marksPer: 1 },
 };
 
 const headerTemplate = () => Number(props.layout?.header_template ?? 1);
@@ -54,23 +37,8 @@ const logoSrc = computed(() => {
     return path.startsWith('http') ? path : `/storage/${path}`;
 });
 
-const institutionAddressLine = computed(() => {
-    const inst = props.institution;
-    if (!inst) return '';
-    const address = (inst.address || '').trim();
-    const city = (inst.city || '').trim();
-    let location = address;
-    if (city && !address.toLowerCase().includes(city.toLowerCase())) {
-        location = location ? `${location}, ${city}` : city;
-    }
-    const phone = inst.phone ? ` Ph:${inst.phone}` : '';
-    return (location || city) + phone;
-});
-
 const getMcqOptions = (q) => q?.mcq_options ?? q?.mcqOptions ?? null;
-
 const getPastPaperTag = (q) => q?.past_paper_tag ?? q?.pastPaperTag ?? null;
-
 const getParts = (q) => q?.parts ?? [];
 
 const watermarkLines = computed(() => {
@@ -99,7 +67,7 @@ const groupQuestionsByType = (list) => {
         }));
 };
 
-const displaySections = computed(() => {
+const legacySections = computed(() => {
     const raw = props.sections?.length ? props.sections : groupQuestionsByType(props.questions);
     return raw.map((section, idx) => ({
         ...section,
@@ -108,29 +76,69 @@ const displaySections = computed(() => {
     }));
 });
 
-const toRoman = (idx) => ROMAN[idx] ?? String(idx + 1);
-
-const sectionMarks = (section) => {
-    const per = SECTION_COPY[section.type]?.marksPer ?? 1;
-    const n = section.question_count ?? section.questions?.length ?? 0;
-    return `(${n}X${per}=${n * per})`;
-};
-
-const sectionHeadingEn = (section) => SECTION_COPY[section.type]?.en ?? section.title ?? '';
-
-const sectionHeadingUr = (section) => SECTION_COPY[section.type]?.ur ?? '';
-
-const sectionNote = (section) => SECTION_COPY[section.type]?.note ?? '';
-
-const pastPaperRef = (q) => {
-    const tag = getPastPaperTag(q);
-    if (!props.layout?.show_past_paper_tags || q.source !== 'past_paper' || !tag) {
-        return '';
+const content = computed(() => {
+    if (props.paperContent?.sections) {
+        return props.paperContent;
     }
-    return `[${tag.board_name} ${tag.year}]`;
+    return buildPaperContentFromPreview(
+        {
+            sections: legacySections.value,
+            layout: props.layout,
+            institution: props.institution,
+            exam_meta: props.examMeta,
+            paper: { title: props.title },
+        },
+        props.title,
+    );
+});
+
+const displaySections = computed(() => content.value.sections ?? []);
+
+const header = computed(() => content.value.header ?? {});
+
+const patchContent = (mutator) => {
+    const next = clonePaperContent(content.value);
+    mutator(next);
+    emit('update:paperContent', next);
 };
+
+const onEditableBlur = (event, mutator) => {
+    if (!props.editable) return;
+    const text = (event.target.innerText ?? '').trim();
+    patchContent((draft) => mutator(draft, text));
+};
+
+const meta = computed(() => ({
+    class: header.value.class || props.examMeta?.class || '',
+    subject: header.value.subject || props.examMeta?.subject || '',
+    time: header.value.paper_time || props.examMeta?.time || '',
+    marks: header.value.marks || props.examMeta?.marks || '',
+    paperType: header.value.paper_type || props.title || '',
+}));
+
+const instituteName = computed(() => header.value.institute_name || props.institution?.name || 'Institution Name');
+const instituteAddress = computed(() => header.value.institute_address || institutionAddressFromInst(props.institution));
+
+function institutionAddressFromInst(inst) {
+    if (!inst) return '';
+    const address = (inst.address || '').trim();
+    const city = (inst.city || '').trim();
+    let location = address;
+    if (city && !address.toLowerCase().includes(city.toLowerCase())) {
+        location = location ? `${location}, ${city}` : city;
+    }
+    const phone = inst.phone ? ` Ph:${inst.phone}` : '';
+    return (location || city) + phone;
+}
 
 const mcqOptionCells = (q) => {
+    if (q.options) {
+        return ['A', 'B', 'C', 'D'].map((key) => ({
+            key,
+            en: q.options[key]?.en ?? '',
+            ur: q.options[key]?.ur ?? '',
+        }));
+    }
     const o = getMcqOptions(q);
     if (!o) return [];
     return [
@@ -141,19 +149,20 @@ const mcqOptionCells = (q) => {
     ];
 };
 
-const meta = computed(() => ({
-    class: props.examMeta?.class ?? '',
-    subject: props.examMeta?.subject ?? '',
-    time: props.examMeta?.time ?? '',
-    marks: props.examMeta?.marks ?? '',
-    paperType: props.title ?? '',
-}));
+const pastPaperRefLegacy = (q) => {
+    const tag = getPastPaperTag(q);
+    if (!props.layout?.show_past_paper_tags || q.source !== 'past_paper' || !tag) return '';
+    return `[${tag.board_name} ${tag.year}]`;
+};
 </script>
 
 <template>
     <div
         class="paper-preview"
-        :class="{ 'paper-preview--tpl1': isTemplate1 }"
+        :class="{
+            'paper-preview--tpl1': isTemplate1,
+            'paper-preview--editing': editable && isTemplate1,
+        }"
         :style="{
             fontFamily: layout?.font_family || 'Arial',
             fontSize: (layout?.font_size || 12) + 'pt',
@@ -174,27 +183,76 @@ const meta = computed(() => ({
         </div>
 
         <header class="paper-header" :class="{ 'mb-6 border-b pb-4': !isTemplate1 }">
-            <!-- Template 1: Creative Test Maker style -->
             <template v-if="isTemplate1">
-                <div class="tpl1-header-dashed">
-                    <h1 class="tpl1-institute-name">{{ institution?.name || 'Institution Name' }}</h1>
-                    <p v-if="institutionAddressLine" class="tpl1-institute-address">{{ institutionAddressLine }}</p>
+                <div class="tpl1-header-dashed" :class="{ 'tpl1-zone--edit': editable }">
+                    <h1
+                        class="tpl1-institute-name"
+                        :contenteditable="editable"
+                        suppresscontenteditablewarning
+                        @blur="onEditableBlur($event, (d, t) => { d.header.institute_name = t; })"
+                    >
+                        {{ instituteName }}
+                    </h1>
+                    <p
+                        v-if="instituteAddress || editable"
+                        class="tpl1-institute-address"
+                        :contenteditable="editable"
+                        suppresscontenteditablewarning
+                        @blur="onEditableBlur($event, (d, t) => { d.header.institute_address = t; })"
+                    >
+                        {{ instituteAddress }}
+                    </p>
                 </div>
-                <table class="tpl1-info-table">
+                <table class="tpl1-info-table" :class="{ 'tpl1-zone--edit': editable }">
                     <tbody>
                         <tr>
                             <td class="tpl1-info-cell">
                                 <div class="tpl1-info-row"><span>Student Name:</span><span class="tpl1-blank" /></div>
-                                <div class="tpl1-info-row"><span>Paper Type:</span><span>{{ meta.paperType }}</span></div>
-                                <div class="tpl1-info-row"><span>Paper Time:</span><span>{{ meta.time }}</span></div>
+                                <div class="tpl1-info-row">
+                                    <span>Paper Type:</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => { d.header.paper_type = t; })"
+                                    >{{ meta.paperType }}</span>
+                                </div>
+                                <div class="tpl1-info-row">
+                                    <span>Paper Time:</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => { d.header.paper_time = t; })"
+                                    >{{ meta.time }}</span>
+                                </div>
                             </td>
                             <td class="tpl1-logo-cell">
                                 <img v-if="logoSrc" :src="logoSrc" alt="Logo" class="tpl1-logo" />
                             </td>
                             <td class="tpl1-info-cell tpl1-info-cell--right">
-                                <div class="tpl1-info-row"><span>Class:</span><span>{{ meta.class }}</span></div>
-                                <div class="tpl1-info-row"><span>Subject:</span><span>{{ meta.subject }}</span></div>
-                                <div class="tpl1-info-row"><span>Maximum Marks:</span><span>{{ meta.marks }}</span></div>
+                                <div class="tpl1-info-row">
+                                    <span>Class:</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => { d.header.class = t; })"
+                                    >{{ meta.class }}</span>
+                                </div>
+                                <div class="tpl1-info-row">
+                                    <span>Subject:</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => { d.header.subject = t; })"
+                                    >{{ meta.subject }}</span>
+                                </div>
+                                <div class="tpl1-info-row">
+                                    <span>Maximum Marks:</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => { d.header.marks = t; })"
+                                    >{{ meta.marks }}</span>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -283,67 +341,171 @@ const meta = computed(() => ({
 
         <!-- Template 1 body -->
         <template v-if="isTemplate1 && displaySections.length">
-            <section v-for="section in displaySections" :key="section.type" class="tpl1-section">
-                <div class="tpl1-section-heading">
-                    <div class="tpl1-section-heading-en">
-                        <strong>Q{{ section.number }}.</strong>
-                        {{ sectionHeadingEn(section) }}
-                        <span v-if="sectionNote(section)" class="tpl1-section-note">{{ sectionNote(section) }}</span>
-                        <span class="tpl1-section-marks">{{ sectionMarks(section) }}</span>
-                    </div>
-                    <div v-if="dualMedium && sectionHeadingUr(section)" class="tpl1-section-heading-ur question-ur">
-                        {{ sectionHeadingUr(section) }}
-                    </div>
-                </div>
-
-                <div
-                    v-for="(q, idx) in section.questions"
-                    :key="q.id"
-                    class="tpl1-question"
-                    :class="layout?.dual_column ? 'questions-container dual-col' : ''"
-                >
-                    <div class="tpl1-question-row">
-                        <div class="tpl1-question-en">
-                            <span class="tpl1-q-num">{{ toRoman(idx) }}.</span>
-                            <span>{{ q.text_en }}</span>
-                            <p v-if="pastPaperRef(q)" class="tpl1-past-ref">{{ pastPaperRef(q) }}</p>
+            <div class="tpl1-body" :class="{ 'tpl1-body--edit': editable }">
+                <section v-for="section in displaySections" :key="section.type" class="tpl1-section">
+                    <div class="tpl1-section-heading">
+                        <div class="tpl1-section-heading-en">
+                            <strong>Q{{ section.number }}.</strong>
+                            <span
+                                :contenteditable="editable"
+                                suppresscontenteditablewarning
+                                @blur="onEditableBlur($event, (d, t) => {
+                                    const s = d.sections.find((x) => x.type === section.type);
+                                    if (s) s.heading_en = t.replace(/^Q\d+\.\s*/i, '').trim();
+                                })"
+                            >{{ section.heading_en }}</span>
+                            <span v-if="section.note" class="tpl1-section-note">{{ section.note }}</span>
+                            <span class="tpl1-section-marks">{{ section.marks }}</span>
                         </div>
-                        <div v-if="dualMedium && q.text_ur" class="tpl1-question-ur question-ur">{{ q.text_ur }}</div>
-                    </div>
-
-                    <div v-if="q.type === 'mcq' && getMcqOptions(q)" class="tpl1-mcq-options">
-                        <div v-for="opt in mcqOptionCells(q)" :key="opt.key" class="tpl1-mcq-cell">
-                            <span class="tpl1-mcq-key">({{ opt.key }})</span>
-                            <span>{{ opt.en }}</span>
-                            <span v-if="dualMedium && opt.ur" class="question-ur tpl1-mcq-ur">{{ opt.ur }}</span>
+                        <div
+                            v-if="dualMedium && section.heading_ur"
+                            class="tpl1-section-heading-ur question-ur"
+                            :contenteditable="editable"
+                            suppresscontenteditablewarning
+                            @blur="onEditableBlur($event, (d, t) => {
+                                const s = d.sections.find((x) => x.type === section.type);
+                                if (s) s.heading_ur = t;
+                            })"
+                        >
+                            {{ section.heading_ur }}
                         </div>
-                    </div>
-
-                    <div v-else-if="q.type === 'long' && q.has_parts && getParts(q).length" class="tpl1-parts">
-                        <div v-for="(p, pIdx) in getParts(q)" :key="p.id" class="tpl1-question-row tpl1-part-row">
-                            <div class="tpl1-question-en">
-                                <span class="tpl1-q-num">({{ String.fromCharCode(97 + pIdx) }})</span>
-                                <span>{{ p.text_en }}</span>
-                            </div>
-                            <div v-if="dualMedium && p.text_ur" class="tpl1-question-ur question-ur">{{ p.text_ur }}</div>
-                        </div>
-                    </div>
-
-                    <div v-else-if="q.type === 'truefalse'" class="tpl1-truefalse">
-                        <label><span class="tpl1-tf-box" /> True</label>
-                        <label><span class="tpl1-tf-box" /> False</label>
                     </div>
 
                     <div
-                        v-else-if="settings?.blank_lines"
-                        class="tpl1-blank-area"
-                        :style="{ minHeight: settings.blank_lines * 24 + 'px' }"
-                    />
-                </div>
-            </section>
+                        v-for="(q, idx) in section.questions"
+                        :key="q.id"
+                        class="tpl1-question"
+                        :class="layout?.dual_column ? 'questions-container dual-col' : ''"
+                    >
+                        <div class="tpl1-question-row">
+                            <div class="tpl1-question-en">
+                                <span class="tpl1-q-num">{{ q.roman ?? toRoman(idx) }}.</span>
+                                <span
+                                    :contenteditable="editable"
+                                    suppresscontenteditablewarning
+                                    @blur="onEditableBlur($event, (d, t) => {
+                                        const s = d.sections.find((x) => x.type === section.type);
+                                        const question = s?.questions.find((x) => x.id === q.id);
+                                        if (question) question.text_en = t;
+                                    })"
+                                >{{ q.text_en }}</span>
+                                <p
+                                    v-if="q.past_ref"
+                                    class="tpl1-past-ref"
+                                    :contenteditable="editable && !!q.past_ref"
+                                    suppresscontenteditablewarning
+                                    @blur="onEditableBlur($event, (d, t) => {
+                                        const s = d.sections.find((x) => x.type === section.type);
+                                        const question = s?.questions.find((x) => x.id === q.id);
+                                        if (question) question.past_ref = t;
+                                    })"
+                                >
+                                    {{ q.past_ref || pastPaperRefLegacy(q) }}
+                                </p>
+                            </div>
+                            <div
+                                v-if="dualMedium && (q.text_ur || editable)"
+                                class="tpl1-question-ur question-ur"
+                            >
+                                <span
+                                    :contenteditable="editable"
+                                    suppresscontenteditablewarning
+                                    @blur="onEditableBlur($event, (d, t) => {
+                                        const s = d.sections.find((x) => x.type === section.type);
+                                        const question = s?.questions.find((x) => x.id === q.id);
+                                        if (question) question.text_ur = t.replace(/\s*[ivxlcdm]+\.\s*$/i, '').trim();
+                                    })"
+                                >{{ q.text_ur }}</span>
+                                <span class="tpl1-q-num tpl1-q-num--ur">{{ q.roman ?? toRoman(idx) }}.</span>
+                            </div>
+                        </div>
+
+                        <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="tpl1-mcq-options">
+                            <div v-for="opt in mcqOptionCells(q)" :key="opt.key" class="tpl1-mcq-cell">
+                                <span class="tpl1-mcq-left">
+                                    <span class="tpl1-mcq-key">({{ opt.key }})</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => {
+                                            const s = d.sections.find((x) => x.type === section.type);
+                                            const question = s?.questions.find((x) => x.id === q.id);
+                                            if (question?.options?.[opt.key]) question.options[opt.key].en = t;
+                                        })"
+                                    >{{ opt.en }}</span>
+                                </span>
+                                <span
+                                    v-if="dualMedium && (opt.ur || editable)"
+                                    class="question-ur tpl1-mcq-ur"
+                                    :contenteditable="editable"
+                                    suppresscontenteditablewarning
+                                    @blur="onEditableBlur($event, (d, t) => {
+                                        const s = d.sections.find((x) => x.type === section.type);
+                                        const question = s?.questions.find((x) => x.id === q.id);
+                                        if (question?.options?.[opt.key]) question.options[opt.key].ur = t;
+                                    })"
+                                >{{ opt.ur }}</span>
+                            </div>
+                        </div>
+
+                        <div v-else-if="q.type === 'long' && q.parts?.length" class="tpl1-parts">
+                            <div v-for="(p, pIdx) in q.parts" :key="p.id ?? pIdx" class="tpl1-question-row tpl1-part-row">
+                                <div class="tpl1-question-en">
+                                    <span class="tpl1-q-num">({{ p.label ?? String.fromCharCode(97 + pIdx) }})</span>
+                                    <span
+                                        :contenteditable="editable"
+                                        suppresscontenteditablewarning
+                                        @blur="onEditableBlur($event, (d, t) => {
+                                            const s = d.sections.find((x) => x.type === section.type);
+                                            const question = s?.questions.find((x) => x.id === q.id);
+                                            const part = question?.parts?.[pIdx];
+                                            if (part) part.text_en = t;
+                                        })"
+                                    >{{ p.text_en }}</span>
+                                </div>
+                                <div
+                                    v-if="dualMedium && (p.text_ur || editable)"
+                                    class="tpl1-question-ur question-ur"
+                                    :contenteditable="editable"
+                                    suppresscontenteditablewarning
+                                    @blur="onEditableBlur($event, (d, t) => {
+                                        const s = d.sections.find((x) => x.type === section.type);
+                                        const question = s?.questions.find((x) => x.id === q.id);
+                                        const part = question?.parts?.[pIdx];
+                                        if (part) part.text_ur = t;
+                                    })"
+                                >
+                                    {{ p.text_ur }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else-if="q.type === 'long' && getParts(q).length" class="tpl1-parts">
+                            <div v-for="(p, pIdx) in getParts(q)" :key="p.id" class="tpl1-question-row tpl1-part-row">
+                                <div class="tpl1-question-en">
+                                    <span class="tpl1-q-num">({{ String.fromCharCode(97 + pIdx) }})</span>
+                                    <span>{{ p.text_en }}</span>
+                                </div>
+                                <div v-if="dualMedium && p.text_ur" class="tpl1-question-ur question-ur">{{ p.text_ur }}</div>
+                            </div>
+                        </div>
+
+                        <div v-else-if="q.type === 'truefalse'" class="tpl1-truefalse">
+                            <label><span class="tpl1-tf-box" /> True</label>
+                            <label><span class="tpl1-tf-box" /> False</label>
+                        </div>
+
+                        <div
+                            v-else-if="settings?.blank_lines"
+                            class="tpl1-blank-area"
+                            :style="{ minHeight: settings.blank_lines * 24 + 'px' }"
+                        />
+                    </div>
+                </section>
+            </div>
         </template>
 
-        <!-- Legacy body (templates 2–7 or flat questions) -->
+        <!-- Legacy body -->
         <template v-else-if="displaySections.length">
             <div
                 v-for="section in displaySections"
@@ -351,43 +513,14 @@ const meta = computed(() => ({
                 class="mb-6"
                 :class="layout?.dual_column ? 'questions-container dual-col' : ''"
             >
-                <h3 class="mb-3 font-bold">{{ section.title || sectionHeadingEn(section) }}</h3>
+                <h3 class="mb-3 font-bold">{{ section.title || section.heading_en }}</h3>
                 <div v-for="(q, idx) in section.questions" :key="q.id" class="question-block mb-4">
                     <p>
                         <strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}
-                        <span
-                            v-if="layout?.show_past_paper_tags && q.source === 'past_paper' && getPastPaperTag(q)"
-                            class="ms-2 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
-                        >
-                            {{ getPastPaperTag(q).board_name }} {{ getPastPaperTag(q).year }}
-                        </span>
                     </p>
                     <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
-
-                    <div v-if="q.type === 'long' && q.has_parts && getParts(q).length" class="ms-6 mt-2 space-y-2">
-                        <div v-for="(p, pIdx) in getParts(q)" :key="p.id">
-                            <p>
-                                <strong>({{ String.fromCharCode(97 + pIdx) }})</strong>
-                                {{ p.text_en }}
-                            </p>
-                            <p v-if="dualMedium && p.text_ur" class="question-ur">{{ p.text_ur }}</p>
-                        </div>
-                    </div>
-                    <div v-if="q.type === 'mcq' && getMcqOptions(q)" class="ms-6 mt-1 grid grid-cols-2 gap-1">
-                        <span>A) {{ getMcqOptions(q).option_a_en }}</span>
-                        <span>B) {{ getMcqOptions(q).option_b_en }}</span>
-                        <span>C) {{ getMcqOptions(q).option_c_en }}</span>
-                        <span>D) {{ getMcqOptions(q).option_d_en }}</span>
-                    </div>
-                    <div v-else-if="q.type === 'truefalse'" class="ms-6 mt-2 flex items-center gap-6">
-                        <label class="inline-flex items-center gap-2">
-                            <span class="inline-block h-4 w-4 rounded border border-gray-900" />
-                            True
-                        </label>
-                        <label class="inline-flex items-center gap-2">
-                            <span class="inline-block h-4 w-4 rounded border border-gray-900" />
-                            False
-                        </label>
+                    <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="ms-6 mt-1 grid grid-cols-2 gap-1">
+                        <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}</span>
                     </div>
                     <div v-else-if="settings?.blank_lines" :style="{ height: settings.blank_lines * 24 + 'px' }" />
                 </div>
@@ -445,6 +578,18 @@ const meta = computed(() => ({
     box-sizing: border-box;
 }
 
+.paper-preview--editing [contenteditable='true'] {
+    outline: 1px dashed #3b82f6;
+    outline-offset: 2px;
+    cursor: text;
+    min-width: 0.5rem;
+}
+
+.paper-preview--editing [contenteditable='true']:focus {
+    outline-color: #16a34a;
+    background: rgb(240 253 244 / 0.5);
+}
+
 .watermark-layer {
     position: absolute;
     inset: 0;
@@ -478,12 +623,15 @@ const meta = computed(() => ({
     z-index: 1;
 }
 
-/* Template 1 header */
 .tpl1-header-dashed {
     border: 2px dashed #000;
     padding: 10px 12px;
     text-align: center;
     margin-bottom: 0;
+}
+
+.tpl1-zone--edit {
+    border-color: #000;
 }
 
 .tpl1-institute-name {
@@ -553,16 +701,33 @@ const meta = computed(() => ({
     min-width: 40px;
 }
 
-/* Template 1 sections */
+.tpl1-body--edit {
+    border: 2px dashed #16a34a;
+    padding: 10px 8px;
+    margin-top: 10px;
+}
+
 .tpl1-section {
     margin-top: 14px;
     padding-top: 8px;
     border-top: 1px solid #000;
 }
 
-.tpl1-section:first-of-type {
+.tpl1-body--edit .tpl1-section:first-of-type {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.tpl1-section:first-of-type:not(.tpl1-body--edit *) {
     border-top: none;
     margin-top: 10px;
+    padding-top: 0;
+}
+
+.tpl1-body .tpl1-section:first-of-type {
+    border-top: none;
+    margin-top: 0;
     padding-top: 0;
 }
 
@@ -581,7 +746,7 @@ const meta = computed(() => ({
 
 .tpl1-section-heading-ur {
     flex-shrink: 0;
-    max-width: 42%;
+    max-width: 45%;
     font-weight: 700;
 }
 
@@ -595,20 +760,15 @@ const meta = computed(() => ({
 }
 
 .tpl1-question {
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #d1d5db;
-}
-
-.tpl1-question:last-child {
-    border-bottom: none;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
 }
 
 .tpl1-question-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
 }
 
 .tpl1-question-en {
@@ -618,47 +778,72 @@ const meta = computed(() => ({
 
 .tpl1-question-ur {
     flex-shrink: 0;
-    max-width: 42%;
+    max-width: 45%;
     text-align: right;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    justify-content: flex-end;
 }
 
 .tpl1-q-num {
     font-weight: 700;
     margin-right: 4px;
+    white-space: nowrap;
+}
+
+.tpl1-q-num--ur {
+    margin-right: 0;
+    margin-left: 4px;
+    flex-shrink: 0;
 }
 
 .tpl1-past-ref {
     margin: 2px 0 0 1.2rem;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: #374151;
 }
 
 .tpl1-mcq-options {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
+    border: 1px solid #000;
     margin-top: 6px;
-    margin-left: 1rem;
 }
 
 .tpl1-mcq-cell {
-    border: 1px solid #000;
-    padding: 4px 6px;
-    font-size: 0.8rem;
-    min-height: 2rem;
+    border-right: 1px solid #000;
+    padding: 5px 6px;
+    font-size: 0.78rem;
+    min-height: 2.1rem;
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
+.tpl1-mcq-cell:last-child {
+    border-right: none;
+}
+
+.tpl1-mcq-left {
+    display: flex;
     align-items: center;
     gap: 4px;
+    flex: 1;
+    min-width: 0;
 }
 
 .tpl1-mcq-key {
     font-weight: 700;
+    flex-shrink: 0;
 }
 
 .tpl1-mcq-ur {
-    font-size: 0.75rem;
-    width: 100%;
+    flex-shrink: 0;
+    max-width: 48%;
+    font-size: 0.72rem;
+    text-align: right;
 }
 
 .tpl1-parts {

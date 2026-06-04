@@ -26,17 +26,26 @@ class PaperExportService
             ->sortBy(fn ($q) => array_search($q->id, $questionIds))
             ->values();
 
+        if (! empty($layout['paper_content'])) {
+            $questions = $this->applyPaperContentToQuestions($questions, $layout['paper_content']);
+        }
+
         $mcqs = $questions->where('type', 'mcq')->values();
 
         if (($layout['enable_watermark'] ?? false) && empty($layout['watermark_text'])) {
             $layout['watermark_text'] = $this->buildWatermarkText($institution, $paper->institute_snapshot);
         }
 
+        $examMeta = $config['exam_meta'] ?? [];
+        if (! empty($layout['paper_content']['header'])) {
+            $examMeta = array_merge($examMeta, $this->examMetaFromPaperContent($layout['paper_content']['header']));
+        }
+
         return [
             'paper' => $paper,
-            'institution' => $institution,
+            'institution' => $this->institutionWithPaperContent($institution, $paper->institute_snapshot, $layout['paper_content']['header'] ?? null),
             'config' => $config,
-            'exam_meta' => $config['exam_meta'] ?? [],
+            'exam_meta' => $examMeta,
             'settings' => $config['settings'] ?? [],
             'layout' => $layout,
             'questions' => $questions,
@@ -138,5 +147,117 @@ class PaperExportService
         }
 
         return $key;
+    }
+
+    /**
+     * @param  array<string, mixed>  $paperContent
+     */
+    protected function applyPaperContentToQuestions(Collection $questions, array $paperContent): Collection
+    {
+        $overrides = [];
+
+        foreach ($paperContent['sections'] ?? [] as $section) {
+            foreach ($section['questions'] ?? [] as $question) {
+                if (! empty($question['id'])) {
+                    $overrides[(int) $question['id']] = $question;
+                }
+            }
+        }
+
+        return $questions->map(function ($question) use ($overrides) {
+            $override = $overrides[$question->id] ?? null;
+
+            if (! $override) {
+                return $question;
+            }
+
+            if (isset($override['text_en'])) {
+                $question->text_en = $override['text_en'];
+            }
+
+            if (isset($override['text_ur'])) {
+                $question->text_ur = $override['text_ur'];
+            }
+
+            if ($question->mcqOptions && ! empty($override['options'])) {
+                $opts = $override['options'];
+                $map = [
+                    'A' => ['option_a_en', 'option_a_ur'],
+                    'B' => ['option_b_en', 'option_b_ur'],
+                    'C' => ['option_c_en', 'option_c_ur'],
+                    'D' => ['option_d_en', 'option_d_ur'],
+                ];
+
+                foreach ($map as $key => [$enField, $urField]) {
+                    if (isset($opts[$key]['en'])) {
+                        $question->mcqOptions->{$enField} = $opts[$key]['en'];
+                    }
+                    if (isset($opts[$key]['ur'])) {
+                        $question->mcqOptions->{$urField} = $opts[$key]['ur'];
+                    }
+                }
+            }
+
+            if (! empty($override['parts']) && $question->relationLoaded('parts')) {
+                foreach ($question->parts as $idx => $part) {
+                    $partOverride = $override['parts'][$idx] ?? null;
+                    if (! $partOverride) {
+                        continue;
+                    }
+                    if (isset($partOverride['text_en'])) {
+                        $part->text_en = $partOverride['text_en'];
+                    }
+                    if (isset($partOverride['text_ur'])) {
+                        $part->text_ur = $partOverride['text_ur'];
+                    }
+                }
+            }
+
+            return $question;
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $header
+     * @return array<string, mixed>
+     */
+    protected function examMetaFromPaperContent(array $header): array
+    {
+        return array_filter([
+            'class' => $header['class'] ?? null,
+            'subject' => $header['subject'] ?? null,
+            'time' => $header['paper_time'] ?? null,
+            'marks' => $header['marks'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $header
+     */
+    protected function institutionWithPaperContent(?Institution $institution, ?array $snapshot, ?array $header): ?Institution
+    {
+        if (! $header) {
+            return $institution;
+        }
+
+        $data = $institution
+            ? $institution->only(['name', 'logo_path', 'address', 'city', 'phone'])
+            : ($snapshot ?? []);
+
+        if (! empty($header['institute_name'])) {
+            $data['name'] = $header['institute_name'];
+        }
+
+        if (! empty($header['institute_address'])) {
+            $data['address'] = $header['institute_address'];
+        }
+
+        if ($institution) {
+            $institution->forceFill($data);
+
+            return $institution;
+        }
+
+        return Institution::make($data);
     }
 }

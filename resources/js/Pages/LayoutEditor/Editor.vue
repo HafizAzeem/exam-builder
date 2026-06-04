@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
+import { buildPaperContentFromPreview, clonePaperContent } from '@/utils/paperContent';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     savedPaper: Object,
@@ -30,13 +31,33 @@ if (layout.value.enable_watermark && !layout.value.watermark_text) {
         || buildWatermarkText(props.preview.institution);
 }
 
+const initialContent = () =>
+    clonePaperContent(
+        layout.value.paper_content
+            ?? buildPaperContentFromPreview(props.preview, props.savedPaper.title),
+    );
+
+const paperContent = ref(initialContent());
+const editDraft = ref(null);
+const editingPaper = ref(false);
+const savingPaper = ref(false);
+
+const activePaperContent = computed(() => (editingPaper.value ? editDraft.value : paperContent.value));
+
 const form = useForm({ layout_snapshot: layout.value });
+
+let layoutSaveTimer = null;
 
 watch(
     layout,
     (val) => {
-        form.layout_snapshot = val;
-        form.patch(route('editor.update', props.savedPaper.id), { preserveScroll: true, preserveState: true });
+        form.layout_snapshot = { ...val, paper_content: paperContent.value };
+        clearTimeout(layoutSaveTimer);
+        layoutSaveTimer = setTimeout(() => {
+            if (!editingPaper.value && !savingPaper.value) {
+                form.patch(route('editor.update', props.savedPaper.id), { preserveScroll: true, preserveState: true });
+            }
+        }, 600);
     },
     { deep: true },
 );
@@ -50,6 +71,40 @@ watch(
     },
 );
 
+const onContentUpdate = (content) => {
+    if (editingPaper.value) {
+        editDraft.value = content;
+    }
+};
+
+const startEditPaper = () => {
+    editDraft.value = clonePaperContent(paperContent.value);
+    editingPaper.value = true;
+};
+
+const cancelEditPaper = () => {
+    editDraft.value = null;
+    editingPaper.value = false;
+};
+
+const savePaperContent = () => {
+    if (!editDraft.value) return;
+
+    savingPaper.value = true;
+    paperContent.value = clonePaperContent(editDraft.value);
+    layout.value.paper_content = paperContent.value;
+    form.layout_snapshot = { ...layout.value, paper_content: paperContent.value };
+
+    form.patch(route('editor.update', props.savedPaper.id), {
+        preserveScroll: true,
+        onFinish: () => {
+            savingPaper.value = false;
+            editingPaper.value = false;
+            editDraft.value = null;
+        },
+    });
+};
+
 const printPaper = () => window.open(route('editor.print', props.savedPaper.id), '_blank');
 const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
 </script>
@@ -59,11 +114,41 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-gray-800">{{ savedPaper.title }}</h2>
-                <div class="flex gap-2">
-                    <button class="rounded bg-green-600 px-4 py-2 text-sm text-white" @click="printPaper">Print</button>
-                    <button class="rounded bg-indigo-600 px-4 py-2 text-sm text-white" @click="requestPdf">Generate PDF</button>
+                <div class="flex flex-wrap gap-2">
+                    <button
+                        v-if="!editingPaper"
+                        type="button"
+                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700"
+                        @click="startEditPaper"
+                    >
+                        Edit Paper
+                    </button>
+                    <template v-else>
+                        <button
+                            type="button"
+                            class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-60"
+                            :disabled="savingPaper"
+                            @click="savePaperContent"
+                        >
+                            {{ savingPaper ? 'Saving…' : 'Save Paper' }}
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                            :disabled="savingPaper"
+                            @click="cancelEditPaper"
+                        >
+                            Cancel
+                        </button>
+                    </template>
+                    <button type="button" class="rounded bg-green-600 px-4 py-2 text-sm text-white" @click="printPaper">
+                        Print
+                    </button>
+                    <button type="button" class="rounded bg-indigo-600 px-4 py-2 text-sm text-white" @click="requestPdf">
+                        Generate PDF
+                    </button>
                     <a
                         v-if="pdfUrl"
                         :href="pdfUrl"
@@ -75,6 +160,13 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                 </div>
             </div>
         </template>
+
+        <p
+            v-if="editingPaper"
+            class="mx-auto mb-2 max-w-7xl px-4 text-sm text-green-700"
+        >
+            Edit mode: click any English or Urdu text on the paper. Green dashed border marks the question area. Save when finished.
+        </p>
 
         <div class="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-3">
             <div class="toolbar space-y-4 rounded-lg bg-white p-4 shadow lg:col-span-1">
@@ -114,6 +206,11 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                 </div>
 
                 <label class="flex items-center gap-2 text-sm">
+                    <input v-model="layout.dual_medium" type="checkbox" />
+                    Dual Medium (English + Urdu)
+                </label>
+
+                <label class="flex items-center gap-2 text-sm">
                     <input v-model="layout.dual_column" type="checkbox" />
                     Dual Column (use Landscape)
                 </label>
@@ -141,6 +238,11 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                         <input v-model.number="layout.margins.left" type="number" min="0" class="rounded border" placeholder="Left" />
                     </div>
                 </div>
+
+                <label class="flex items-center gap-2 text-sm">
+                    <input v-model="layout.show_past_paper_tags" type="checkbox" />
+                    Show past paper references
+                </label>
 
                 <label class="flex items-center gap-2 text-sm">
                     <input v-model="layout.enable_omr" type="checkbox" />
@@ -179,9 +281,12 @@ const requestPdf = () => form.post(route('editor.pdf', props.savedPaper.id), { p
                     :exam-meta="preview.exam_meta"
                     :settings="preview.settings"
                     :sections="preview.sections"
+                    :paper-content="activePaperContent"
+                    :editable="editingPaper"
                     :dual-medium="layout.dual_medium"
                     :omr-rows="preview.omr_rows"
                     :answer-key="preview.answer_key"
+                    @update:paper-content="onContentUpdate"
                 />
             </div>
         </div>

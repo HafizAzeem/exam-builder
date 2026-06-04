@@ -22,6 +22,7 @@ onMounted(() => {
         :exam-meta="preview.exam_meta"
         :settings="preview.settings"
         :sections="preview.sections"
+        :paper-content="preview.layout?.paper_content"
         :dual-medium="preview.layout.dual_medium"
         :omr-rows="preview.omr_rows"
         :answer-key="preview.answer_key"

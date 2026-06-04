@@ -99,10 +99,25 @@
 
     .tpl1-mcq-options {
         grid-template-columns: repeat(4, 1fr);
+        border: 1px solid #000 !important;
     }
 
     .tpl1-mcq-cell {
-        border: 1px solid #000 !important;
+        border-right: 1px solid #000 !important;
+    }
+
+    .tpl1-mcq-cell:last-child {
+        border-right: none !important;
+    }
+
+    .paper-preview--editing [contenteditable='true'] {
+        outline: none !important;
+        background: transparent !important;
+    }
+
+    .tpl1-body--edit {
+        border: none !important;
+        padding: 0 !important;
     }
 
     .tpl1-header-dashed {
