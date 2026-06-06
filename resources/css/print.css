@@ -10,12 +10,12 @@
     transform: rotate(var(--wm-angle, 45deg));
     opacity: var(--wm-opacity, 0.18);
     pointer-events: none;
-    z-index: 0;
+    z-index: 20;
     user-select: none;
 }
 
 .paper-preview .watermark-line {
-    font-size: 1.35rem;
+    font-size: var(--wm-font-size, 1.35rem);
     font-weight: 700;
     letter-spacing: 0.06em;
     color: #9ca3af;
@@ -51,7 +51,8 @@
 
     .paper-preview--tpl1 {
         border: 2px solid #000 !important;
-        padding: 10mm 8mm !important;
+        padding: var(--paper-padding-top, 10mm) var(--paper-padding-right, 8mm)
+            var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
     }
 
     @page {
@@ -86,6 +87,26 @@
 
     .omr-sheet {
         page-break-before: always;
+    }
+
+    .omr-sheet-grid--cols-2 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .omr-sheet-grid--cols-3 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .omr-sheet-grid--cols-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .omr-sheet-grid--cols-5 {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+
+    .omr-bubble {
+        border: 1px solid #000 !important;
     }
 
     .question-ur,

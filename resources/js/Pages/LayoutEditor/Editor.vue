@@ -62,7 +62,9 @@ const layout = ref({
     watermark_text: props.preview.layout?.watermark_text ?? '',
     watermark_opacity: props.preview.layout?.watermark_opacity ?? 0.18,
     watermark_angle: props.preview.layout?.watermark_angle ?? 45,
+    watermark_size: props.preview.layout?.watermark_size ?? 22,
     paper_content: props.preview.layout?.paper_content,
+    omr_columns: props.preview.layout?.omr_columns ?? 2,
     margins: {
         top: 15,
         right: 15,
@@ -72,7 +74,10 @@ const layout = ref({
     },
 });
 
-if (layout.value.enable_watermark && !layout.value.watermark_text) {
+if (
+    (layout.value.enable_watermark || layout.value.watermark_type === 'text')
+    && !layout.value.watermark_text?.trim()
+) {
     layout.value.watermark_text = props.preview.layout?.watermark_text
         || buildWatermarkText(props.preview.institution);
 }
@@ -110,22 +115,45 @@ const previewAnswerKey = computed(() => (previewLayout.value.enable_answer_key ?
 
 const layoutForm = useForm({ layout_snapshot: { ...layout.value } });
 
+const paperClass = computed(() => props.preview.exam_meta?.class ?? examMeta.class ?? '');
+const paperSubject = computed(() => props.preview.exam_meta?.subject ?? examMeta.subject ?? '');
+
 const saveForm = useForm({
     title: props.savedPaper.title,
     paper_type: examMeta.paper_type ?? paperContent.value.header?.paper_type ?? props.savedPaper.title,
     paper_date: examMeta.paper_date ?? todayIso(),
     time_allowed: examMeta.time ?? '2 Hours',
     total_marks: examMeta.marks ?? '',
-    class: examMeta.class ?? '',
-    subject: examMeta.subject ?? '',
 });
 
 let layoutSaveTimer = null;
 
+const ensureMargins = (target) => {
+    const defaults = { top: 15, right: 15, bottom: 15, left: 15 };
+
+    if (!target.margins || typeof target.margins !== 'object') {
+        target.margins = { ...defaults };
+        return;
+    }
+
+    for (const side of ['top', 'right', 'bottom', 'left']) {
+        const n = Number(target.margins[side]);
+        const fixed = Number.isFinite(n) ? n : defaults[side];
+        if (target.margins[side] !== fixed) {
+            target.margins[side] = fixed;
+        }
+    }
+};
+
+ensureMargins(layout.value);
+
 watch(
     layout,
     (val) => {
-        val.enable_watermark = val.watermark_type === 'text';
+        const wantsWatermark = val.watermark_type === 'text';
+        if (val.enable_watermark !== wantsWatermark) {
+            val.enable_watermark = wantsWatermark;
+        }
         layoutForm.layout_snapshot = { ...val, paper_content: paperContent.value };
         clearTimeout(layoutSaveTimer);
         layoutSaveTimer = setTimeout(() => {
@@ -145,6 +173,22 @@ watch(
     (enabled) => {
         if (!enabled) return;
         paperContent.value = hydratePaperContentUrdu(paperContent.value, props.preview);
+    },
+);
+
+watch(
+    () => layout.value.watermark_type,
+    (type) => {
+        const wantsWatermark = type === 'text';
+        if (layout.value.enable_watermark !== wantsWatermark) {
+            layout.value.enable_watermark = wantsWatermark;
+        }
+        if (editorSettings.value.enable_watermark !== wantsWatermark) {
+            editorSettings.value.enable_watermark = wantsWatermark;
+        }
+        if (wantsWatermark && !layout.value.watermark_text?.trim()) {
+            layout.value.watermark_text = buildWatermarkText(props.preview.institution);
+        }
     },
 );
 
@@ -179,8 +223,6 @@ const openSaveModal = () => {
     saveForm.paper_date = examMeta.paper_date || todayIso();
     saveForm.time_allowed = header.paper_time || examMeta.time || '2 Hours';
     saveForm.total_marks = header.marks || examMeta.marks || '';
-    saveForm.class = header.class || examMeta.class || '';
-    saveForm.subject = header.subject || examMeta.subject || '';
     showSaveModal.value = true;
 };
 
@@ -191,8 +233,8 @@ const submitSavePaper = () => {
         paper_type: saveForm.paper_type,
         paper_time: saveForm.time_allowed,
         marks: saveForm.total_marks,
-        class: saveForm.class,
-        subject: saveForm.subject,
+        class: paperClass.value,
+        subject: paperSubject.value,
     };
 
     paperContent.value = content;
@@ -208,8 +250,8 @@ const submitSavePaper = () => {
                 paper_date: data.paper_date,
                 time: data.time_allowed,
                 marks: data.total_marks,
-                class: data.class,
-                subject: data.subject,
+                class: paperClass.value,
+                subject: paperSubject.value,
             },
             settings: { ...editorSettings.value },
             layout_snapshot: {
@@ -307,27 +349,29 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
         </p>
 
-        <div class="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-3">
-            <PaperSettingsSidebar
-                v-model:layout="layout"
-                v-model:settings="editorSettings"
-                :header-templates="headerTemplates"
-                class="lg:col-span-1"
-            />
+        <div class="grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">
+            <div class="editor-sidebar-scroll lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
+                <PaperSettingsSidebar
+                    v-model:layout="layout"
+                    v-model:settings="editorSettings"
+                    :header-templates="headerTemplates"
+                />
+            </div>
 
-            <div class="lg:col-span-2">
-                <div class="overflow-x-auto rounded-lg bg-gray-100 p-4 md:p-6">
+            <div class="min-w-0 w-full">
+                <div class="w-full overflow-x-auto rounded-lg bg-gray-100 py-3 md:py-4">
                     <PaperPreview
+                        fill-width
                         :title="saveForm.title || savedPaper.title"
                         :layout="previewLayout"
                         :institution="preview.institution"
                         :exam-meta="{
                             ...preview.exam_meta,
+                            class: paperClass,
+                            subject: paperSubject,
                             paper_type: saveForm.paper_type,
                             time: saveForm.time_allowed,
                             marks: saveForm.total_marks,
-                            class: saveForm.class,
-                            subject: saveForm.subject,
                             paper_date: saveForm.paper_date,
                         }"
                         :settings="editorSettings"
@@ -347,8 +391,30 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
             :show="showSaveModal"
             :form="saveForm"
             :processing="saveForm.processing"
+            :paper-class="paperClass"
+            :paper-subject="paperSubject"
             @close="showSaveModal = false"
             @submit="submitSavePaper"
         />
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.editor-sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.editor-sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.editor-sidebar-scroll::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background-color: #cbd5e1;
+}
+
+.editor-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+</style>

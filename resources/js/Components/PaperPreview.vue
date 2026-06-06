@@ -21,6 +21,8 @@ const props = defineProps({
     /** When set, renders from this JSON instead of raw question models */
     paperContent: Object,
     editable: Boolean,
+    /** Stretch template to full container width (editor preview) */
+    fillWidth: Boolean,
 });
 
 const emit = defineEmits(['update:paperContent']);
@@ -47,15 +49,15 @@ const getPastPaperTag = (q) => q?.past_paper_tag ?? q?.pastPaperTag ?? null;
 const getParts = (q) => q?.parts ?? [];
 
 const watermarkLines = computed(() => {
-    const text = props.layout?.watermark_text ?? '';
+    const text = (props.layout?.watermark_text ?? '').trim();
+    if (!text) return [];
     return text.split('\n').map((l) => l.trim()).filter(Boolean);
 });
 
-const showWatermark = computed(
-    () =>
-        (props.layout?.watermark_type === 'text' || props.layout?.enable_watermark)
-        && watermarkLines.value.length > 0,
-);
+const showWatermark = computed(() => {
+    const enabled = props.layout?.watermark_type === 'text' || props.layout?.enable_watermark;
+    return enabled && watermarkLines.value.length > 0;
+});
 
 const showSectionNote = computed(() => props.layout?.show_note !== false);
 
@@ -167,6 +169,23 @@ const pastPaperRefLegacy = (q) => {
     if (!props.layout?.show_past_paper_tags || q.source !== 'past_paper' || !tag) return '';
     return `[${tag.board_name} ${tag.year}]`;
 };
+
+const omrColumnCount = computed(() => {
+    const n = Number(props.layout?.omr_columns ?? 2);
+    return Math.min(5, Math.max(1, n));
+});
+
+const omrColumnChunks = computed(() => {
+    const rows = props.omrRows ?? [];
+    if (!rows.length) return [];
+
+    const cols = omrColumnCount.value;
+    const perCol = Math.ceil(rows.length / cols);
+
+    return Array.from({ length: cols }, (_, i) =>
+        rows.slice(i * perCol, (i + 1) * perCol),
+    ).filter((chunk) => chunk.length > 0);
+});
 </script>
 
 <template>
@@ -175,6 +194,7 @@ const pastPaperRefLegacy = (q) => {
         :class="{
             'paper-preview--tpl1': isTemplate1,
             'paper-preview--editing': editable && isTemplate1,
+            'paper-preview--fill': fillWidth,
         }"
         :style="{
             fontFamily: layout?.font_family || 'Arial',
@@ -189,8 +209,13 @@ const pastPaperRefLegacy = (q) => {
             '--print-margin-right': (layout?.margins?.right ?? 15) + 'mm',
             '--print-margin-bottom': (layout?.margins?.bottom ?? 15) + 'mm',
             '--print-margin-left': (layout?.margins?.left ?? 15) + 'mm',
+            '--paper-padding-top': (layout?.margins?.top ?? 12) + 'mm',
+            '--paper-padding-right': (layout?.margins?.right ?? 10) + 'mm',
+            '--paper-padding-bottom': (layout?.margins?.bottom ?? 12) + 'mm',
+            '--paper-padding-left': (layout?.margins?.left ?? 10) + 'mm',
             '--wm-opacity': layout?.watermark_opacity ?? 0.18,
             '--wm-angle': (layout?.watermark_angle ?? 45) + 'deg',
+            '--wm-font-size': (layout?.watermark_size ?? 22) + 'pt',
         }"
     >
         <div v-if="showWatermark" class="watermark-layer" aria-hidden="true">
@@ -551,14 +576,26 @@ const pastPaperRefLegacy = (q) => {
 
         <div v-if="omrRows?.length" class="omr-sheet mt-8">
             <h3 class="mb-4 font-bold">OMR Answer Sheet</h3>
-            <div v-for="row in omrRows" :key="row.number" class="mb-2 flex items-center gap-4">
-                <span class="w-8">{{ row.number }}.</span>
-                <span
-                    v-for="opt in row.options"
-                    :key="opt"
-                    class="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gray-800"
-                    >{{ opt }}</span
+            <div
+                class="omr-sheet-grid"
+                :class="`omr-sheet-grid--cols-${omrColumnCount}`"
+            >
+                <div
+                    v-for="(column, colIdx) in omrColumnChunks"
+                    :key="colIdx"
+                    class="omr-sheet-col"
                 >
+                    <div v-for="row in column" :key="row.number" class="omr-sheet-row">
+                        <span class="omr-sheet-num">{{ row.number }}.</span>
+                        <span class="omr-sheet-bubbles">
+                            <span
+                                v-for="opt in row.options"
+                                :key="opt"
+                                class="omr-bubble"
+                            >{{ opt }}</span>
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -585,12 +622,21 @@ const pastPaperRefLegacy = (q) => {
 
 .paper-preview--tpl1 {
     border: 2px solid #000;
-    padding: 12mm 10mm;
+    padding: var(--paper-padding-top, 12mm) var(--paper-padding-right, 10mm)
+        var(--paper-padding-bottom, 12mm) var(--paper-padding-left, 10mm);
     width: 100%;
     max-width: 210mm;
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
+}
+
+.paper-preview--fill.paper-preview--tpl1,
+.paper-preview--fill {
+    max-width: none;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 .paper-preview--editing [contenteditable='true'] {
@@ -616,12 +662,12 @@ const pastPaperRefLegacy = (q) => {
     transform: rotate(var(--wm-angle, 45deg));
     opacity: var(--wm-opacity, 0.18);
     pointer-events: none;
-    z-index: 0;
+    z-index: 20;
     user-select: none;
 }
 
 .watermark-line {
-    font-size: 1.35rem;
+    font-size: var(--wm-font-size, 1.35rem);
     font-weight: 700;
     letter-spacing: 0.06em;
     color: #9ca3af;
@@ -893,5 +939,64 @@ const pastPaperRefLegacy = (q) => {
     direction: rtl;
     text-align: right;
     font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
+}
+
+.omr-sheet-grid {
+    display: grid;
+    gap: 1rem 1.5rem;
+    align-items: start;
+}
+
+.omr-sheet-grid--cols-1 {
+    grid-template-columns: 1fr;
+}
+
+.omr-sheet-grid--cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.omr-sheet-grid--cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.omr-sheet-grid--cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.omr-sheet-grid--cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.omr-sheet-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.8rem;
+}
+
+.omr-sheet-num {
+    flex-shrink: 0;
+    width: 1.75rem;
+    text-align: right;
+    font-weight: 600;
+}
+
+.omr-sheet-bubbles {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.omr-bubble {
+    display: inline-flex;
+    height: 1.35rem;
+    width: 1.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid #1f2937;
+    font-size: 0.65rem;
+    font-weight: 600;
 }
 </style>
