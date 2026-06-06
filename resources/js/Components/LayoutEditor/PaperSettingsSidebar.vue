@@ -318,12 +318,8 @@ const removeWatermarkImage = () => {
                 Teacher answer key
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input v-model="settings.show_past_paper_tags" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-                Past paper board &amp; year
-            </label>
-            <label class="flex items-center gap-2 text-sm text-gray-700">
-                <input v-model="layout.show_note" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-                Section notes (e.g. Answer any 5)
+                <input v-model="layout.show_paper_note" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
+                Paper note
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-700">
                 <input v-model="layout.dual_medium" type="checkbox" class="rounded border-gray-300 text-indigo-600" />

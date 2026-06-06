@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import {
     buildPaperContentFromPreview,
     clonePaperContent,
+    DEFAULT_PAPER_NOTE,
     hydratePaperContentUrdu,
     toRoman,
 } from '@/utils/paperContent';
@@ -70,6 +71,11 @@ const showImageWatermark = computed(() => {
 });
 
 const showSectionNote = computed(() => props.layout?.show_note !== false);
+const showPaperNote = computed(() => props.layout?.show_paper_note !== false);
+
+const paperNoteText = computed(() =>
+    header.value.paper_note?.trim() || DEFAULT_PAPER_NOTE,
+);
 
 const groupQuestionsByType = (list) => {
     const order = ['mcq', 'short', 'long', 'fill', 'truefalse'];
@@ -290,6 +296,19 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                     </tbody>
                 </table>
                 <div
+                    v-if="showPaperNote"
+                    class="tpl1-paper-note"
+                    :class="{ 'tpl1-zone--edit': editable }"
+                >
+                    <strong class="tpl1-paper-note-label">Note:</strong>
+                    <span
+                        class="tpl1-paper-note-text"
+                        :contenteditable="editable"
+                        suppresscontenteditablewarning
+                        @blur="onEditableBlur($event, (d, t) => { d.header.paper_note = t; })"
+                    >{{ paperNoteText }}</span>
+                </div>
+                <div
                     v-if="omrRowsList.length"
                     class="tpl1-omr-sheet"
                 >
@@ -402,6 +421,20 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                 aria-hidden="true"
             >
                 <img :src="watermarkImageSrc" alt="" class="watermark-image" />
+            </div>
+
+            <div
+                v-if="!isTemplate1 && showPaperNote"
+                class="tpl1-paper-note omr-sheet--header"
+                :class="{ 'tpl1-zone--edit': editable }"
+            >
+                <strong class="tpl1-paper-note-label">Note:</strong>
+                <span
+                    class="tpl1-paper-note-text"
+                    :contenteditable="editable"
+                    suppresscontenteditablewarning
+                    @blur="onEditableBlur($event, (d, t) => { d.header.paper_note = t; })"
+                >{{ paperNoteText }}</span>
             </div>
 
             <div
@@ -727,6 +760,7 @@ const omrRowsList = computed(() => props.omrRows ?? []);
 .tpl1-section,
 .omr-sheet,
 .tpl1-omr-sheet,
+.tpl1-paper-note,
 .section-break {
     position: relative;
     z-index: 1;
@@ -993,6 +1027,22 @@ const omrRowsList = computed(() => props.omrRows ?? []);
     border: 2px solid #000;
     border-top: none;
     padding: 6px 8px;
+}
+
+.tpl1-paper-note {
+    border: 2px solid #000;
+    border-top: none;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+}
+
+.tpl1-paper-note-label {
+    margin-right: 0.35rem;
+}
+
+.tpl1-paper-note-text {
+    font-weight: 400;
 }
 
 .omr-sheet--header {

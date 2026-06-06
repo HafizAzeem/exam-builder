@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperSettingsSidebar from '@/Components/LayoutEditor/PaperSettingsSidebar.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
-import { buildPaperContentFromPreview, clonePaperContent, hydratePaperContentUrdu } from '@/utils/paperContent';
+import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
@@ -56,6 +56,7 @@ const layout = ref({
     scale: props.preview.layout?.scale ?? 100,
     paper_size: props.preview.layout?.paper_size ?? 'A4',
     show_note: props.preview.layout?.show_note ?? true,
+    show_paper_note: props.preview.layout?.show_paper_note ?? true,
     watermark_type: props.preview.layout?.watermark_type
         ?? (props.preview.layout?.enable_watermark ? 'text' : 'none'),
     enable_watermark: props.preview.layout?.enable_watermark ?? editorSettings.value.enable_watermark,
@@ -101,6 +102,13 @@ const paperContent = ref(initialContent());
 const editDraft = ref(null);
 const editingPaper = ref(false);
 const showSaveModal = ref(false);
+
+if (!paperContent.value.header?.paper_note?.trim()) {
+    paperContent.value.header = {
+        ...paperContent.value.header,
+        paper_note: DEFAULT_PAPER_NOTE,
+    };
+}
 
 const activePaperContent = computed(() => (editingPaper.value ? editDraft.value : paperContent.value));
 
@@ -247,6 +255,12 @@ const onContentUpdate = (content) => {
 
 const startEditPaper = () => {
     editDraft.value = clonePaperContent(paperContent.value);
+    if (!editDraft.value.header?.paper_note?.trim()) {
+        editDraft.value.header = {
+            ...editDraft.value.header,
+            paper_note: DEFAULT_PAPER_NOTE,
+        };
+    }
     editingPaper.value = true;
 };
 

@@ -128,6 +128,7 @@ class PaperExportService
             'font_color' => '#000000',
             'line_height' => 1.5,
             'show_note' => true,
+            'show_paper_note' => true,
             'watermark_type' => 'none',
             'dual_column' => false,
             'dual_medium' => false,

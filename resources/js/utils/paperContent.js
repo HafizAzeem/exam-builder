@@ -1,5 +1,8 @@
 const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv'];
 
+export const DEFAULT_PAPER_NOTE =
+    'Write your roll number/name in space provided. Over-writing, cutting, erasing, using lead pencil will result in loss of marks.';
+
 const SECTION_COPY = {
     mcq: { en: 'Choose the correct option.', ur: 'درست جواب کا انتخاب کریں۔', marksPer: 1 },
     short: { en: 'Write short answers of following questions.', ur: 'مختصر سوالات کے جوابات لکھیں۔', marksPer: 2, note: '(Answer any 5)' },
@@ -88,6 +91,7 @@ export function buildPaperContentFromPreview(preview, title = '') {
             class: preview?.exam_meta?.class ?? '',
             subject: preview?.exam_meta?.subject ?? '',
             marks: preview?.exam_meta?.marks ?? '',
+            paper_note: preview?.layout?.paper_content?.header?.paper_note || DEFAULT_PAPER_NOTE,
         },
         sections,
     };

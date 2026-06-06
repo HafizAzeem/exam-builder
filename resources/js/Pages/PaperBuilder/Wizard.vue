@@ -31,6 +31,7 @@ const previewLayout = computed(() => ({
     watermark_opacity: 0.18,
     watermark_angle: 45,
     show_past_paper_tags: settings.value.show_past_paper_tags,
+    show_paper_note: true,
 }));
 
 const step = ref(1);
