@@ -116,6 +116,10 @@
         border: 1px solid #000 !important;
     }
 
+    .teacher-answer-badge {
+        display: none !important;
+    }
+
     .question-ur,
     .tpl1-section-heading-ur,
     .tpl1-question-ur,

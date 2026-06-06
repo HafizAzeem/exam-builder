@@ -25,7 +25,6 @@ onMounted(() => {
         :paper-content="preview.layout?.paper_content"
         :dual-medium="preview.layout.dual_medium"
         :omr-rows="preview.layout?.enable_omr ? preview.omr_rows : []"
-        :answer-key="preview.layout?.enable_answer_key ? preview.answer_key : []"
     />
 </template>
 

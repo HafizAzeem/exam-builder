@@ -187,6 +187,33 @@ const pastPaperRefLegacy = (q) => {
 };
 
 const omrRowsList = computed(() => props.omrRows ?? []);
+
+const mcqAnswerByQuestionId = computed(() => {
+    const map = new Map();
+    if (!props.answerKey?.length) return map;
+
+    let mcqIndex = 0;
+    for (const section of displaySections.value) {
+        if (section.type !== 'mcq') continue;
+        for (const question of section.questions ?? []) {
+            mcqIndex++;
+            const entry = props.answerKey.find((item) => item.number === mcqIndex)
+                ?? props.answerKey[mcqIndex - 1];
+            if (!entry?.answer || question.id == null) continue;
+            map.set(question.id, {
+                number: entry.number ?? mcqIndex,
+                answer: entry.answer,
+            });
+        }
+    }
+
+    return map;
+});
+
+const teacherAnswerFor = (question) => {
+    if (question?.id == null) return null;
+    return mcqAnswerByQuestionId.value.get(question.id) ?? null;
+};
 </script>
 
 <template>
@@ -539,7 +566,12 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                             </div>
                         </div>
 
-                        <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="tpl1-mcq-options">
+                        <div
+                            v-if="q.type === 'mcq' && mcqOptionCells(q).length"
+                            class="tpl1-mcq-block"
+                            :class="{ 'tpl1-mcq-block--has-answer': teacherAnswerFor(q) }"
+                        >
+                            <div class="tpl1-mcq-options">
                             <div v-for="opt in mcqOptionCells(q)" :key="opt.key" class="tpl1-mcq-cell">
                                 <span class="tpl1-mcq-left">
                                     <span class="tpl1-mcq-key">({{ opt.key }})</span>
@@ -564,6 +596,15 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                                         if (question?.options?.[opt.key]) question.options[opt.key].ur = t;
                                     })"
                                 >{{ opt.ur }}</span>
+                            </div>
+                            </div>
+                            <div
+                                v-if="teacherAnswerFor(q)"
+                                class="teacher-answer-badge"
+                                aria-hidden="true"
+                            >
+                                <span class="teacher-answer-badge-label">{{ teacherAnswerFor(q).number }}.Answer:</span>
+                                <span class="teacher-answer-badge-value">{{ teacherAnswerFor(q).answer }}</span>
                             </div>
                         </div>
 
@@ -638,8 +679,18 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                         <strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}
                     </p>
                     <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
-                    <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="ms-6 mt-1 grid grid-cols-2 gap-1">
-                        <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}</span>
+                    <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="ms-6 mt-1">
+                        <div class="grid grid-cols-2 gap-1">
+                            <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}</span>
+                        </div>
+                        <div
+                            v-if="teacherAnswerFor(q)"
+                            class="teacher-answer-badge teacher-answer-badge--inline"
+                            aria-hidden="true"
+                        >
+                            <span class="teacher-answer-badge-label">{{ teacherAnswerFor(q).number }}.Answer:</span>
+                            <span class="teacher-answer-badge-value">{{ teacherAnswerFor(q).answer }}</span>
+                        </div>
                     </div>
                     <div v-else-if="settings?.blank_lines" :style="{ height: settings.blank_lines * 24 + 'px' }" />
                 </div>
@@ -652,13 +703,6 @@ const omrRowsList = computed(() => props.omrRows ?? []);
                 <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
             </div>
         </template>
-
-        <div v-if="answerKey?.length" class="section-break mt-8">
-            <h3 class="mb-4 font-bold">Teacher Answer Key</h3>
-            <div class="grid grid-cols-5 gap-2">
-                <span v-for="a in answerKey" :key="a.number">{{ a.number }}: {{ a.answer }}</span>
-            </div>
-        </div>
     </div>
 </template>
 
@@ -955,6 +999,71 @@ const omrRowsList = computed(() => props.omrRows ?? []);
     grid-template-columns: repeat(4, 1fr);
     border: 1px solid #000;
     margin-top: 6px;
+}
+
+.tpl1-mcq-block {
+    position: relative;
+    margin-top: 6px;
+}
+
+.tpl1-mcq-block--has-answer {
+    margin-bottom: 1rem;
+    padding-bottom: 0.15rem;
+}
+
+.tpl1-mcq-block .tpl1-mcq-options {
+    margin-top: 0;
+}
+
+.teacher-answer-badge {
+    position: absolute;
+    left: 50%;
+    bottom: -0.55rem;
+    display: inline-flex;
+    align-items: stretch;
+    transform: translateX(-50%);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+    border-radius: 9999px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+    border: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.teacher-answer-badge--inline {
+    position: static;
+    transform: none;
+    margin-top: 0.45rem;
+}
+
+.teacher-answer-badge-label {
+    display: inline-flex;
+    align-items: center;
+    background: #b5cf2a;
+    color: #fff;
+    padding: 0.24rem 0.52rem 0.24rem 0.55rem;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.12);
+}
+
+.teacher-answer-badge-value {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ff1f1f;
+    color: #fff;
+    padding: 0.24rem 0.58rem;
+    font-weight: 700;
+    min-width: 1.35rem;
+    text-transform: uppercase;
+    border-left: 1px solid rgb(0 0 0 / 0.12);
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.15);
 }
 
 .tpl1-mcq-cell {
