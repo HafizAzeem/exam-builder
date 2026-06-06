@@ -25,6 +25,7 @@ const previewLayout = computed(() => ({
     font_size: 12,
     line_height: 1.5,
     dual_medium: dualMedium.value,
+    enable_omr: settings.value.enable_omr,
     enable_watermark: settings.value.enable_watermark,
     watermark_text: settings.value.enable_watermark ? buildWatermarkText(props.institution) : '',
     watermark_opacity: 0.18,
@@ -229,6 +230,17 @@ const toggleQuestion = (id) => {
 const selectedQuestions = computed(() =>
     selectedIds.value.map((id) => selectedQuestionById.value[id]).filter(Boolean),
 );
+
+const previewOmrRows = computed(() => {
+    if (!settings.value.enable_omr) return [];
+
+    const mcqCount = selectedQuestions.value.filter((question) => question.type === 'mcq').length;
+
+    return Array.from({ length: mcqCount }, (_, index) => ({
+        number: index + 1,
+        options: ['A', 'B', 'C', 'D'],
+    }));
+});
 
 const fillExamMetaDefaults = () => {
     if (!examMeta.value.class && gradeId.value) {
@@ -581,6 +593,7 @@ const savePaper = () => {
                         :exam-meta="examMeta"
                         :layout="previewLayout"
                         :institution="institution"
+                        :omr-rows="previewOmrRows"
                     />
                     <p v-else class="py-12 text-center text-gray-500">No questions selected. Go back to Step 2 and select questions.</p>
                 </div>

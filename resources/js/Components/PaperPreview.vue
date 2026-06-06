@@ -180,22 +180,7 @@ const pastPaperRefLegacy = (q) => {
     return `[${tag.board_name} ${tag.year}]`;
 };
 
-const omrColumnCount = computed(() => {
-    const n = Number(props.layout?.omr_columns ?? 2);
-    return Math.min(5, Math.max(1, n));
-});
-
-const omrColumnChunks = computed(() => {
-    const rows = props.omrRows ?? [];
-    if (!rows.length) return [];
-
-    const cols = omrColumnCount.value;
-    const perCol = Math.ceil(rows.length / cols);
-
-    return Array.from({ length: cols }, (_, i) =>
-        rows.slice(i * perCol, (i + 1) * perCol),
-    ).filter((chunk) => chunk.length > 0);
-});
+const omrRowsList = computed(() => props.omrRows ?? []);
 </script>
 
 <template>
@@ -304,6 +289,25 @@ const omrColumnChunks = computed(() => {
                         </tr>
                     </tbody>
                 </table>
+                <div
+                    v-if="omrRowsList.length"
+                    class="tpl1-omr-sheet"
+                >
+                    <div class="omr-sheet-grid">
+                        <div
+                            v-for="row in omrRowsList"
+                            :key="row.number"
+                            class="omr-question"
+                        >
+                            <span class="omr-question-num">{{ row.number }}</span>
+                            <span
+                                v-for="opt in row.options"
+                                :key="opt"
+                                class="omr-bubble"
+                            >{{ opt }}</span>
+                        </div>
+                    </div>
+                </div>
             </template>
 
             <template v-else-if="headerTemplate() === 2">
@@ -398,6 +402,26 @@ const omrColumnChunks = computed(() => {
                 aria-hidden="true"
             >
                 <img :src="watermarkImageSrc" alt="" class="watermark-image" />
+            </div>
+
+            <div
+                v-if="!isTemplate1 && omrRowsList.length"
+                class="omr-sheet omr-sheet--header"
+            >
+                <div class="omr-sheet-grid">
+                    <div
+                        v-for="row in omrRowsList"
+                        :key="row.number"
+                        class="omr-question"
+                    >
+                        <span class="omr-question-num">{{ row.number }}</span>
+                        <span
+                            v-for="opt in row.options"
+                            :key="opt"
+                            class="omr-bubble"
+                        >{{ opt }}</span>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -596,31 +620,6 @@ const omrColumnChunks = computed(() => {
             </div>
         </template>
 
-        <div v-if="omrRows?.length" class="omr-sheet mt-8">
-            <h3 class="mb-4 font-bold">OMR Answer Sheet</h3>
-            <div
-                class="omr-sheet-grid"
-                :class="`omr-sheet-grid--cols-${omrColumnCount}`"
-            >
-                <div
-                    v-for="(column, colIdx) in omrColumnChunks"
-                    :key="colIdx"
-                    class="omr-sheet-col"
-                >
-                    <div v-for="row in column" :key="row.number" class="omr-sheet-row">
-                        <span class="omr-sheet-num">{{ row.number }}.</span>
-                        <span class="omr-sheet-bubbles">
-                            <span
-                                v-for="opt in row.options"
-                                :key="opt"
-                                class="omr-bubble"
-                            >{{ opt }}</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div v-if="answerKey?.length" class="section-break mt-8">
             <h3 class="mb-4 font-bold">Teacher Answer Key</h3>
             <div class="grid grid-cols-5 gap-2">
@@ -727,6 +726,7 @@ const omrColumnChunks = computed(() => {
 
 .tpl1-section,
 .omr-sheet,
+.tpl1-omr-sheet,
 .section-break {
     position: relative;
     z-index: 1;
@@ -989,62 +989,56 @@ const omrColumnChunks = computed(() => {
     font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
 }
 
+.tpl1-omr-sheet {
+    border: 2px solid #000;
+    border-top: none;
+    padding: 6px 8px;
+}
+
+.omr-sheet--header {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+}
+
 .omr-sheet-grid {
-    display: grid;
-    gap: 1rem 1.5rem;
-    align-items: start;
-}
-
-.omr-sheet-grid--cols-1 {
-    grid-template-columns: 1fr;
-}
-
-.omr-sheet-grid--cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.omr-sheet-grid--cols-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.omr-sheet-grid--cols-4 {
-    grid-template-columns: repeat(4, 1fr);
-}
-
-.omr-sheet-grid--cols-5 {
-    grid-template-columns: repeat(5, 1fr);
-}
-
-.omr-sheet-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
-    font-size: 0.8rem;
+    gap: 0.2rem 0.45rem;
 }
 
-.omr-sheet-num {
+.omr-question {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.12rem;
     flex-shrink: 0;
-    width: 1.75rem;
-    text-align: right;
-    font-weight: 600;
 }
 
-.omr-sheet-bubbles {
-    display: flex;
+.omr-question-num {
+    display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    justify-content: center;
+    min-width: 1rem;
+    height: 1rem;
+    padding: 0 0.12rem;
+    background: #000;
+    color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .omr-bubble {
     display: inline-flex;
-    height: 1.35rem;
-    width: 1.35rem;
+    height: 1rem;
+    width: 1rem;
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    border: 1px solid #1f2937;
-    font-size: 0.65rem;
+    border: 1px solid #000;
+    font-size: 0.52rem;
     font-weight: 600;
+    line-height: 1;
 }
 </style>

@@ -36,10 +36,10 @@ const resolveInitialDualMedium = () =>
     );
 
 const editorSettings = ref({
-    enable_omr: props.preview.settings?.enable_omr ?? false,
-    enable_answer_key: props.preview.settings?.enable_answer_key ?? false,
-    enable_watermark: props.preview.settings?.enable_watermark ?? false,
-    show_past_paper_tags: props.preview.settings?.show_past_paper_tags ?? false,
+    enable_omr: props.preview.settings?.enable_omr ?? props.preview.layout?.enable_omr ?? false,
+    enable_answer_key: props.preview.settings?.enable_answer_key ?? props.preview.layout?.enable_answer_key ?? false,
+    enable_watermark: props.preview.settings?.enable_watermark ?? props.preview.layout?.enable_watermark ?? false,
+    show_past_paper_tags: props.preview.settings?.show_past_paper_tags ?? props.preview.layout?.show_past_paper_tags ?? false,
 });
 
 const layout = ref({
@@ -112,7 +112,24 @@ const previewLayout = computed(() => ({
     show_past_paper_tags: editorSettings.value.show_past_paper_tags,
 }));
 
-const previewOmr = computed(() => (previewLayout.value.enable_omr ? props.preview.omr_rows : []));
+const buildOmrRows = (rows, sections) => {
+    if (rows?.length) return rows;
+
+    const mcqCount = (sections ?? [])
+        .filter((section) => section.type === 'mcq')
+        .reduce((sum, section) => sum + (section.questions?.length ?? section.question_count ?? 0), 0);
+
+    return Array.from({ length: mcqCount }, (_, index) => ({
+        number: index + 1,
+        options: ['A', 'B', 'C', 'D'],
+    }));
+};
+
+const previewOmr = computed(() => (
+    previewLayout.value.enable_omr
+        ? buildOmrRows(props.preview.omr_rows, props.preview.sections)
+        : []
+));
 const previewAnswerKey = computed(() => (previewLayout.value.enable_answer_key ? props.preview.answer_key : []));
 
 const layoutForm = useForm({ layout_snapshot: { ...layout.value } });
@@ -166,6 +183,16 @@ const ensureMargins = (target) => {
 };
 
 ensureMargins(layout.value);
+
+watch(
+    editorSettings,
+    (val) => {
+        layout.value.enable_omr = val.enable_omr;
+        layout.value.enable_answer_key = val.enable_answer_key;
+        layout.value.show_past_paper_tags = val.show_past_paper_tags;
+    },
+    { deep: true },
+);
 
 watch(
     layout,

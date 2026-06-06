@@ -313,16 +313,6 @@ const removeWatermarkImage = () => {
                 <input v-model="settings.enable_omr" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
                 OMR bubble sheet
             </label>
-            <div v-if="settings.enable_omr" class="ms-6">
-                <label class="text-xs text-gray-600">OMR layout</label>
-                <select v-model.number="layout.omr_columns" class="mt-1 w-full rounded-md border-gray-300 text-sm">
-                    <option :value="1">1 column</option>
-                    <option :value="2">2 columns</option>
-                    <option :value="3">3 columns</option>
-                    <option :value="4">4 columns</option>
-                    <option :value="5">5 columns</option>
-                </select>
-            </div>
             <label class="flex items-center gap-2 text-sm text-gray-700">
                 <input v-model="settings.enable_answer_key" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
                 Teacher answer key

@@ -60,12 +60,8 @@ class PaperExportService
             'layout' => $layout,
             'questions' => $questions,
             'sections' => $this->groupBySection($questions),
-            'omr_rows' => ($layout['enable_omr'] ?? false)
-                ? $this->bubbleSheetService->generate($mcqs)
-                : [],
-            'answer_key' => ($layout['enable_answer_key'] ?? false)
-                ? $this->buildAnswerKey($mcqs)
-                : [],
+            'omr_rows' => $this->bubbleSheetService->generate($mcqs),
+            'answer_key' => $this->buildAnswerKey($mcqs),
         ];
     }
 
