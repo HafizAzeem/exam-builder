@@ -32,6 +32,7 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
 
     Route::get('/editor/{paper}', [LayoutEditorController::class, 'show'])->name('editor.show');
     Route::patch('/editor/{paper}', [LayoutEditorController::class, 'update'])->name('editor.update');
+    Route::post('/editor/{paper}/watermark-image', [LayoutEditorController::class, 'uploadWatermarkImage'])->name('editor.watermark-image');
     Route::get('/editor/{paper}/print', [LayoutEditorController::class, 'print'])->name('editor.print');
     Route::post('/editor/{paper}/pdf', [LayoutEditorController::class, 'pdf'])->name('editor.pdf');
 

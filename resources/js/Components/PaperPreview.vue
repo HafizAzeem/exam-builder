@@ -54,9 +54,19 @@ const watermarkLines = computed(() => {
     return text.split('\n').map((l) => l.trim()).filter(Boolean);
 });
 
-const showWatermark = computed(() => {
-    const enabled = props.layout?.watermark_type === 'text' || props.layout?.enable_watermark;
-    return enabled && watermarkLines.value.length > 0;
+const watermarkImageSrc = computed(() => {
+    const path = props.layout?.watermark_image_path;
+    if (!path) return null;
+    if (path.startsWith('data:') || path.startsWith('http') || path.startsWith('/')) return path;
+    return `/storage/${path}`;
+});
+
+const showTextWatermark = computed(() => {
+    return props.layout?.watermark_type === 'text' && watermarkLines.value.length > 0;
+});
+
+const showImageWatermark = computed(() => {
+    return props.layout?.watermark_type === 'image' && !!watermarkImageSrc.value;
 });
 
 const showSectionNote = computed(() => props.layout?.show_note !== false);
@@ -216,12 +226,9 @@ const omrColumnChunks = computed(() => {
             '--wm-opacity': layout?.watermark_opacity ?? 0.18,
             '--wm-angle': (layout?.watermark_angle ?? 45) + 'deg',
             '--wm-font-size': (layout?.watermark_size ?? 22) + 'pt',
+            '--wm-image-size': (layout?.watermark_image_size ?? 50) + '%',
         }"
     >
-        <div v-if="showWatermark" class="watermark-layer" aria-hidden="true">
-            <div v-for="(line, i) in watermarkLines" :key="i" class="watermark-line">{{ line }}</div>
-        </div>
-
         <header class="paper-header" :class="{ 'mb-6 border-b pb-4': !isTemplate1 }">
             <template v-if="isTemplate1">
                 <div class="tpl1-header-dashed" :class="{ 'tpl1-zone--edit': editable }">
@@ -377,6 +384,21 @@ const omrColumnChunks = computed(() => {
                     <p class="mt-1 text-xs text-gray-600">Official Exam Paper</p>
                 </div>
             </template>
+
+            <div
+                v-if="showTextWatermark"
+                class="watermark-below-header watermark-below-header--text"
+                aria-hidden="true"
+            >
+                <div v-for="(line, i) in watermarkLines" :key="i" class="watermark-line">{{ line }}</div>
+            </div>
+            <div
+                v-if="showImageWatermark"
+                class="watermark-below-header watermark-below-header--image"
+                aria-hidden="true"
+            >
+                <img :src="watermarkImageSrc" alt="" class="watermark-image" />
+            </div>
         </header>
 
         <!-- Template 1 body -->
@@ -651,21 +673,6 @@ const omrColumnChunks = computed(() => {
     background: rgb(240 253 244 / 0.5);
 }
 
-.watermark-layer {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    transform: rotate(var(--wm-angle, 45deg));
-    opacity: var(--wm-opacity, 0.18);
-    pointer-events: none;
-    z-index: 20;
-    user-select: none;
-}
-
 .watermark-line {
     font-size: var(--wm-font-size, 1.35rem);
     font-weight: 700;
@@ -676,7 +683,48 @@ const omrColumnChunks = computed(() => {
     line-height: 1.2;
 }
 
-.paper-header,
+.watermark-below-header {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    transform: translateX(-50%) rotate(var(--wm-angle, 45deg));
+    transform-origin: center top;
+    opacity: var(--wm-opacity, 0.18);
+    pointer-events: none;
+    user-select: none;
+}
+
+.watermark-below-header--text {
+    margin-top: 1.75rem;
+}
+
+.watermark-below-header--image {
+    margin-top: 3.5rem;
+}
+
+.watermark-image {
+    display: block;
+    max-width: var(--wm-image-size, 50%);
+    max-height: var(--wm-image-size, 50%);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+.paper-header {
+    position: relative;
+    z-index: 1;
+    overflow: visible;
+}
+
 .tpl1-section,
 .omr-sheet,
 .section-break {

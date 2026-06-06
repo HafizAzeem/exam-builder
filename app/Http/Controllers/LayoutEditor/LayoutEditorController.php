@@ -93,6 +93,29 @@ class LayoutEditorController extends Controller
         ]);
     }
 
+    public function uploadWatermarkImage(Request $request, SavedPaper $paper)
+    {
+        abort_unless($paper->institution_id === $request->user()->institution_id, 403);
+
+        $request->validate([
+            'image' => ['required', 'image', 'max:4096'],
+        ]);
+
+        $path = $request->file('image')->store(
+            "watermarks/{$paper->institution_id}/{$paper->id}",
+            'public',
+        );
+
+        $layout = $paper->layout_snapshot ?? [];
+        $layout['watermark_image_path'] = $path;
+        $layout['watermark_type'] = 'image';
+        $layout['enable_watermark'] = true;
+        $paper->layout_snapshot = $layout;
+        $paper->save();
+
+        return back()->with('watermark_upload', ['path' => $path]);
+    }
+
     public function pdf(Request $request, SavedPaper $paper)
     {
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);

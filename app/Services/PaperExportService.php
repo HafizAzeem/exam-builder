@@ -42,6 +42,10 @@ class PaperExportService
             $layout['watermark_text'] = $this->buildWatermarkText($institution, $paper->institute_snapshot);
         }
 
+        if (! empty($layout['watermark_image_path'])) {
+            $layout['watermark_image_url'] = '/storage/'.$layout['watermark_image_path'];
+        }
+
         $examMeta = $config['exam_meta'] ?? [];
         if (! empty($layout['paper_content']['header'])) {
             $examMeta = array_merge($examMeta, $this->examMetaFromPaperContent($layout['paper_content']['header']));
@@ -110,7 +114,7 @@ class PaperExportService
             }
         }
 
-        if (($layout['watermark_type'] ?? 'none') === 'text') {
+        if (in_array($layout['watermark_type'] ?? 'none', ['text', 'image'], true)) {
             $layout['enable_watermark'] = true;
         }
 
@@ -140,6 +144,8 @@ class PaperExportService
             'watermark_opacity' => 0.18,
             'watermark_angle' => 45,
             'watermark_size' => 22,
+            'watermark_image_path' => '',
+            'watermark_image_size' => 50,
             'margins' => ['top' => 15, 'right' => 15, 'bottom' => 15, 'left' => 15],
             'paper_size' => 'A4',
             'orientation' => 'portrait',

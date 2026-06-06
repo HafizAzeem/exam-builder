@@ -1,19 +1,91 @@
 <script setup>
+import { router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+
 const layout = defineModel('layout', { type: Object, required: true });
 const settings = defineModel('settings', { type: Object, required: true });
 
-defineProps({
+const props = defineProps({
     headerTemplates: { type: Array, default: () => [1, 2, 3, 4, 5, 6, 7] },
+    paperId: { type: [Number, String], required: true },
 });
 
+const emit = defineEmits(['watermark-uploaded']);
+
+const watermarkUploading = ref(false);
+const watermarkUploadError = ref('');
+const localPreviewUrl = ref('');
+
+const storageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('data:') || path.startsWith('http') || path.startsWith('/')) return path;
+    return `/storage/${path}`;
+};
+
+const watermarkImagePreview = computed(() => {
+    if (localPreviewUrl.value) return localPreviewUrl.value;
+    return storageUrl(layout.value.watermark_image_path);
+});
+
+const wantsWatermark = (type) => type === 'text' || type === 'image';
+
 const onWatermarkTypeChange = () => {
-    const wantsWatermark = layout.value.watermark_type === 'text';
-    if (layout.value.enable_watermark !== wantsWatermark) {
-        layout.value.enable_watermark = wantsWatermark;
+    const active = wantsWatermark(layout.value.watermark_type);
+    if (layout.value.enable_watermark !== active) {
+        layout.value.enable_watermark = active;
     }
-    if (settings.value.enable_watermark !== wantsWatermark) {
-        settings.value.enable_watermark = wantsWatermark;
+    if (settings.value.enable_watermark !== active) {
+        settings.value.enable_watermark = active;
     }
+};
+
+const onWatermarkImageSelect = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    watermarkUploadError.value = '';
+    watermarkUploading.value = true;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        localPreviewUrl.value = e.target?.result ?? '';
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    router.post(route('editor.watermark-image', props.paperId), formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+            const upload = page.props.flash?.watermark_upload;
+            if (upload?.path) {
+                layout.value.watermark_image_path = upload.path;
+                layout.value.watermark_type = 'image';
+                localPreviewUrl.value = '';
+                onWatermarkTypeChange();
+                emit('watermark-uploaded', upload.path);
+                return;
+            }
+            watermarkUploadError.value = 'Upload failed. Please try again.';
+            localPreviewUrl.value = '';
+        },
+        onError: () => {
+            watermarkUploadError.value = 'Could not upload image. Use JPG or PNG under 4 MB.';
+            localPreviewUrl.value = '';
+        },
+        onFinish: () => {
+            watermarkUploading.value = false;
+        },
+    });
+};
+
+const removeWatermarkImage = () => {
+    layout.value.watermark_image_path = '';
+    localPreviewUrl.value = '';
 };
 </script>
 
@@ -126,6 +198,7 @@ const onWatermarkTypeChange = () => {
             >
                 <option value="none">Off</option>
                 <option value="text">Text watermark</option>
+                <option value="image">Picture watermark</option>
             </select>
             <template v-if="layout.watermark_type === 'text'">
                 <input
@@ -141,6 +214,73 @@ const onWatermarkTypeChange = () => {
                             type="number"
                             min="10"
                             max="72"
+                            class="mt-0.5 w-full rounded-md border-gray-300 px-2 py-1.5 text-sm"
+                        />
+                    </div>
+                    <div class="pair-field-grid">
+                        <label class="pair-field-label">Opacity</label>
+                        <label class="pair-field-label">Angle</label>
+                        <input
+                            v-model.number="layout.watermark_opacity"
+                            type="number"
+                            min="0.05"
+                            max="0.3"
+                            step="0.01"
+                            class="pair-field-input"
+                        />
+                        <input
+                            v-model.number="layout.watermark_angle"
+                            type="number"
+                            min="0"
+                            max="60"
+                            class="pair-field-input"
+                        />
+                    </div>
+                </div>
+            </template>
+            <template v-if="layout.watermark_type === 'image'">
+                <div class="mt-2 space-y-2">
+                    <div
+                        v-if="watermarkImagePreview"
+                        class="relative overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-2"
+                    >
+                        <img
+                            :src="watermarkImagePreview"
+                            alt="Watermark preview"
+                            class="mx-auto max-h-24 object-contain opacity-60"
+                        />
+                        <button
+                            type="button"
+                            class="mt-2 w-full rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                            @click="removeWatermarkImage"
+                        >
+                            Remove image
+                        </button>
+                    </div>
+                    <label class="block">
+                        <span class="text-xs text-gray-500">
+                            {{ watermarkImagePreview ? 'Replace image' : 'Upload image' }}
+                        </span>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            class="mt-1 block w-full text-xs text-gray-600 file:mr-2 file:rounded-md file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-medium file:text-indigo-700"
+                            :disabled="watermarkUploading"
+                            @change="onWatermarkImageSelect"
+                        />
+                    </label>
+                    <p v-if="!watermarkImagePreview && !watermarkUploading" class="text-xs text-amber-600">
+                        Upload an image to show it on the paper.
+                    </p>
+                    <p v-if="watermarkUploading" class="text-xs text-gray-500">Uploading…</p>
+                    <p v-if="watermarkUploadError" class="text-xs text-red-600">{{ watermarkUploadError }}</p>
+                    <div>
+                        <label class="text-xs text-gray-500">Size (%)</label>
+                        <input
+                            v-model.number="layout.watermark_image_size"
+                            type="number"
+                            min="10"
+                            max="100"
                             class="mt-0.5 w-full rounded-md border-gray-300 px-2 py-1.5 text-sm"
                         />
                     </div>

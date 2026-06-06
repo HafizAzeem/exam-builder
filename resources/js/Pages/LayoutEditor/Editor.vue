@@ -63,6 +63,8 @@ const layout = ref({
     watermark_opacity: props.preview.layout?.watermark_opacity ?? 0.18,
     watermark_angle: props.preview.layout?.watermark_angle ?? 45,
     watermark_size: props.preview.layout?.watermark_size ?? 22,
+    watermark_image_path: props.preview.layout?.watermark_image_path ?? '',
+    watermark_image_size: props.preview.layout?.watermark_image_size ?? 50,
     paper_content: props.preview.layout?.paper_content,
     omr_columns: props.preview.layout?.omr_columns ?? 2,
     margins: {
@@ -75,7 +77,7 @@ const layout = ref({
 });
 
 if (
-    (layout.value.enable_watermark || layout.value.watermark_type === 'text')
+    layout.value.watermark_type === 'text'
     && !layout.value.watermark_text?.trim()
 ) {
     layout.value.watermark_text = props.preview.layout?.watermark_text
@@ -106,7 +108,7 @@ const previewLayout = computed(() => ({
     ...layout.value,
     enable_omr: editorSettings.value.enable_omr,
     enable_answer_key: editorSettings.value.enable_answer_key,
-    enable_watermark: layout.value.watermark_type === 'text',
+    enable_watermark: layout.value.watermark_type === 'text' || layout.value.watermark_type === 'image',
     show_past_paper_tags: editorSettings.value.show_past_paper_tags,
 }));
 
@@ -127,6 +129,24 @@ const saveForm = useForm({
 });
 
 let layoutSaveTimer = null;
+
+const flushLayoutSave = () => {
+    clearTimeout(layoutSaveTimer);
+    layoutForm.layout_snapshot = { ...layout.value, paper_content: paperContent.value };
+    if (!editingPaper.value && !saveForm.processing) {
+        layoutForm.patch(route('editor.update', props.savedPaper.id), {
+            preserveScroll: true,
+            preserveState: true,
+        });
+    }
+};
+
+const onWatermarkUploaded = (path) => {
+    layout.value.watermark_image_path = path;
+    layout.value.watermark_type = 'image';
+    layout.value.enable_watermark = true;
+    flushLayoutSave();
+};
 
 const ensureMargins = (target) => {
     const defaults = { top: 15, right: 15, bottom: 15, left: 15 };
@@ -150,7 +170,7 @@ ensureMargins(layout.value);
 watch(
     layout,
     (val) => {
-        const wantsWatermark = val.watermark_type === 'text';
+        const wantsWatermark = val.watermark_type === 'text' || val.watermark_type === 'image';
         if (val.enable_watermark !== wantsWatermark) {
             val.enable_watermark = wantsWatermark;
         }
@@ -179,7 +199,7 @@ watch(
 watch(
     () => layout.value.watermark_type,
     (type) => {
-        const wantsWatermark = type === 'text';
+        const wantsWatermark = type === 'text' || type === 'image';
         if (layout.value.enable_watermark !== wantsWatermark) {
             layout.value.enable_watermark = wantsWatermark;
         }
@@ -239,8 +259,9 @@ const submitSavePaper = () => {
 
     paperContent.value = content;
     layout.value.paper_content = content;
-    layout.value.enable_watermark = layout.value.watermark_type === 'text';
-    editorSettings.value.enable_watermark = layout.value.watermark_type === 'text';
+    const watermarkOn = layout.value.watermark_type === 'text' || layout.value.watermark_type === 'image';
+    layout.value.enable_watermark = watermarkOn;
+    editorSettings.value.enable_watermark = watermarkOn;
 
     saveForm
         .transform((data) => ({
@@ -355,6 +376,8 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                     v-model:layout="layout"
                     v-model:settings="editorSettings"
                     :header-templates="headerTemplates"
+                    :paper-id="savedPaper.id"
+                    @watermark-uploaded="onWatermarkUploaded"
                 />
             </div>
 

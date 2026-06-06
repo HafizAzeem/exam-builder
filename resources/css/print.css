@@ -1,19 +1,4 @@
 /* Watermark: visible on screen preview and when printing */
-.paper-preview .watermark-layer {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    transform: rotate(var(--wm-angle, 45deg));
-    opacity: var(--wm-opacity, 0.18);
-    pointer-events: none;
-    z-index: 20;
-    user-select: none;
-}
-
 .paper-preview .watermark-line {
     font-size: var(--wm-font-size, 1.35rem);
     font-weight: 700;
@@ -22,6 +7,40 @@
     text-align: center;
     white-space: nowrap;
     line-height: 1.2;
+}
+
+.paper-preview .watermark-below-header {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    transform: translateX(-50%) rotate(var(--wm-angle, 45deg));
+    transform-origin: center top;
+    opacity: var(--wm-opacity, 0.18);
+    pointer-events: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.paper-preview .watermark-below-header--text {
+    margin-top: 1.75rem;
+}
+
+.paper-preview .watermark-below-header--image {
+    margin-top: 3.5rem;
+}
+
+.paper-preview .watermark-image {
+    max-width: var(--wm-image-size, 50%);
+    max-height: var(--wm-image-size, 50%);
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }
 
 @media print {
@@ -77,10 +96,7 @@
         column-gap: 20px;
     }
 
-    .paper-preview .watermark-layer {
-        position: fixed;
-        inset: 0;
-        display: flex;
+    .paper-preview .watermark-below-header {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
