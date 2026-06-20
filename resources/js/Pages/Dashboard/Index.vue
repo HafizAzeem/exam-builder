@@ -68,7 +68,7 @@ const applySearch = () => {
                                 </td>
                                 <td class="space-x-2 px-4 py-3 text-right text-sm">
                                     <Link :href="route('editor.show', paper.id)" class="text-indigo-600 hover:underline">Edit</Link>
-                                    <Link :href="route('editor.print', paper.id)" class="text-green-600 hover:underline" target="_blank">Print</Link>
+                                    <Link :href="`${route('editor.show', paper.id)}?print=1`" class="text-green-600 hover:underline">Print</Link>
                                     <Link
                                         :href="route('papers.duplicate', paper.id)"
                                         method="post"

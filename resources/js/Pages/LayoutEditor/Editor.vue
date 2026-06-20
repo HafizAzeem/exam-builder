@@ -4,8 +4,9 @@ import PaperSettingsSidebar from '@/Components/LayoutEditor/PaperSettingsSidebar
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
+import { applyPrintStyles, clearPrintStyles } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     savedPaper: Object,
@@ -52,6 +53,7 @@ const layout = ref({
     line_height: props.preview.layout?.line_height ?? 1.5,
     dual_medium: resolveInitialDualMedium(),
     dual_column: props.preview.layout?.dual_column ?? false,
+    page_view: props.preview.layout?.page_view ?? 'single',
     orientation: props.preview.layout?.orientation ?? 'portrait',
     scale: props.preview.layout?.scale ?? 100,
     paper_size: props.preview.layout?.paper_size ?? 'A4',
@@ -140,6 +142,27 @@ const previewOmr = computed(() => (
 ));
 const previewAnswerKey = computed(() => (previewLayout.value.enable_answer_key ? props.preview.answer_key : []));
 
+const paperPreviewProps = computed(() => ({
+    title: saveForm.title || props.savedPaper.title,
+    layout: previewLayout.value,
+    institution: props.preview.institution,
+    examMeta: {
+        ...props.preview.exam_meta,
+        class: paperClass.value,
+        subject: paperSubject.value,
+        paper_type: saveForm.paper_type,
+        time: saveForm.time_allowed,
+        marks: saveForm.total_marks,
+        paper_date: saveForm.paper_date,
+    },
+    settings: editorSettings.value,
+    sections: props.preview.sections,
+    paperContent: activePaperContent.value,
+    dualMedium: layout.value.dual_medium,
+    omrRows: previewOmr.value,
+    answerKey: previewAnswerKey.value,
+}));
+
 const layoutForm = useForm({ layout_snapshot: { ...layout.value } });
 
 const paperClass = computed(() => props.preview.exam_meta?.class ?? examMeta.class ?? '');
@@ -221,6 +244,15 @@ watch(
         }, 800);
     },
     { deep: true },
+);
+
+watch(
+    () => layout.value.page_view,
+    (view) => {
+        if (view === 'double') {
+            layout.value.orientation = 'landscape';
+        }
+    },
 );
 
 watch(
@@ -334,7 +366,37 @@ const submitSavePaper = () => {
         });
 };
 
-const printPaper = () => window.open(route('editor.print', props.savedPaper.id), '_blank');
+const onAfterPrint = () => {
+    clearPrintStyles();
+    document.body.classList.remove('print-active');
+    window.removeEventListener('afterprint', onAfterPrint);
+};
+
+const printPaper = () => {
+    applyPrintStyles({
+        paperSize: layout.value.paper_size,
+        orientation: layout.value.page_view === 'double' ? 'landscape' : layout.value.orientation,
+        margins: layout.value.margins,
+    });
+    document.body.classList.add('print-active');
+    window.addEventListener('afterprint', onAfterPrint);
+    window.print();
+};
+
+onMounted(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('print') === '1') {
+        url.searchParams.delete('print');
+        window.history.replaceState({}, '', url.pathname);
+        setTimeout(() => printPaper(), 400);
+    }
+});
+
+onUnmounted(() => {
+    clearPrintStyles();
+    window.removeEventListener('afterprint', onAfterPrint);
+});
+
 const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
 </script>
 
@@ -343,7 +405,7 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="no-print flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold text-gray-800">{{ savedPaper.title }}</h2>
                 <div class="flex flex-wrap gap-2">
                     <button
@@ -411,8 +473,8 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
         </p>
 
-        <div class="grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">
-            <div class="editor-sidebar-scroll lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
+        <div class="no-print grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">
+            <div class="editor-sidebar-scroll no-print lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                 <PaperSettingsSidebar
                     v-model:layout="layout"
                     v-model:settings="editorSettings"
@@ -423,33 +485,59 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
             </div>
 
             <div class="min-w-0 w-full">
-                <div class="w-full overflow-x-auto rounded-lg bg-gray-100 py-3 md:py-4">
+                <div
+                    class="w-full overflow-x-auto rounded-lg bg-gray-100 py-3 md:py-4"
+                >
+                    <div
+                        v-if="layout.page_view === 'double'"
+                        class="editor-dual-page-spread mx-auto flex gap-3 px-3 py-2"
+                    >
+                        <div class="editor-dual-page-frame">
+                            <div class="dual-page-zoom-inner">
+                                <PaperPreview
+                                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                                    :editable="editingPaper"
+                                    @update:paper-content="onContentUpdate"
+                                />
+                            </div>
+                        </div>
+                        <div class="editor-dual-page-frame editor-dual-page-frame--copy">
+                            <div class="dual-page-zoom-inner">
+                                <PaperPreview
+                                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                                    :editable="false"
+                                />
+                            </div>
+                        </div>
+                    </div>
                     <PaperPreview
+                        v-else
+                        v-bind="paperPreviewProps"
                         fill-width
-                        :title="saveForm.title || savedPaper.title"
-                        :layout="previewLayout"
-                        :institution="preview.institution"
-                        :exam-meta="{
-                            ...preview.exam_meta,
-                            class: paperClass,
-                            subject: paperSubject,
-                            paper_type: saveForm.paper_type,
-                            time: saveForm.time_allowed,
-                            marks: saveForm.total_marks,
-                            paper_date: saveForm.paper_date,
-                        }"
-                        :settings="editorSettings"
-                        :sections="preview.sections"
-                        :paper-content="activePaperContent"
                         :editable="editingPaper"
-                        :dual-medium="layout.dual_medium"
-                        :omr-rows="previewOmr"
-                        :answer-key="previewAnswerKey"
                         @update:paper-content="onContentUpdate"
                     />
                 </div>
             </div>
         </div>
+
+        <Teleport to="body">
+            <div
+                id="exam-print-root"
+                class="print-paper-root"
+                :class="{ 'exam-print-dual': layout.page_view === 'double' }"
+            >
+                <PaperPreview
+                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                    :editable="false"
+                />
+                <PaperPreview
+                    v-if="layout.page_view === 'double'"
+                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                    :editable="false"
+                />
+            </div>
+        </Teleport>
 
         <SavePaperModal
             :show="showSaveModal"
@@ -462,6 +550,10 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
         />
     </AuthenticatedLayout>
 </template>
+
+<style>
+@import '../../../css/print.css';
+</style>
 
 <style scoped>
 .editor-sidebar-scroll {
@@ -480,5 +572,40 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
 
 .editor-sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background-color: #94a3b8;
+}
+
+.editor-dual-page-preview {
+    background: #e5e7eb;
+}
+
+.editor-dual-page-spread {
+    max-width: 100%;
+}
+
+.editor-dual-page-frame {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc(50% - 6px);
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.08);
+    overflow: hidden;
+}
+
+/* zoom reduces both visual AND layout size so overflow never clips */
+.dual-page-zoom-inner {
+    zoom: 0.48;
+}
+
+.dual-page-zoom-inner :deep(.paper-preview) {
+    max-width: 210mm;
+    margin: 0;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.editor-dual-page-frame--copy {
+    opacity: 0.9;
 }
 </style>

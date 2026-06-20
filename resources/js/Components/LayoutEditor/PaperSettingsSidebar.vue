@@ -154,15 +154,64 @@ const removeWatermarkImage = () => {
             <input v-model="layout.font_color" type="color" class="mt-1 h-10 w-full rounded-md border-gray-300" />
         </div>
 
+        <div>
+            <label class="text-sm text-gray-700">Page view</label>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+                <button
+                    type="button"
+                    class="flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2.5 text-xs font-medium transition"
+                    :class="(layout.page_view ?? 'single') === 'single'
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'"
+                    @click="layout.page_view = 'single'"
+                >
+                    <svg class="h-7 w-5 text-current" viewBox="0 0 24 32" fill="none" stroke="currentColor">
+                        <rect x="4" y="2" width="16" height="28" rx="1" stroke-width="1.5" />
+                    </svg>
+                    Single page
+                </button>
+                <button
+                    type="button"
+                    class="flex flex-col items-center gap-1 rounded-lg border-2 px-2 py-2.5 text-xs font-medium transition"
+                    :class="layout.page_view === 'double'
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'"
+                    @click="layout.page_view = 'double'"
+                >
+                    <svg class="h-7 w-10 text-current" viewBox="0 0 36 32" fill="none" stroke="currentColor">
+                        <rect x="2" y="2" width="14" height="28" rx="1" stroke-width="1.5" />
+                        <rect x="20" y="2" width="14" height="28" rx="1" stroke-width="1.5" />
+                    </svg>
+                    Double page
+                </button>
+            </div>
+            <p v-if="layout.page_view === 'double'" class="mt-1.5 text-xs text-amber-700">
+                Use landscape when printing dual page.
+            </p>
+        </div>
+
         <label class="flex items-center gap-2 text-sm text-gray-700">
             <input v-model="layout.dual_column" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
             Two columns (landscape)
         </label>
 
+        <div>
+            <label class="text-sm text-gray-700">Paper size</label>
+            <select v-model="layout.paper_size" class="mt-1 w-full rounded-md border-gray-300 text-sm">
+                <option value="A4">A4</option>
+                <option value="Letter">Letter</option>
+                <option value="Legal">Legal</option>
+            </select>
+        </div>
+
         <div class="pair-field-grid">
             <label class="pair-field-label">Orientation</label>
             <label class="pair-field-label">Scale %</label>
-            <select v-model="layout.orientation" class="pair-field-input">
+            <select
+                v-model="layout.orientation"
+                class="pair-field-input"
+                :disabled="layout.page_view === 'double'"
+            >
                 <option value="portrait">Portrait</option>
                 <option value="landscape">Landscape</option>
             </select>

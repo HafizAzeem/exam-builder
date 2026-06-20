@@ -43,7 +43,61 @@
     object-fit: contain;
 }
 
+/* Hide teleported print root on screen */
+#exam-print-root {
+    display: none;
+}
+
 @media print {
+    /* --- Hide everything except our teleported print root --- */
+    body.print-active > *:not(#exam-print-root) {
+        display: none !important;
+    }
+
+    /* Show & reset the print root */
+    body.print-active > #exam-print-root {
+        display: block !important;
+        position: static !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Dual page: two papers side-by-side on landscape */
+    body.print-active > #exam-print-root.exam-print-dual {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: flex-start !important;
+        gap: 0 !important;
+    }
+
+    body.print-active > #exam-print-root.exam-print-dual .paper-preview {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+        width: 50% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Clean paper look for print */
+    .paper-preview {
+        width: 100%;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible;
+        /* Don't override transform here — let the component handle it, or reset below */
+        transform: none !important;
+    }
+
+    .paper-preview--tpl1 {
+        border: 2px solid #000 !important;
+        padding: var(--paper-padding-top, 10mm) var(--paper-padding-right, 8mm)
+            var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+
     .sidebar,
     .toolbar,
     .navbar,
@@ -55,29 +109,6 @@
     body {
         margin: 0;
         background: white;
-    }
-
-    .paper-preview {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding: 0;
-        border: none !important;
-        box-shadow: none !important;
-        transform: none !important;
-        overflow: visible;
-    }
-
-    .paper-preview--tpl1 {
-        border: 2px solid #000 !important;
-        padding: var(--paper-padding-top, 10mm) var(--paper-padding-right, 8mm)
-            var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
-    }
-
-    @page {
-        size: A4 portrait;
-        margin: var(--print-margin-top, 15mm) var(--print-margin-right, 15mm)
-            var(--print-margin-bottom, 15mm) var(--print-margin-left, 15mm);
     }
 
     .section-break {

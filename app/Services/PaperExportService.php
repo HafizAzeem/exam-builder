@@ -146,6 +146,7 @@ class PaperExportService
             'margins' => ['top' => 15, 'right' => 15, 'bottom' => 15, 'left' => 15],
             'paper_size' => 'A4',
             'orientation' => 'portrait',
+            'page_view' => 'single',
             'scale' => 100,
         ];
     }
