@@ -196,35 +196,6 @@ const removeWatermarkImage = () => {
         </label>
 
         <div>
-            <label class="text-sm text-gray-700">Paper size</label>
-            <select v-model="layout.paper_size" class="mt-1 w-full rounded-md border-gray-300 text-sm">
-                <option value="A4">A4</option>
-                <option value="Letter">Letter</option>
-                <option value="Legal">Legal</option>
-            </select>
-        </div>
-
-        <div class="pair-field-grid">
-            <label class="pair-field-label">Orientation</label>
-            <label class="pair-field-label">Scale %</label>
-            <select
-                v-model="layout.orientation"
-                class="pair-field-input"
-                :disabled="layout.page_view === 'double'"
-            >
-                <option value="portrait">Portrait</option>
-                <option value="landscape">Landscape</option>
-            </select>
-            <input
-                v-model.number="layout.scale"
-                type="number"
-                min="50"
-                max="120"
-                class="pair-field-input"
-            />
-        </div>
-
-        <div>
             <label class="text-sm font-medium text-gray-700">Page margins (mm)</label>
             <div class="pair-field-grid mt-1">
                 <label class="pair-field-label">Top</label>

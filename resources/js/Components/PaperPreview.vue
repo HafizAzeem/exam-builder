@@ -517,11 +517,11 @@ const teacherAnswerFor = (question) => {
                         </div>
                     </div>
 
+                    <div :class="layout?.dual_column ? 'questions-container dual-col' : ''">
                     <div
                         v-for="(q, idx) in section.questions"
                         :key="q.id"
                         class="tpl1-question"
-                        :class="layout?.dual_column ? 'questions-container dual-col' : ''"
                     >
                         <div class="tpl1-question-row">
                             <div class="tpl1-question-en">
@@ -660,6 +660,7 @@ const teacherAnswerFor = (question) => {
                             class="tpl1-blank-area"
                             :style="{ minHeight: settings.blank_lines * 24 + 'px' }"
                         />
+                    </div>
                     </div>
                 </section>
             </div>
@@ -951,6 +952,7 @@ const teacherAnswerFor = (question) => {
 .tpl1-question {
     margin-bottom: 8px;
     padding-bottom: 6px;
+    break-inside: avoid;
 }
 
 .tpl1-question-row {

@@ -373,10 +373,10 @@ const onAfterPrint = () => {
 };
 
 const printPaper = () => {
+    const isDual = layout.value.page_view === 'double';
     applyPrintStyles({
-        paperSize: layout.value.paper_size,
-        orientation: layout.value.page_view === 'double' ? 'landscape' : layout.value.orientation,
-        margins: layout.value.margins,
+        paperSize: layout.value.paper_size ?? 'A4',
+        orientation: isDual ? 'landscape' : 'portrait',
     });
     document.body.classList.add('print-active');
     window.addEventListener('afterprint', onAfterPrint);
@@ -527,13 +527,10 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                 class="print-paper-root"
                 :class="{ 'exam-print-dual': layout.page_view === 'double' }"
             >
-                <PaperPreview
-                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
-                    :editable="false"
-                />
+                <PaperPreview v-bind="paperPreviewProps" :editable="false" />
                 <PaperPreview
                     v-if="layout.page_view === 'double'"
-                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                    v-bind="paperPreviewProps"
                     :editable="false"
                 />
             </div>

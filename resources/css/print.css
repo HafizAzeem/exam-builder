@@ -49,12 +49,11 @@
 }
 
 @media print {
-    /* --- Hide everything except our teleported print root --- */
+    /* ─── Hide everything except our teleported print root ─── */
     body.print-active > *:not(#exam-print-root) {
         display: none !important;
     }
 
-    /* Show & reset the print root */
     body.print-active > #exam-print-root {
         display: block !important;
         position: static !important;
@@ -62,42 +61,53 @@
         padding: 0 !important;
     }
 
-    /* Dual page: two papers side-by-side on landscape */
+    /* ─── Dual page: two papers side-by-side on landscape ─── */
     body.print-active > #exam-print-root.exam-print-dual {
         display: flex !important;
         flex-direction: row !important;
         align-items: flex-start !important;
         gap: 0 !important;
+        width: 100% !important;
     }
 
-    body.print-active > #exam-print-root.exam-print-dual .paper-preview {
+    body.print-active > #exam-print-root.exam-print-dual > .paper-preview {
         flex: 0 0 50% !important;
         max-width: 50% !important;
         width: 50% !important;
         box-sizing: border-box !important;
     }
 
-    /* Clean paper look for print */
+    /* ─── Strip screen-only chrome; preserve template design ─── */
     .paper-preview {
-        width: 100%;
-        max-width: none !important;
-        margin: 0 !important;
-        padding: 0;
+        /* Remove screen chrome only */
         border: none !important;
         box-shadow: none !important;
-        overflow: visible;
-        /* Don't override transform here — let the component handle it, or reset below */
+        border-radius: 0 !important;
+        overflow: visible !important;
+        /* Reset screen transform/scale */
         transform: none !important;
+        /* Fill the print page */
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 auto !important;
+        /* Keep internal padding — each template manages its own */
+        background: white;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
+    /* ─── Template 1: restore its structural border and margin-based padding ─── */
     .paper-preview--tpl1 {
         border: 2px solid #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         padding: var(--paper-padding-top, 10mm) var(--paper-padding-right, 8mm)
             var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
-        max-width: none !important;
         width: 100% !important;
+        box-sizing: border-box !important;
     }
 
+    /* ─── Hide editor UI elements ─── */
     .sidebar,
     .toolbar,
     .navbar,
@@ -185,11 +195,18 @@
 
     .tpl1-header-dashed {
         border: 2px dashed #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 
     .tpl1-info-table,
     .tpl1-info-cell,
     .tpl1-logo-cell {
+        border-color: #000 !important;
+    }
+
+    /* Editing indicator styles — clean for print */
+    .tpl1-zone--edit {
         border-color: #000 !important;
     }
 }
