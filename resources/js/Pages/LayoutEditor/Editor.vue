@@ -373,11 +373,7 @@ const onAfterPrint = () => {
 };
 
 const printPaper = () => {
-    const isDual = layout.value.page_view === 'double';
-    applyPrintStyles({
-        paperSize: layout.value.paper_size ?? 'A4',
-        orientation: isDual ? 'landscape' : 'portrait',
-    });
+    applyPrintStyles();
     document.body.classList.add('print-active');
     window.addEventListener('afterprint', onAfterPrint);
     window.print();
