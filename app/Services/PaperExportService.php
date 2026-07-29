@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\Question;
 use App\Models\SavedPaper;
+use App\Models\Subject;
 use Illuminate\Support\Collection;
 
 class PaperExportService
@@ -49,6 +51,15 @@ class PaperExportService
         $examMeta = $config['exam_meta'] ?? [];
         if (! empty($layout['paper_content']['header'])) {
             $examMeta = array_merge($examMeta, $this->examMetaFromPaperContent($layout['paper_content']['header']));
+        }
+
+        $examMeta = $this->enrichExamMetaFromRelations($examMeta, $config);
+
+        if (! empty($layout['paper_content']['header'])) {
+            $layout['paper_content']['header'] = $this->fillPaperContentHeader(
+                $layout['paper_content']['header'],
+                $examMeta,
+            );
         }
 
         return [
@@ -276,7 +287,86 @@ class PaperExportService
             'subject' => $header['subject'] ?? null,
             'time' => $header['paper_time'] ?? null,
             'marks' => $header['marks'] ?? null,
+            'paper_type' => $header['paper_type'] ?? null,
+            'paper_date' => $header['paper_date'] ?? null,
         ], fn ($v) => $v !== null && $v !== '');
+    }
+
+    /**
+     * Fill missing Class / Subject from related grade_id / subject_id,
+     * or from the first question's chapter → subject → grade.
+     *
+     * @param  array<string, mixed>  $examMeta
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    protected function enrichExamMetaFromRelations(array $examMeta, array $config): array
+    {
+        if ($this->isBlank($examMeta['class'] ?? null) && ! empty($config['grade_id'])) {
+            $grade = Grade::query()->find($config['grade_id']);
+            if ($grade) {
+                $examMeta['class'] = $grade->label_en ?: ('Class '.$grade->number);
+            }
+        }
+
+        if ($this->isBlank($examMeta['subject'] ?? null) && ! empty($config['subject_id'])) {
+            $subject = Subject::query()->find($config['subject_id']);
+            if ($subject) {
+                $examMeta['subject'] = $subject->name_en;
+            }
+        }
+
+        if ($this->isBlank($examMeta['class'] ?? null) || $this->isBlank($examMeta['subject'] ?? null)) {
+            $questionId = collect($config['question_ids'] ?? [])->first();
+            if ($questionId) {
+                $question = Question::query()
+                    ->with(['chapter.subject.grade'])
+                    ->find($questionId);
+
+                $subject = $question?->chapter?->subject;
+                $grade = $subject?->grade;
+
+                if ($this->isBlank($examMeta['class'] ?? null) && $grade) {
+                    $examMeta['class'] = $grade->label_en ?: ('Class '.$grade->number);
+                }
+                if ($this->isBlank($examMeta['subject'] ?? null) && $subject) {
+                    $examMeta['subject'] = $subject->name_en;
+                }
+            }
+        }
+
+        return $examMeta;
+    }
+
+    /**
+     * @param  array<string, mixed>  $header
+     * @param  array<string, mixed>  $examMeta
+     * @return array<string, mixed>
+     */
+    protected function fillPaperContentHeader(array $header, array $examMeta): array
+    {
+        if ($this->isBlank($header['class'] ?? null) && ! $this->isBlank($examMeta['class'] ?? null)) {
+            $header['class'] = $examMeta['class'];
+        }
+        if ($this->isBlank($header['subject'] ?? null) && ! $this->isBlank($examMeta['subject'] ?? null)) {
+            $header['subject'] = $examMeta['subject'];
+        }
+        if ($this->isBlank($header['marks'] ?? null) && ! $this->isBlank($examMeta['marks'] ?? null)) {
+            $header['marks'] = $examMeta['marks'];
+        }
+        if ($this->isBlank($header['paper_time'] ?? null) && ! $this->isBlank($examMeta['time'] ?? null)) {
+            $header['paper_time'] = $examMeta['time'];
+        }
+        if ($this->isBlank($header['paper_type'] ?? null) && ! $this->isBlank($examMeta['paper_type'] ?? null)) {
+            $header['paper_type'] = $examMeta['paper_type'];
+        }
+
+        return $header;
+    }
+
+    protected function isBlank(mixed $value): bool
+    {
+        return $value === null || $value === '';
     }
 
     /**

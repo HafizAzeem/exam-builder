@@ -6,25 +6,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Chapter extends Model
+class Topic extends Model
 {
     public $timestamps = false;
 
     protected $fillable = [
-        'subject_id',
-        'number',
+        'chapter_id',
+        'code',
         'title_en',
         'title_ur',
+        'sort_order',
     ];
 
-    public function subject(): BelongsTo
+    public function chapter(): BelongsTo
     {
-        return $this->belongsTo(Subject::class);
-    }
-
-    public function topics(): HasMany
-    {
-        return $this->hasMany(Topic::class)->orderBy('sort_order');
+        return $this->belongsTo(Chapter::class);
     }
 
     public function questions(): HasMany
@@ -32,4 +28,3 @@ class Chapter extends Model
         return $this->hasMany(Question::class);
     }
 }
-

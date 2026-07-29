@@ -36,6 +36,11 @@ class User extends Authenticatable
         return $this->hasMany(SavedPaper::class);
     }
 
+    public function loginSessions(): HasMany
+    {
+        return $this->hasMany(LoginSession::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *

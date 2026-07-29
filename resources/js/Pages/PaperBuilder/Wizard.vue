@@ -1,11 +1,20 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
-const props = defineProps({ grades: Array, teacherPermissions: Object, institution: Object });
+const props = defineProps({
+    grades: Array,
+    subjects: { type: Array, default: () => [] },
+    selectedGradeId: { type: Number, default: null },
+    selectedSubjectId: { type: Number, default: null },
+    selectedChapterIds: { type: Array, default: () => [] },
+    selectedTopicIds: { type: Array, default: () => [] },
+    teacherPermissions: Object,
+    institution: Object,
+});
 
 const buildWatermarkText = (inst) => {
     if (!inst) return '';
@@ -36,12 +45,13 @@ const previewLayout = computed(() => ({
 }));
 
 const step = ref(1);
-const gradeId = ref(null);
-const subjectId = ref(null);
-const chapterIds = ref([]);
+const gradeId = ref(props.selectedGradeId ?? null);
+const subjectId = ref(props.selectedSubjectId ?? null);
+const chapterIds = ref([...(props.selectedChapterIds ?? [])]);
+const topicIds = ref([...(props.selectedTopicIds ?? [])]);
 const sources = ref(['exercise']);
 const dualMedium = ref(false);
-const subjects = ref([]);
+const subjects = ref(props.subjects ?? []);
 const chapters = ref([]);
 const questions = ref([]);
 const manualPaginator = ref(null);
@@ -114,16 +124,19 @@ const loadChapters = async () => {
     chapterIds.value = [];
 };
 
+const questionFilterParams = () => ({
+    chapter_ids: chapterIds.value,
+    topic_ids: topicIds.value.length ? topicIds.value : undefined,
+    sources: sources.value,
+    type: manualType.value || undefined,
+    search: manualSearch.value || undefined,
+    per_page: perPage.value,
+});
+
 const loadQuestions = async () => {
     if (!chapterIds.value.length) return;
     const { data } = await axios.get('/api/builder/questions', {
-        params: {
-            chapter_ids: chapterIds.value,
-            sources: sources.value,
-            type: manualType.value || undefined,
-            search: manualSearch.value || undefined,
-            per_page: perPage.value,
-        },
+        params: questionFilterParams(),
     });
     manualPaginator.value = data;
     questions.value = data.data ?? data;
@@ -133,13 +146,7 @@ const loadQuestions = async () => {
 const loadPage = async (url) => {
     if (!url) return;
     const { data } = await axios.get(url, {
-        params: {
-            chapter_ids: chapterIds.value,
-            sources: sources.value,
-            type: manualType.value || undefined,
-            search: manualSearch.value || undefined,
-            per_page: perPage.value,
-        },
+        params: questionFilterParams(),
     });
     manualPaginator.value = data;
     questions.value = data.data ?? data;
@@ -172,6 +179,7 @@ const randomize = async (refresh = false) => {
     try {
         const { data } = await axios.post('/api/builder/questions/random', {
             chapter_ids: chapterIds.value,
+            topic_ids: topicIds.value.length ? topicIds.value : undefined,
             sources: sources.value,
             config: randomConfig.value,
             cache_key: randomCacheKey.value,
@@ -207,8 +215,23 @@ const randomSelectionStale = computed(
         && selectedIds.value.length !== randomTargetCount.value,
 );
 
-watch(gradeId, loadSubjects);
 watch(subjectId, loadChapters);
+
+onMounted(() => {
+    // Chapters/topics already chosen on previous screen.
+});
+
+const selectedGrade = computed(() =>
+    props.grades?.find((g) => g.id === gradeId.value) ?? null,
+);
+
+const selectedSubject = computed(() =>
+    subjects.value?.find((s) => s.id === subjectId.value) ?? null,
+);
+
+const chaptersHref = computed(() =>
+    route('builder.chapters', { grade: gradeId.value, subject: subjectId.value }),
+);
 
 const toggleQuestion = (id) => {
     const idx = selectedIds.value.indexOf(id);
@@ -303,6 +326,7 @@ const selectAllMatchingQuestions = async () => {
         const { data } = await axios.get('/api/builder/questions/all', {
             params: {
                 chapter_ids: chapterIds.value,
+                topic_ids: topicIds.value.length ? topicIds.value : undefined,
                 sources: sources.value,
                 type: manualType.value || undefined,
                 search: manualSearch.value || undefined,
@@ -346,6 +370,7 @@ const savePaper = () => {
             grade_id: gradeId.value,
             subject_id: subjectId.value,
             chapter_ids: chapterIds.value,
+            topic_ids: topicIds.value,
             sources: sources.value,
             dual_medium: dualMedium.value,
             question_ids: selectedIds.value,
@@ -390,36 +415,38 @@ const savePaper = () => {
             </div>
 
             <div v-show="step === 1" class="space-y-4 rounded-lg bg-white p-6 shadow">
-                <div>
-                    <label class="block text-sm font-medium">Grade</label>
-                    <select v-model="gradeId" class="mt-1 w-full rounded-md border-gray-300">
-                        <option :value="null">Select grade</option>
-                        <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium">Subject</label>
-                    <select v-model="subjectId" class="mt-1 w-full rounded-md border-gray-300" :disabled="!subjects.length">
-                        <option :value="null">Select subject</option>
-                        <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
-                    </select>
-                </div>
-                <div>
-                    <div class="flex items-center justify-between gap-4">
-                        <label class="block text-sm font-medium">Chapters</label>
-                        <label
-                            v-if="chapters.length"
-                            class="flex items-center gap-2 text-sm font-medium text-indigo-600"
-                        >
-                            <input v-model="allChaptersSelected" type="checkbox" />
-                            Select all
-                        </label>
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-100 bg-teal-50/70 px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-medium uppercase tracking-wide text-teal-700">Selected</p>
+                        <p class="text-lg font-semibold text-slate-900">
+                            {{ selectedGrade?.label_en ?? 'Class' }}
+                            <span class="mx-2 text-slate-300">/</span>
+                            {{ selectedSubject?.name_en ?? 'Subject' }}
+                        </p>
+                        <p class="mt-1 text-sm text-slate-600">
+                            {{ chapterIds.length }} chapter(s)
+                            <span v-if="topicIds.length"> · {{ topicIds.length }} topic(s)</span>
+                        </p>
                     </div>
-                    <div class="mt-2 grid grid-cols-2 gap-2">
-                        <label v-for="c in chapters" :key="c.id" class="flex items-center gap-2 text-sm">
-                            <input v-model="chapterIds" type="checkbox" :value="c.id" />
-                            Ch {{ c.number }}: {{ c.title_en }}
-                        </label>
+                    <div class="flex flex-wrap gap-2">
+                        <Link
+                            :href="route('builder')"
+                            class="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
+                        >
+                            Change class
+                        </Link>
+                        <Link
+                            :href="route('builder.subjects', { grade: gradeId })"
+                            class="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
+                        >
+                            Change subject
+                        </Link>
+                        <Link
+                            :href="chaptersHref"
+                            class="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
+                        >
+                            Change chapters
+                        </Link>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-4">

@@ -61,22 +61,6 @@
         padding: 0 !important;
     }
 
-    /* ─── Dual page: two papers side-by-side on landscape ─── */
-    body.print-active > #exam-print-root.exam-print-dual {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: flex-start !important;
-        gap: 0 !important;
-        width: 100% !important;
-    }
-
-    body.print-active > #exam-print-root.exam-print-dual > .paper-preview {
-        flex: 0 0 50% !important;
-        max-width: 50% !important;
-        width: 50% !important;
-        box-sizing: border-box !important;
-    }
-
     /* ─── Strip screen-only chrome; preserve template design ─── */
     .paper-preview {
         /* Remove screen chrome only */
@@ -105,6 +89,66 @@
             var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
         width: 100% !important;
         box-sizing: border-box !important;
+    }
+
+    /*
+     * Dual page (2-up): two COMPLETE A4 pages side-by-side.
+     * User must choose Layout → Landscape in the print dialog
+     * (@page size is intentionally omitted so that dropdown stays visible).
+     */
+    body.print-active > #exam-print-root.exam-print-dual {
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    body.print-active > #exam-print-root.exam-print-dual > .exam-print-dual-sheet {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        gap: 2mm !important;
+        width: 100% !important;
+        max-height: 200mm !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-slot {
+        flex: 0 0 calc(50% - 1mm) !important;
+        width: calc(50% - 1mm) !important;
+        max-width: calc(50% - 1mm) !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Scale full A4 page into half of a landscape sheet; negative margins
+       collapse the unused layout box so we don't get blank 2nd sheets. */
+    body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler {
+        --dual-scale: 0.67;
+        width: 210mm !important;
+        transform: scale(var(--dual-scale)) !important;
+        transform-origin: top left !important;
+        margin-right: calc(210mm * (var(--dual-scale) - 1)) !important;
+        margin-bottom: calc(297mm * (var(--dual-scale) - 1)) !important;
+    }
+
+    body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler > .paper-preview,
+    body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler > .paper-preview--tpl1 {
+        width: 210mm !important;
+        max-width: 210mm !important;
+        min-height: 297mm !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        transform: none !important;
     }
 
     /* ─── Hide editor UI elements ─── */

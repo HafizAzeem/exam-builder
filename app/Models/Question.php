@@ -11,6 +11,7 @@ class Question extends Model
 {
     protected $fillable = [
         'chapter_id',
+        'topic_id',
         'type',
         'source',
         'text_en',
@@ -29,6 +30,11 @@ class Question extends Model
     public function chapter(): BelongsTo
     {
         return $this->belongsTo(Chapter::class);
+    }
+
+    public function topic(): BelongsTo
+    {
+        return $this->belongsTo(Topic::class);
     }
 
     public function mcqOptions(): HasOne

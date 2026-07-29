@@ -11,17 +11,17 @@ const props = defineProps({
 const search = ref(props.filters?.search ?? '');
 
 const applySearch = () => {
-    router.get(route('dashboard'), { search: search.value }, { preserveState: true });
+    router.get(route('saved-papers.index'), { search: search.value }, { preserveState: true });
 };
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="Saved Papers" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">Paper History</h2>
+                <h2 class="text-xl font-semibold leading-tight text-gray-800">Saved Papers</h2>
                 <Link
                     :href="route('builder')"
                     class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -94,6 +94,17 @@ const applySearch = () => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <div v-if="papers.links?.length > 3" class="mt-4 flex flex-wrap gap-1">
+                    <Link
+                        v-for="link in papers.links"
+                        :key="link.label"
+                        :href="link.url ?? '#'"
+                        class="rounded border px-3 py-1 text-sm"
+                        :class="link.active ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600'"
+                        v-html="link.label"
+                    />
                 </div>
             </div>
         </div>

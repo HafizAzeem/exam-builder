@@ -32,7 +32,7 @@ class LayoutEditorController extends Controller
         return Inertia::render('LayoutEditor/Editor', [
             'savedPaper' => $paper,
             'preview' => $this->paperExport->buildPreviewData($paper, $institution),
-            'headerTemplates' => range(1, 7),
+            'headerTemplates' => [1],
             'pdfUrl' => $pdfUrl,
         ]);
     }

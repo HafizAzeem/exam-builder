@@ -15,7 +15,7 @@ class PaperController extends Controller
         $user = $request->user();
 
         if (! $user->institution_id) {
-            return Inertia::render('Dashboard/Index', [
+            return Inertia::render('Dashboard/SavedPapers', [
                 'papers' => ['data' => []],
                 'filters' => [],
                 'message' => 'Super Admin: assign an institution context or use admin tools.',
@@ -37,7 +37,7 @@ class PaperController extends Controller
             $query->where('title', 'like', "%{$search}%");
         }
 
-        return Inertia::render('Dashboard/Index', [
+        return Inertia::render('Dashboard/SavedPapers', [
             'papers' => $query->paginate(15)->withQueryString(),
             'filters' => $request->only(['search']),
         ]);

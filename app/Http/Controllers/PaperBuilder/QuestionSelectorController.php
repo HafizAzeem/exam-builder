@@ -55,6 +55,7 @@ class QuestionSelectorController extends Controller
 
         return Chapter::query()
             ->where('subject_id', $subjectId)
+            ->with(['topics' => fn ($q) => $q->orderBy('sort_order')->orderBy('code')])
             ->orderBy('number')
             ->get(['id', 'number', 'title_en', 'title_ur', 'subject_id']);
     }
@@ -64,9 +65,13 @@ class QuestionSelectorController extends Controller
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],
+            'topic_ids' => ['array'],
+            'topic_ids.*' => ['integer'],
             'sources' => ['array'],
             'type' => ['nullable', 'string'],
             'search' => ['nullable', 'string'],
+            'board_name' => ['nullable', 'string', 'max:100'],
+            'year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:50'],
         ]);
 
@@ -87,6 +92,9 @@ class QuestionSelectorController extends Controller
             $validated['sources'] ?? [],
             $validated['search'] ?? null,
             (int) ($validated['per_page'] ?? 20),
+            $validated['topic_ids'] ?? [],
+            $validated['board_name'] ?? null,
+            isset($validated['year']) ? (int) $validated['year'] : null,
         );
     }
 
@@ -95,9 +103,13 @@ class QuestionSelectorController extends Controller
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],
+            'topic_ids' => ['array'],
+            'topic_ids.*' => ['integer'],
             'sources' => ['array'],
             'type' => ['nullable', 'string'],
             'search' => ['nullable', 'string'],
+            'board_name' => ['nullable', 'string', 'max:100'],
+            'year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
         ]);
 
         $user = $request->user();
@@ -116,7 +128,29 @@ class QuestionSelectorController extends Controller
             $validated['type'] ?? null,
             $validated['sources'] ?? [],
             $validated['search'] ?? null,
+            500,
+            $validated['topic_ids'] ?? [],
+            $validated['board_name'] ?? null,
+            isset($validated['year']) ? (int) $validated['year'] : null,
         );
+    }
+
+    public function pastPaperFilters()
+    {
+        return [
+            'boards' => \App\Models\PastPaperTag::query()
+                ->whereNotNull('board_name')
+                ->distinct()
+                ->orderBy('board_name')
+                ->pluck('board_name')
+                ->values(),
+            'years' => \App\Models\PastPaperTag::query()
+                ->whereNotNull('year')
+                ->distinct()
+                ->orderByDesc('year')
+                ->pluck('year')
+                ->values(),
+        ];
     }
 
     public function random(Request $request)
@@ -124,21 +158,13 @@ class QuestionSelectorController extends Controller
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],
+            'topic_ids' => ['array'],
+            'topic_ids.*' => ['integer'],
             'sources' => ['array'],
             'config' => ['required', 'array'],
             'cache_key' => ['required', 'string'],
             'refresh' => ['boolean'],
         ]);
-
-        $user = $request->user();
-        if ($user->hasRole('teacher')) {
-            $allowedCategories = $user->teacherPermission?->allowed_categories ?? null;
-            if (is_array($allowedCategories) && count($allowedCategories)) {
-                // Random config is by type; sources are controlled by Step 1 UI.
-                // We enforce the sources on manual endpoint and wizard store.
-                // Keep a hard fail if teacher isn't allowed to use random selection at all? (Not in PRD)
-            }
-        }
 
         if ($request->boolean('refresh')) {
             $this->questionBank->invalidateCache($validated['cache_key']);
@@ -149,6 +175,7 @@ class QuestionSelectorController extends Controller
             $validated['config'],
             $validated['cache_key'],
             $validated['sources'] ?? [],
+            $validated['topic_ids'] ?? [],
         );
     }
 

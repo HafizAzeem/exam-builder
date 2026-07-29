@@ -5,7 +5,7 @@ export const DEFAULT_PAPER_NOTE =
 
 const SECTION_COPY = {
     mcq: { en: 'Choose the correct option.', ur: 'درست جواب کا انتخاب کریں۔', marksPer: 1 },
-    short: { en: 'Write short answers of following questions.', ur: 'مختصر سوالات کے جوابات لکھیں۔', marksPer: 2, note: '(Answer any 5)' },
+    short: { en: 'Write short answers of following questions.', ur: 'مختصر سوالات کے جوابات لکھیں۔', marksPer: 2, note: '' },
     long: { en: 'Write detailed answers of the following questions.', ur: 'تفصیلی سوالات کے جوابات لکھیں۔', marksPer: 5 },
     fill: { en: 'Fill in the blanks.', ur: 'خالی جگہ پُر کریں۔', marksPer: 1 },
     truefalse: { en: 'Mark True or False.', ur: 'درست یا غلط نشان لگائیں۔', marksPer: 1 },
@@ -33,10 +33,22 @@ const pastPaperRef = (q, layout) => {
     return `[${tag.board_name} ${tag.year}]`;
 };
 
-const sectionMarks = (section) => {
-    const per = SECTION_COPY[section.type]?.marksPer ?? 1;
+const typeSettings = (layout, type) => layout?.section_settings?.[type] ?? {};
+
+const sectionMarks = (section, layout = {}) => {
+    const cfg = typeSettings(layout, section.type);
+    const per = Number(cfg.marks) || SECTION_COPY[section.type]?.marksPer || 1;
     const n = section.question_count ?? section.questions?.length ?? 0;
     return `(${n}X${per}=${n * per})`;
+};
+
+const sectionNote = (section, layout = {}) => {
+    const cfg = typeSettings(layout, section.type);
+    const choice = Number(cfg.choice_questions) || 0;
+    if (choice > 0 && (section.type === 'short' || section.type === 'long')) {
+        return `(Answer any ${choice})`;
+    }
+    return SECTION_COPY[section.type]?.note ?? '';
 };
 
 const mcqOptionsContent = (q) => {
@@ -55,29 +67,36 @@ const mcqOptionsContent = (q) => {
  */
 export function buildPaperContentFromPreview(preview, title = '') {
     const layout = preview?.layout ?? {};
-    const sections = (preview?.sections ?? []).map((section) => ({
-        type: section.type,
-        number: section.number,
-        heading_en: SECTION_COPY[section.type]?.en ?? section.title ?? '',
-        heading_ur: SECTION_COPY[section.type]?.ur ?? '',
-        note: SECTION_COPY[section.type]?.note ?? '',
-        marks: sectionMarks(section),
-        questions: (section.questions ?? []).map((q, idx) => ({
-            id: q.id,
-            type: q.type,
-            roman: toRoman(idx),
-            text_en: q.text_en ?? '',
-            text_ur: q.text_ur ?? '',
-            past_ref: pastPaperRef(q, layout),
-            options: q.type === 'mcq' ? mcqOptionsContent(q) : null,
-            parts: (q.parts ?? []).map((p, pIdx) => ({
-                id: p.id,
-                label: String.fromCharCode(97 + pIdx),
-                text_en: p.text_en ?? '',
-                text_ur: p.text_ur ?? '',
+    const sections = (preview?.sections ?? []).map((section) => {
+        const cfg = typeSettings(layout, section.type);
+        const showParts = cfg.show_parts !== false;
+
+        return {
+            type: section.type,
+            number: section.number,
+            heading_en: SECTION_COPY[section.type]?.en ?? section.title ?? '',
+            heading_ur: SECTION_COPY[section.type]?.ur ?? '',
+            note: sectionNote(section, layout),
+            marks: sectionMarks(section, layout),
+            questions: (section.questions ?? []).map((q, idx) => ({
+                id: q.id,
+                type: q.type,
+                roman: toRoman(idx),
+                text_en: q.text_en ?? '',
+                text_ur: q.text_ur ?? '',
+                past_ref: pastPaperRef(q, layout),
+                options: q.type === 'mcq' ? mcqOptionsContent(q) : null,
+                parts: showParts
+                    ? (q.parts ?? []).map((p, pIdx) => ({
+                        id: p.id,
+                        label: String.fromCharCode(97 + pIdx),
+                        text_en: p.text_en ?? '',
+                        text_ur: p.text_ur ?? '',
+                    }))
+                    : [],
             })),
-        })),
-    }));
+        };
+    });
 
     const inst = preview?.institution ?? preview?.institutionOverride ?? null;
 
@@ -115,6 +134,10 @@ export function hydratePaperContentUrdu(content, preview) {
         if (!section.heading_ur && freshSection.heading_ur) {
             section.heading_ur = freshSection.heading_ur;
         }
+
+        // Keep marks/notes in sync with latest section settings when rebuilding from live questions.
+        if (freshSection.marks) section.marks = freshSection.marks;
+        section.note = freshSection.note ?? section.note ?? '';
 
         for (const question of section.questions ?? []) {
             const freshQuestion = freshSection.questions?.find((q) => q.id === question.id);

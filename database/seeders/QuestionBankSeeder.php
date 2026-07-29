@@ -30,8 +30,31 @@ class QuestionBankSeeder extends Seeder
         $gradeNumber = (int) ($chapter->subject?->grade?->number ?? 0);
         $subjectName = (string) ($chapter->subject?->name_en ?? '');
 
+    protected $currentTopics;
+    protected int $topicCursor = 0;
+
+    protected function nextTopicId(): ?int
+    {
+        if (! $this->currentTopics || $this->currentTopics->isEmpty()) {
+            return null;
+        }
+
+        $topic = $this->currentTopics[$this->topicCursor % $this->currentTopics->count()];
+        $this->topicCursor++;
+
+        return $topic->id;
+    }
+
+    protected function seedForChapter(Chapter $chapter): void
+    {
+        $gradeNumber = (int) ($chapter->subject?->grade?->number ?? 0);
+        $subjectName = (string) ($chapter->subject?->name_en ?? '');
+
         // Make higher grades slightly denser.
         $multiplier = $gradeNumber >= 9 ? 2 : 1;
+
+        $this->currentTopics = $chapter->topics()->orderBy('sort_order')->get();
+        $this->topicCursor = 0;
 
         $this->seedMcqs($chapter, 8 * $multiplier);
         $this->seedShort($chapter, 5 * $multiplier);
@@ -48,6 +71,7 @@ class QuestionBankSeeder extends Seeder
         for ($i = 1; $i <= $count; $i++) {
             $q = Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $this->nextTopicId(),
                 'type' => 'mcq',
                 'source' => Arr::random(['exercise', 'additional']),
                 'text_en' => "MCQ {$i}: Choose the correct option for Chapter {$chapter->number}.",
@@ -77,6 +101,7 @@ class QuestionBankSeeder extends Seeder
         for ($i = 1; $i <= $count; $i++) {
             Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $this->nextTopicId(),
                 'type' => 'short',
                 'source' => Arr::random(['exercise', 'additional']),
                 'text_en' => "Short {$i}: Write a brief answer related to Chapter {$chapter->number}.",
@@ -89,8 +114,10 @@ class QuestionBankSeeder extends Seeder
     protected function seedLongWithParts(Chapter $chapter, int $count): void
     {
         for ($i = 1; $i <= $count; $i++) {
+            $topicId = $this->nextTopicId();
             $parent = Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $topicId,
                 'type' => 'long',
                 'source' => Arr::random(['exercise', 'additional']),
                 'text_en' => "Long {$i}: Answer the following in detail (parts a & b).",
@@ -101,6 +128,7 @@ class QuestionBankSeeder extends Seeder
 
             Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $topicId,
                 'type' => 'long',
                 'source' => $parent->source,
                 'text_en' => "(a) Explain the first point for Long {$i}.",
@@ -111,6 +139,7 @@ class QuestionBankSeeder extends Seeder
 
             Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $topicId,
                 'type' => 'long',
                 'source' => $parent->source,
                 'text_en' => "(b) Explain the second point for Long {$i}.",
@@ -155,6 +184,7 @@ class QuestionBankSeeder extends Seeder
 
             Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $this->nextTopicId(),
                 'type' => 'fill',
                 'source' => Arr::random(['exercise', 'additional']),
                 'text_en' => $subjectName === 'Urdu' ? null : $en,
@@ -169,6 +199,7 @@ class QuestionBankSeeder extends Seeder
         for ($i = 1; $i <= $count; $i++) {
             Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $this->nextTopicId(),
                 'type' => 'truefalse',
                 'source' => Arr::random(['exercise', 'additional']),
                 'text_en' => "T/F {$i}: Statement for Chapter {$chapter->number} (mark True or False).",
@@ -187,6 +218,7 @@ class QuestionBankSeeder extends Seeder
         for ($i = 1; $i <= $count; $i++) {
             $q = Question::query()->create([
                 'chapter_id' => $chapter->id,
+                'topic_id' => $this->nextTopicId(),
                 'type' => 'mcq',
                 'source' => 'past_paper',
                 'text_en' => "Past Paper MCQ {$i}: Board-style question for Chapter {$chapter->number}.",

@@ -4,7 +4,10 @@ use App\Http\Controllers\Admin\InstituteProfileController;
 use App\Http\Controllers\Admin\QuestionBankController;
 use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Dashboard\ActivityLogController;
+use App\Http\Controllers\Dashboard\DashboardController;
+use App\Http\Controllers\Dashboard\LoginHistoryController;
 use App\Http\Controllers\Dashboard\PaperController;
+use App\Http\Controllers\Dashboard\PaperHistoryController;
 use App\Http\Controllers\LayoutEditor\LayoutEditorController;
 use App\Http\Controllers\PaperBuilder\QuestionSelectorController;
 use App\Http\Controllers\PaperBuilder\WizardController;
@@ -16,9 +19,14 @@ use Illuminate\Support\Facades\URL;
 Route::redirect('/', '/login');
 
 Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(function () {
-    Route::get('/dashboard', [PaperController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/saved-papers', [PaperController::class, 'index'])->name('saved-papers.index');
+    Route::get('/paper-history', [PaperHistoryController::class, 'index'])->name('paper-history.index');
 
-    Route::get('/builder', [WizardController::class, 'index'])->name('builder');
+    Route::get('/builder', [WizardController::class, 'classes'])->name('builder');
+    Route::get('/builder/subjects', [WizardController::class, 'subjects'])->name('builder.subjects');
+    Route::get('/builder/chapters', [WizardController::class, 'chapters'])->name('builder.chapters');
+    Route::get('/builder/create', [WizardController::class, 'index'])->name('builder.create');
     Route::post('/builder', [WizardController::class, 'store'])->name('builder.store');
 
     Route::prefix('api/builder')->group(function () {
@@ -26,6 +34,7 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
         Route::get('/subjects/{subject}/chapters', [QuestionSelectorController::class, 'chapters']);
         Route::get('/questions', [QuestionSelectorController::class, 'questions']);
         Route::get('/questions/all', [QuestionSelectorController::class, 'all']);
+        Route::get('/past-paper-filters', [QuestionSelectorController::class, 'pastPaperFilters']);
         Route::match(['get', 'post'], '/questions/by-ids', [QuestionSelectorController::class, 'byIds']);
         Route::post('/questions/random', [QuestionSelectorController::class, 'random']);
     });
@@ -52,6 +61,7 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
         Route::get('/profile', [InstituteProfileController::class, 'edit'])->name('admin.profile');
         Route::post('/profile', [InstituteProfileController::class, 'update'])->name('admin.profile.update');
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs');
+        Route::get('/login-history', [LoginHistoryController::class, 'index'])->name('admin.login-history');
 
         Route::get('/question-bank', [QuestionBankController::class, 'index'])->name('admin.question-bank.index');
         Route::post('/question-bank', [QuestionBankController::class, 'store'])->name('admin.question-bank.store');

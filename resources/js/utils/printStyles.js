@@ -1,6 +1,9 @@
 const STYLE_ID = 'exam-builder-print-page-style';
 
-export function applyPrintStyles() {
+/**
+ * @param {{ dual?: boolean }} [options]
+ */
+export function applyPrintStyles(options = {}) {
     let styleEl = document.getElementById(STYLE_ID);
     if (!styleEl) {
         styleEl = document.createElement('style');
@@ -8,10 +11,11 @@ export function applyPrintStyles() {
         document.head.appendChild(styleEl);
     }
 
-    // Do NOT set `size` in @page — any size value causes Chrome to hide the
-    // Layout (Portrait/Landscape) dropdown in the print dialog.
-    // Paper dimensions are already defined by .paper-preview CSS width.
-    // Only apply the hardware margin so the template border sits near the edge.
+    const dual = Boolean(options.dual);
+
+    // Never set @page `size` here — Chrome/Edge hide the Layout
+    // (Portrait/Landscape) dropdown whenever size is specified.
+    // Double-page users must pick Landscape in the print dialog.
     styleEl.textContent = `
         @media print {
             @page {
@@ -19,8 +23,12 @@ export function applyPrintStyles() {
             }
         }
     `;
+
+    document.body.classList.toggle('print-dual', dual);
+    document.body.classList.toggle('print-single', !dual);
 }
 
 export function clearPrintStyles() {
     document.getElementById(STYLE_ID)?.remove();
+    document.body.classList.remove('print-dual', 'print-single');
 }

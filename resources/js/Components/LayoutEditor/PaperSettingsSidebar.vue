@@ -95,9 +95,16 @@ const removeWatermarkImage = () => {
 
         <div>
             <label class="text-sm text-gray-700">Header template</label>
-            <select v-model.number="layout.header_template" class="mt-1 w-full rounded-md border-gray-300 text-sm">
+            <select
+                v-model.number="layout.header_template"
+                class="mt-1 w-full rounded-md border-gray-300 text-sm"
+                :disabled="headerTemplates.length <= 1"
+            >
                 <option v-for="t in headerTemplates" :key="t" :value="t">Template {{ t }}</option>
             </select>
+            <p v-if="headerTemplates.length <= 1" class="mt-1 text-xs text-gray-500">
+                Only Template 1 is available for now.
+            </p>
         </div>
 
         <div>
@@ -185,8 +192,9 @@ const removeWatermarkImage = () => {
                     Double page
                 </button>
             </div>
-            <p v-if="layout.page_view === 'double'" class="mt-1.5 text-xs text-amber-700">
-                Use landscape when printing dual page.
+            <p v-if="layout.page_view === 'double'" class="mt-1.5 text-xs text-slate-600">
+                Two complete copies on one sheet. In the print dialog choose
+                <strong>Layout → Landscape</strong>.
             </p>
         </div>
 

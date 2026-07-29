@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperSettingsSidebar from '@/Components/LayoutEditor/PaperSettingsSidebar.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
+import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
 import { applyPrintStyles, clearPrintStyles } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
@@ -44,7 +45,7 @@ const editorSettings = ref({
 });
 
 const layout = ref({
-    header_template: props.preview.layout?.header_template ?? 1,
+    header_template: 1,
     font_family: props.preview.layout?.font_family ?? 'Arial',
     font_size: props.preview.layout?.font_size ?? 11,
     heading_font_size: props.preview.layout?.heading_font_size ?? 12,
@@ -95,6 +96,16 @@ const initialContent = () => {
             ?? buildPaperContentFromPreview(props.preview, props.savedPaper.title),
     );
 
+    const meta = props.preview.exam_meta ?? {};
+    base.header = {
+        ...base.header,
+        class: (base.header?.class || '').trim() || meta.class || '',
+        subject: (base.header?.subject || '').trim() || meta.subject || '',
+        marks: (base.header?.marks || '').toString().trim() || meta.marks || '',
+        paper_time: (base.header?.paper_time || '').trim() || meta.time || '',
+        paper_type: (base.header?.paper_type || '').trim() || meta.paper_type || props.savedPaper.title || '',
+    };
+
     return layout.value.dual_medium
         ? hydratePaperContentUrdu(base, props.preview)
         : base;
@@ -104,6 +115,7 @@ const paperContent = ref(initialContent());
 const editDraft = ref(null);
 const editingPaper = ref(false);
 const showSaveModal = ref(false);
+const showPrintLandscapeHint = ref(false);
 
 if (!paperContent.value.header?.paper_note?.trim()) {
     paperContent.value.header = {
@@ -165,15 +177,19 @@ const paperPreviewProps = computed(() => ({
 
 const layoutForm = useForm({ layout_snapshot: { ...layout.value } });
 
-const paperClass = computed(() => props.preview.exam_meta?.class ?? examMeta.class ?? '');
-const paperSubject = computed(() => props.preview.exam_meta?.subject ?? examMeta.subject ?? '');
+const paperClass = computed(() =>
+    (props.preview.exam_meta?.class || paperContent.value?.header?.class || examMeta.class || '').trim(),
+);
+const paperSubject = computed(() =>
+    (props.preview.exam_meta?.subject || paperContent.value?.header?.subject || examMeta.subject || '').trim(),
+);
 
 const saveForm = useForm({
     title: props.savedPaper.title,
     paper_type: examMeta.paper_type ?? paperContent.value.header?.paper_type ?? props.savedPaper.title,
     paper_date: examMeta.paper_date ?? todayIso(),
-    time_allowed: examMeta.time ?? '2 Hours',
-    total_marks: examMeta.marks ?? '',
+    time_allowed: examMeta.time ?? paperContent.value.header?.paper_time ?? '2 Hours',
+    total_marks: examMeta.marks ?? paperContent.value.header?.marks ?? '',
 });
 
 let layoutSaveTimer = null;
@@ -368,15 +384,40 @@ const submitSavePaper = () => {
 
 const onAfterPrint = () => {
     clearPrintStyles();
-    document.body.classList.remove('print-active');
+    document.body.classList.remove('print-active', 'print-dual', 'print-single');
     window.removeEventListener('afterprint', onAfterPrint);
 };
 
-const printPaper = () => {
-    applyPrintStyles();
+const runPrint = () => {
+    const dual = layout.value.page_view === 'double';
+    if (dual) {
+        layout.value.orientation = 'landscape';
+    }
+
+    applyPrintStyles({ dual });
     document.body.classList.add('print-active');
+    document.body.classList.toggle('print-dual', dual);
+    document.body.classList.toggle('print-single', !dual);
+
     window.addEventListener('afterprint', onAfterPrint);
-    window.print();
+    requestAnimationFrame(() => {
+        setTimeout(() => window.print(), 50);
+    });
+};
+
+const printPaper = () => {
+    // Double page needs Landscape in the browser print dialog.
+    // We cannot force @page size without Chrome/Edge hiding the Layout dropdown.
+    if (layout.value.page_view === 'double') {
+        showPrintLandscapeHint.value = true;
+        return;
+    }
+    runPrint();
+};
+
+const confirmDualPrint = () => {
+    showPrintLandscapeHint.value = false;
+    runPrint();
 };
 
 onMounted(() => {
@@ -458,7 +499,7 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                     >
                         Download PDF
                     </a>
-                    <Link :href="route('dashboard')" class="rounded-md bg-gray-200 px-4 py-2 text-sm text-gray-800">
+                    <Link :href="route('saved-papers.index')" class="rounded-md bg-gray-200 px-4 py-2 text-sm text-gray-800">
                         Back
                     </Link>
                 </div>
@@ -486,23 +527,29 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                 >
                     <div
                         v-if="layout.page_view === 'double'"
-                        class="editor-dual-page-spread mx-auto flex gap-3 px-3 py-2"
+                        class="editor-dual-sheet mx-auto"
                     >
-                        <div class="editor-dual-page-frame">
-                            <div class="dual-page-zoom-inner">
-                                <PaperPreview
-                                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
-                                    :editable="editingPaper"
-                                    @update:paper-content="onContentUpdate"
-                                />
-                            </div>
+                        <div class="editor-dual-sheet-label no-print">
+                            Landscape sheet · 2 complete pages side-by-side (saves paper when printing)
                         </div>
-                        <div class="editor-dual-page-frame editor-dual-page-frame--copy">
-                            <div class="dual-page-zoom-inner">
-                                <PaperPreview
-                                    v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
-                                    :editable="false"
-                                />
+                        <div class="editor-dual-page-spread">
+                            <div class="editor-dual-page-frame">
+                                <div class="dual-page-zoom-inner">
+                                    <PaperPreview
+                                        v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                                        :editable="editingPaper"
+                                        @update:paper-content="onContentUpdate"
+                                    />
+                                </div>
+                            </div>
+                            <div class="editor-dual-page-divider" aria-hidden="true" />
+                            <div class="editor-dual-page-frame">
+                                <div class="dual-page-zoom-inner">
+                                    <PaperPreview
+                                        v-bind="{ ...paperPreviewProps, layout: { ...paperPreviewProps.layout, scale: 100 } }"
+                                        :editable="false"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -523,14 +570,56 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                 class="print-paper-root"
                 :class="{ 'exam-print-dual': layout.page_view === 'double' }"
             >
-                <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+                <div v-if="layout.page_view === 'double'" class="exam-print-dual-sheet">
+                    <div class="exam-print-dual-slot">
+                        <div class="exam-print-dual-scaler">
+                            <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+                        </div>
+                    </div>
+                    <div class="exam-print-dual-slot">
+                        <div class="exam-print-dual-scaler">
+                            <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+                        </div>
+                    </div>
+                </div>
                 <PaperPreview
-                    v-if="layout.page_view === 'double'"
+                    v-else
                     v-bind="paperPreviewProps"
                     :editable="false"
                 />
             </div>
         </Teleport>
+
+        <Modal :show="showPrintLandscapeHint" max-width="md" @close="showPrintLandscapeHint = false">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900">Print double page</h3>
+                <p class="mt-2 text-sm text-slate-600">
+                    In the print dialog, set <strong>Layout</strong> to <strong>Landscape</strong>
+                    so both complete copies fit on one sheet.
+                </p>
+                <ol class="mt-4 list-decimal space-y-1.5 pl-5 text-sm text-slate-700">
+                    <li>Open <strong>More settings</strong> if needed</li>
+                    <li>Choose <strong>Layout → Landscape</strong></li>
+                    <li>Confirm preview shows two pages side-by-side on <strong>1 sheet</strong></li>
+                </ol>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="showPrintLandscapeHint = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+                        @click="confirmDualPrint"
+                    >
+                        Open print dialog
+                    </button>
+                </div>
+            </div>
+        </Modal>
 
         <SavePaperModal
             :show="showSaveModal"
@@ -571,19 +660,52 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
     background: #e5e7eb;
 }
 
-.editor-dual-page-spread {
+.editor-dual-sheet {
+    width: 100%;
     max-width: 100%;
+    padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.editor-dual-sheet-label {
+    margin-bottom: 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.editor-dual-page-spread {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.04);
 }
 
 .editor-dual-page-frame {
     flex: 1 1 0;
     min-width: 0;
-    max-width: calc(50% - 6px);
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
     background: #fff;
-    box-shadow: 0 2px 4px rgb(0 0 0 / 0.08);
     overflow: hidden;
+}
+
+.editor-dual-page-divider {
+    flex: 0 0 2px;
+    width: 2px;
+    align-self: stretch;
+    margin: 0 2px;
+    background: repeating-linear-gradient(
+        to bottom,
+        #94a3b8 0 6px,
+        transparent 6px 12px
+    );
 }
 
 /* zoom reduces both visual AND layout size so overflow never clips */
@@ -596,9 +718,5 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
     margin: 0;
     border: none !important;
     box-shadow: none !important;
-}
-
-.editor-dual-page-frame--copy {
-    opacity: 0.9;
 }
 </style>

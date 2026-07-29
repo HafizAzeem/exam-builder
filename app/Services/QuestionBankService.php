@@ -14,12 +14,29 @@ class QuestionBankService
         ?string $type,
         array $sources,
         ?string $search = null,
+        array $topicIds = [],
+        ?string $boardName = null,
+        ?int $year = null,
     ) {
         $query = Question::query()
-            ->with(['mcqOptions', 'pastPaperTag', 'parts', 'chapter.subject.grade'])
-            ->whereIn('chapter_id', $chapterIds)
+            ->with(['mcqOptions', 'pastPaperTag', 'parts', 'chapter.subject.grade', 'topic'])
             ->where('is_active', true)
             ->whereNull('parent_question_id');
+
+        if ($topicIds) {
+            $query->where(function ($q) use ($topicIds, $chapterIds) {
+                $q->whereIn('topic_id', $topicIds);
+
+                // Include legacy questions without topic, scoped to selected chapters.
+                if ($chapterIds) {
+                    $q->orWhere(function ($legacy) use ($chapterIds) {
+                        $legacy->whereNull('topic_id')->whereIn('chapter_id', $chapterIds);
+                    });
+                }
+            });
+        } else {
+            $query->whereIn('chapter_id', $chapterIds);
+        }
 
         if ($type) {
             $query->where('type', $type);
@@ -27,6 +44,17 @@ class QuestionBankService
 
         if ($sources) {
             $query->whereIn('source', $sources);
+        }
+
+        if ($boardName || $year) {
+            $query->whereHas('pastPaperTag', function ($q) use ($boardName, $year) {
+                if ($boardName) {
+                    $q->where('board_name', $boardName);
+                }
+                if ($year) {
+                    $q->where('year', $year);
+                }
+            });
         }
 
         if ($search) {
@@ -45,10 +73,13 @@ class QuestionBankService
         ?string $type,
         array $sources,
         ?string $search = null,
-        int $perPage = 20
+        int $perPage = 20,
+        array $topicIds = [],
+        ?string $boardName = null,
+        ?int $year = null,
     ): LengthAwarePaginator
     {
-        return $this->baseQuery($chapterIds, $type, $sources, $search)
+        return $this->baseQuery($chapterIds, $type, $sources, $search, $topicIds, $boardName, $year)
             ->latest('id')
             ->paginate($perPage);
     }
@@ -59,8 +90,11 @@ class QuestionBankService
         array $sources,
         ?string $search = null,
         int $limit = 500,
+        array $topicIds = [],
+        ?string $boardName = null,
+        ?int $year = null,
     ): Collection {
-        return $this->baseQuery($chapterIds, $type, $sources, $search)
+        return $this->baseQuery($chapterIds, $type, $sources, $search, $topicIds, $boardName, $year)
             ->latest('id')
             ->limit($limit)
             ->get();
@@ -71,8 +105,9 @@ class QuestionBankService
         array $config,
         string $cacheKey,
         array $sources = [],
+        array $topicIds = [],
     ): Collection {
-        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($chapterIds, $config, $sources) {
+        return Cache::remember($cacheKey, now()->addMinutes(10), function () use ($chapterIds, $config, $sources, $topicIds) {
             $results = collect();
 
             foreach ($config as $type => $count) {
@@ -83,10 +118,22 @@ class QuestionBankService
 
                 $query = Question::query()
                     ->with(['mcqOptions', 'pastPaperTag', 'parts'])
-                    ->whereIn('chapter_id', $chapterIds)
                     ->where('type', $type)
                     ->where('is_active', true)
                     ->whereNull('parent_question_id');
+
+                if ($topicIds) {
+                    $query->where(function ($q) use ($topicIds, $chapterIds) {
+                        $q->whereIn('topic_id', $topicIds);
+                        if ($chapterIds) {
+                            $q->orWhere(function ($legacy) use ($chapterIds) {
+                                $legacy->whereNull('topic_id')->whereIn('chapter_id', $chapterIds);
+                            });
+                        }
+                    });
+                } else {
+                    $query->whereIn('chapter_id', $chapterIds);
+                }
 
                 if ($sources) {
                     $query->whereIn('source', $sources);

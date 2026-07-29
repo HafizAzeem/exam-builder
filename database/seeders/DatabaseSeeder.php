@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RolePermissionSeeder::class,
             GradeSeeder::class,
             CurriculumSeeder::class,
+            Class9TopicsSeeder::class,
             QuestionBankSeeder::class,
             DemoDataSeeder::class,
         ]);

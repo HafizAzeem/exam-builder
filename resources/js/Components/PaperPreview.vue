@@ -120,6 +120,13 @@ const content = computed(() => {
         base = hydratePaperContentUrdu(base, previewPayload);
     }
 
+    // Always fill Class / Subject from exam meta when header is blank.
+    base.header = {
+        ...base.header,
+        class: (base.header?.class || '').trim() || (props.examMeta?.class || '').trim() || '',
+        subject: (base.header?.subject || '').trim() || (props.examMeta?.subject || '').trim() || '',
+    };
+
     return base;
 });
 
@@ -140,11 +147,11 @@ const onEditableBlur = (event, mutator) => {
 };
 
 const meta = computed(() => ({
-    class: header.value.class || props.examMeta?.class || '',
-    subject: header.value.subject || props.examMeta?.subject || '',
-    time: header.value.paper_time || props.examMeta?.time || '',
-    marks: header.value.marks || props.examMeta?.marks || '',
-    paperType: header.value.paper_type || props.title || '',
+    class: (header.value.class || '').trim() || (props.examMeta?.class || '').trim() || '',
+    subject: (header.value.subject || '').trim() || (props.examMeta?.subject || '').trim() || '',
+    time: (header.value.paper_time || '').trim() || (props.examMeta?.time || '').trim() || '',
+    marks: (header.value.marks || '').toString().trim() || (props.examMeta?.marks || '').toString().trim() || '',
+    paperType: (header.value.paper_type || '').trim() || props.title || '',
 }));
 
 const instituteName = computed(() => header.value.institute_name || props.institution?.name || 'Institution Name');
@@ -184,6 +191,29 @@ const pastPaperRefLegacy = (q) => {
     const tag = getPastPaperTag(q);
     if (!props.layout?.show_past_paper_tags || q.source !== 'past_paper' || !tag) return '';
     return `[${tag.board_name} ${tag.year}]`;
+};
+
+const tabularMcqs = computed(() =>
+    props.settings?.tabular_mcqs
+        ?? props.layout?.tabular_mcqs
+        ?? true,
+);
+
+const questionsPerLineFor = (type) => {
+    const fromSection = props.layout?.section_settings?.[type]?.questions_per_line;
+    if (fromSection) return Number(fromSection);
+    return Number(props.settings?.questions_per_line ?? props.layout?.questions_per_line ?? 1);
+};
+
+const blankLinesFor = (type) => {
+    const fromSection = props.layout?.section_settings?.[type]?.blank_lines;
+    if (fromSection !== undefined && fromSection !== null) return Number(fromSection);
+    return Number(props.settings?.blank_lines ?? 0);
+};
+
+const showPartsFor = (type) => {
+    const cfg = props.layout?.section_settings?.[type];
+    return cfg?.show_parts !== false;
 };
 
 const omrRowsList = computed(() => props.omrRows ?? []);
@@ -297,6 +327,7 @@ const teacherAnswerFor = (question) => {
                                 <div class="tpl1-info-row">
                                     <span>Class:</span>
                                     <span
+                                        :key="`tpl1-class-${meta.class}`"
                                         :contenteditable="editable"
                                         suppresscontenteditablewarning
                                         @blur="onEditableBlur($event, (d, t) => { d.header.class = t; })"
@@ -305,6 +336,7 @@ const teacherAnswerFor = (question) => {
                                 <div class="tpl1-info-row">
                                     <span>Subject:</span>
                                     <span
+                                        :key="`tpl1-subject-${meta.subject}`"
                                         :contenteditable="editable"
                                         suppresscontenteditablewarning
                                         @blur="onEditableBlur($event, (d, t) => { d.header.subject = t; })"
@@ -517,7 +549,12 @@ const teacherAnswerFor = (question) => {
                         </div>
                     </div>
 
-                    <div :class="layout?.dual_column ? 'questions-container dual-col' : ''">
+                    <div
+                        :class="[
+                            layout?.dual_column ? 'questions-container dual-col' : '',
+                            questionsPerLineFor(section.type) === 2 ? 'tpl1-questions--two-col' : '',
+                        ]"
+                    >
                     <div
                         v-for="(q, idx) in section.questions"
                         :key="q.id"
@@ -571,7 +608,10 @@ const teacherAnswerFor = (question) => {
                             class="tpl1-mcq-block"
                             :class="{ 'tpl1-mcq-block--has-answer': teacherAnswerFor(q) }"
                         >
-                            <div class="tpl1-mcq-options">
+                            <div
+                                class="tpl1-mcq-options"
+                                :class="tabularMcqs ? 'tpl1-mcq-options--tabular' : 'tpl1-mcq-options--stacked'"
+                            >
                             <div v-for="opt in mcqOptionCells(q)" :key="opt.key" class="tpl1-mcq-cell">
                                 <span class="tpl1-mcq-left">
                                     <span class="tpl1-mcq-key">({{ opt.key }})</span>
@@ -608,7 +648,7 @@ const teacherAnswerFor = (question) => {
                             </div>
                         </div>
 
-                        <div v-else-if="q.type === 'long' && q.parts?.length" class="tpl1-parts">
+                        <div v-else-if="q.type === 'long' && q.parts?.length && showPartsFor('long')" class="tpl1-parts">
                             <div v-for="(p, pIdx) in q.parts" :key="p.id ?? pIdx" class="tpl1-question-row tpl1-part-row">
                                 <div class="tpl1-question-en">
                                     <span class="tpl1-q-num">({{ p.label ?? String.fromCharCode(97 + pIdx) }})</span>
@@ -640,7 +680,7 @@ const teacherAnswerFor = (question) => {
                             </div>
                         </div>
 
-                        <div v-else-if="q.type === 'long' && getParts(q).length" class="tpl1-parts">
+                        <div v-else-if="q.type === 'long' && getParts(q).length && showPartsFor('long')" class="tpl1-parts">
                             <div v-for="(p, pIdx) in getParts(q)" :key="p.id" class="tpl1-question-row tpl1-part-row">
                                 <div class="tpl1-question-en">
                                     <span class="tpl1-q-num">({{ String.fromCharCode(97 + pIdx) }})</span>
@@ -656,9 +696,9 @@ const teacherAnswerFor = (question) => {
                         </div>
 
                         <div
-                            v-else-if="settings?.blank_lines"
+                            v-else-if="blankLinesFor(section.type)"
                             class="tpl1-blank-area"
-                            :style="{ minHeight: settings.blank_lines * 24 + 'px' }"
+                            :style="{ minHeight: blankLinesFor(section.type) * 24 + 'px' }"
                         />
                     </div>
                     </div>
@@ -998,9 +1038,26 @@ const teacherAnswerFor = (question) => {
 
 .tpl1-mcq-options {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
     border: 1px solid #000;
     margin-top: 6px;
+}
+
+.tpl1-mcq-options--tabular {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.tpl1-mcq-options--stacked {
+    grid-template-columns: 1fr;
+}
+
+.tpl1-questions--two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+}
+
+.tpl1-questions--two-col .tpl1-question {
+    break-inside: avoid;
 }
 
 .tpl1-mcq-block {
@@ -1079,8 +1136,17 @@ const teacherAnswerFor = (question) => {
     gap: 6px;
 }
 
-.tpl1-mcq-cell:last-child {
+.tpl1-mcq-options--tabular .tpl1-mcq-cell:last-child {
     border-right: none;
+}
+
+.tpl1-mcq-options--stacked .tpl1-mcq-cell {
+    border-right: none;
+    border-bottom: 1px solid #000;
+}
+
+.tpl1-mcq-options--stacked .tpl1-mcq-cell:last-child {
+    border-bottom: none;
 }
 
 .tpl1-mcq-left {
