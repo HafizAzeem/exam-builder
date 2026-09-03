@@ -9,11 +9,17 @@
         "php": "^8.3",
         "doctrine/dbal": "^4.4",
         "inertiajs/inertia-laravel": "^2.0",
+        "laravel/ai": "^0.7.2",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "maatwebsite/excel": "^3.1",
+        "phpoffice/phpword": "^1.4",
+        "smalot/pdfparser": "^2.12",
         "spatie/laravel-permission": "^7.4",
+        "symfony/css-selector": "^7.4",
+        "symfony/dom-crawler": "^7.4",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

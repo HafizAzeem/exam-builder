@@ -20,11 +20,14 @@ class Question extends Model
         'has_parts',
         'parent_question_id',
         'is_active',
+        'difficulty',
+        'estimated_marks',
     ];
 
     protected $casts = [
         'has_parts' => 'boolean',
         'is_active' => 'boolean',
+        'estimated_marks' => 'integer',
     ];
 
     public function chapter(): BelongsTo
@@ -57,4 +60,3 @@ class Question extends Model
         return $this->belongsTo(Question::class, 'parent_question_id');
     }
 }
-

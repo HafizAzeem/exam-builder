@@ -9,6 +9,7 @@ use App\Models\LoginSession;
 use App\Models\PastPaperTag;
 use App\Models\SavedPaper;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -16,9 +17,13 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->hasRole('super_admin') && ! $user->institution_id) {
+            return redirect()->route('super-admin.ai-import.dashboard');
+        }
 
         if (! $user->institution_id) {
             return Inertia::render('Dashboard/Overview', [

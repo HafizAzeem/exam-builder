@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import FlashBanner from '@/Components/FlashBanner.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -14,7 +15,21 @@ const isAdmin = computed(() =>
     page.props.auth.user?.roles?.includes('institution_admin')
 );
 
+const isSuperAdmin = computed(() =>
+    page.props.auth.user?.roles?.includes('super_admin')
+);
+
 const navLinks = computed(() => {
+    if (isSuperAdmin.value) {
+        return [
+            { href: route('super-admin.ai-import.dashboard'), label: 'AI Dashboard', active: route().current('super-admin.ai-import.dashboard') || route().current('super-admin.ai-import.index') },
+            { href: route('super-admin.ai-import.create'), label: 'Upload', active: route().current('super-admin.ai-import.create') },
+            { href: route('super-admin.past-paper-collector.create'), label: 'AI Past Paper Collector', active: route().current('super-admin.past-paper-collector.*') },
+            { href: route('super-admin.ai-import.history'), label: 'History', active: route().current('super-admin.ai-import.history') },
+            { href: route('super-admin.ai-import.settings'), label: 'AI Settings', active: route().current('super-admin.ai-import.settings') },
+        ];
+    }
+
     const links = [
         { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard') },
         { href: route('builder'), label: 'Generate Paper', active: route().current('builder') || route().current('builder.subjects') || route().current('builder.chapters') || route().current('builder.create') },
@@ -76,7 +91,7 @@ const navLinks = computed(() => {
                                     </template>
 
                                     <template #content>
-                                        <DropdownLink :href="isAdmin ? route('admin.profile') : route('profile.edit')">
+                                        <DropdownLink :href="isSuperAdmin ? route('profile.edit') : (isAdmin ? route('admin.profile') : route('profile.edit'))">
                                             Profile Settings
                                         </DropdownLink>
                                         <DropdownLink :href="route('logout')" method="post" as="button">
@@ -128,7 +143,7 @@ const navLinks = computed(() => {
                         </div>
 
                         <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="isAdmin ? route('admin.profile') : route('profile.edit')">
+                            <ResponsiveNavLink :href="isSuperAdmin ? route('profile.edit') : (isAdmin ? route('admin.profile') : route('profile.edit'))">
                                 Profile Settings
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">
@@ -144,6 +159,8 @@ const navLinks = computed(() => {
                     <slot name="header" />
                 </div>
             </header>
+
+            <FlashBanner />
 
             <main>
                 <slot />
