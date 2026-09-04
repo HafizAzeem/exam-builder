@@ -27,7 +27,8 @@ const onZipChange = (e) => {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-800">Import Question Bank</h2>
-                <Link :href="route('admin.question-bank.index')" class="rounded bg-gray-200 px-4 py-2 text-sm">Back</Link>
+                <Link :href="route('super-admin.question-bank.index')" class="rounded bg-gray-200 px-4 py-2 text-sm">Back</Link>
+                <Link :href="route('super-admin.question-bank.jsonImportForm')" class="ms-2 rounded bg-emerald-600 px-4 py-2 text-sm text-white">JSON Import</Link>
             </div>
         </template>
 
@@ -83,7 +84,7 @@ const onZipChange = (e) => {
             <button
                 class="rounded bg-indigo-600 px-4 py-2 text-white disabled:opacity-50"
                 :disabled="form.processing || !form.file"
-                @click="form.post(route('admin.question-bank.import'), { forceFormData: true })"
+                @click="form.post(route('super-admin.question-bank.import'), { forceFormData: true })"
             >
                 Run Import
             </button>

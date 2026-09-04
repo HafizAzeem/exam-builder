@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Imports\QuestionBankImport;
 use App\Models\Chapter;
 use App\Services\QuestionImageImportService;
+use App\Services\QuestionJsonImportService;
 use App\Models\Grade;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
@@ -55,7 +56,7 @@ class QuestionBankController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return Inertia::render('Admin/QuestionBank/Index', [
+        return Inertia::render('SuperAdmin/QuestionBank/Index', [
             'grades' => $grades,
             'subjects' => $subjects,
             'chapters' => $chapters,
@@ -67,6 +68,10 @@ class QuestionBankController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->input('correct_answer') === '') {
+            $request->merge(['correct_answer' => null]);
+        }
+
         $validated = $request->validate([
             'chapter_id' => ['required', 'integer', 'exists:chapters,id'],
             'type' => ['required', 'in:mcq,short,long,fill,truefalse'],
@@ -82,6 +87,7 @@ class QuestionBankController extends Controller
             'mcq.option_c_en' => ['nullable', 'string'],
             'mcq.option_d_en' => ['nullable', 'string'],
             'mcq.correct_option' => ['nullable', 'in:a,b,c,d'],
+            'correct_answer' => ['nullable', 'in:true,false'],
 
             'past' => ['array'],
             'past.board_name' => ['nullable', 'string', 'max:100'],
@@ -107,6 +113,9 @@ class QuestionBankController extends Controller
             'image_path' => $imagePath,
             'has_parts' => ! empty($validated['parts']),
             'is_active' => $validated['is_active'] ?? true,
+            'correct_answer' => ($validated['type'] ?? null) === 'truefalse'
+                ? ($validated['correct_answer'] ?? null)
+                : null,
         ]);
 
         if ($question->type === 'mcq') {
@@ -154,6 +163,10 @@ class QuestionBankController extends Controller
     {
         abort_if($question->parent_question_id, 400);
 
+        if ($request->input('correct_answer') === '') {
+            $request->merge(['correct_answer' => null]);
+        }
+
         $validated = $request->validate([
             'chapter_id' => ['required', 'integer', 'exists:chapters,id'],
             'type' => ['required', 'in:mcq,short,long,fill,truefalse'],
@@ -170,6 +183,7 @@ class QuestionBankController extends Controller
             'mcq.option_c_en' => ['nullable', 'string'],
             'mcq.option_d_en' => ['nullable', 'string'],
             'mcq.correct_option' => ['nullable', 'in:a,b,c,d'],
+            'correct_answer' => ['nullable', 'in:true,false'],
 
             'past' => ['array'],
             'past.board_name' => ['nullable', 'string', 'max:100'],
@@ -196,6 +210,9 @@ class QuestionBankController extends Controller
             'text_en' => $validated['text_en'] ?? null,
             'text_ur' => $validated['text_ur'] ?? null,
             'is_active' => $validated['is_active'] ?? true,
+            'correct_answer' => ($validated['type'] ?? null) === 'truefalse'
+                ? ($validated['correct_answer'] ?? null)
+                : null,
         ])->save();
 
         if ($question->type === 'mcq') {
@@ -273,7 +290,7 @@ class QuestionBankController extends Controller
 
     public function importForm(): Response
     {
-        return Inertia::render('Admin/QuestionBank/Import');
+        return Inertia::render('SuperAdmin/QuestionBank/Import');
     }
 
     public function import(Request $request, QuestionImageImportService $imageImport)
@@ -308,8 +325,109 @@ class QuestionBankController extends Controller
         $imageCount = count($imageMap);
 
         return redirect()
-            ->route('admin.question-bank.index')
+            ->route('super-admin.question-bank.index')
             ->with('success', 'Import completed.'.($imageCount ? " ({$imageCount} images mapped)" : ''));
+    }
+
+    public function jsonImportForm(): Response
+    {
+        return Inertia::render('SuperAdmin/QuestionBank/JsonImport', [
+            'grades' => Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']),
+            'subjects' => Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']),
+            'sampleJson' => $this->sampleJson(),
+        ]);
+    }
+
+    public function jsonPreview(Request $request, QuestionJsonImportService $importer)
+    {
+        $validated = $request->validate([
+            'json' => ['required', 'string', 'max:500000'],
+            'grade_id' => ['nullable', 'integer', 'exists:grades,id'],
+            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
+        ]);
+
+        $result = $importer->preview(
+            $validated['json'],
+            $validated['grade_id'] ?? null,
+            $validated['subject_id'] ?? null,
+        );
+
+        if (! ($result['ok'] ?? false)) {
+            return response()->json([
+                'ok' => false,
+                'error' => $result['error'] ?? 'Preview failed.',
+            ], 422);
+        }
+
+        return response()->json($result);
+    }
+
+    public function jsonImport(Request $request, QuestionJsonImportService $importer)
+    {
+        $validated = $request->validate([
+            'rows' => ['required', 'array', 'min:1'],
+            'rows.*.include' => ['required', 'boolean'],
+            'rows.*.valid' => ['required', 'boolean'],
+            'rows.*.type' => ['required', 'in:mcq,short,long,fill,truefalse'],
+            'rows.*.source' => ['required', 'in:exercise,additional,past_paper'],
+            'rows.*.chapter_id' => ['nullable', 'integer', 'exists:chapters,id'],
+            'rows.*.topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'rows.*.text_en' => ['nullable', 'string'],
+            'rows.*.text_ur' => ['nullable', 'string'],
+            'rows.*.correct_answer' => ['nullable', 'in:true,false'],
+            'rows.*.mcq' => ['nullable', 'array'],
+            'rows.*.parts' => ['nullable', 'array'],
+            'rows.*.past' => ['nullable', 'array'],
+        ]);
+
+        $stats = $importer->save($validated['rows']);
+
+        return redirect()
+            ->route('super-admin.question-bank.index')
+            ->with('success', "JSON import saved: {$stats['imported']} imported, {$stats['skipped']} skipped.");
+    }
+
+    protected function sampleJson(): string
+    {
+        return json_encode([
+            'grade' => 9,
+            'subject_en' => 'English',
+            'source' => 'additional',
+            'questions' => [
+                [
+                    'chapter' => 1,
+                    'type' => 'mcq',
+                    'text_en' => 'Who was the Holy Prophet (PBUH)?',
+                    'options' => [
+                        'a' => 'Option A',
+                        'b' => 'Option B',
+                        'c' => 'Option C',
+                        'd' => 'Option D',
+                        'correct' => 'b',
+                    ],
+                ],
+                [
+                    'chapter' => 1,
+                    'type' => 'truefalse',
+                    'text_en' => 'The Holy Prophet (PBUH) was born in Makkah.',
+                    'correct_answer' => 'true',
+                ],
+                [
+                    'chapter' => 1,
+                    'type' => 'short',
+                    'text_en' => 'Write two qualities of the Holy Prophet (PBUH).',
+                ],
+                [
+                    'chapter' => 1,
+                    'type' => 'long',
+                    'text_en' => 'Discuss the early life of the Holy Prophet (PBUH).',
+                    'parts' => [
+                        ['text_en' => 'Birth and childhood'],
+                        ['text_en' => 'Youth and character'],
+                    ],
+                ],
+            ],
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 }
 

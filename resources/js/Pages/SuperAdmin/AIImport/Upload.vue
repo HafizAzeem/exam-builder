@@ -5,39 +5,12 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 
 const props = defineProps({
     grades: { type: Array, required: true },
     subjects: { type: Array, required: true },
 });
-
-const boards = [
-    'Lahore Board',
-    'Federal Board',
-    'Karachi Board',
-    'Rawalpindi Board',
-    'Multan Board',
-    'Faisalabad Board',
-    'Gujranwala Board',
-    'Bahawalpur Board',
-    'Sargodha Board',
-    'DG Khan Board',
-    'Sahiwal Board',
-    'Hyderabad Board',
-    'Sukkur Board',
-    'Larkana Board',
-    'Mirpurkhas Board',
-    'Quetta Board',
-    'Peshawar Board',
-    'Abbottabad Board',
-    'Swat Board',
-    'Malakand Board',
-    'DI Khan Board',
-    'Bannu Board',
-    'Kohat Board',
-    'AJK Board',
-];
 
 const form = useForm({
     grade_id: '',
@@ -56,12 +29,12 @@ const filteredSubjects = computed(() =>
     props.subjects.filter((s) => !form.grade_id || String(s.grade_id) === String(form.grade_id))
 );
 
-const onBookTypeChange = () => {
-    if (!isPastPaper.value) {
+watch(() => form.book_type, (type) => {
+    if (type !== 'past_paper') {
         form.year = '';
         form.session = '';
     }
-};
+});
 
 const submit = () => {
     form.post(route('super-admin.ai-import.store'), { forceFormData: true });
@@ -101,11 +74,7 @@ const submit = () => {
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel value="Book Type" />
-                            <select
-                                v-model="form.book_type"
-                                class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
-                                @change="onBookTypeChange"
-                            >
+                            <select v-model="form.book_type" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="text_book">Text Book</option>
                                 <option value="past_paper">Past Paper</option>
                                 <option value="additional_questions">Additional Questions</option>
@@ -123,20 +92,20 @@ const submit = () => {
                         </div>
                     </div>
 
-                    <div v-if="isPastPaper" class="grid gap-4 sm:grid-cols-3">
+                    <div class="grid gap-4" :class="isPastPaper ? 'sm:grid-cols-3' : 'sm:grid-cols-1'">
                         <div>
                             <InputLabel value="Board" />
                             <select v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
-                                <option v-for="b in boards" :key="b" :value="b">{{ b }}</option>
+                                <option value="Lahore Board">Lahore Board</option>
                             </select>
                             <InputError :message="form.errors.board" class="mt-1" />
                         </div>
-                        <div>
+                        <div v-if="isPastPaper">
                             <InputLabel value="Year (optional)" />
                             <TextInput v-model="form.year" type="number" class="mt-1 block w-full" />
                             <InputError :message="form.errors.year" class="mt-1" />
                         </div>
-                        <div>
+                        <div v-if="isPastPaper">
                             <InputLabel value="Session" />
                             <select v-model="form.session" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">—</option>

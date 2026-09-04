@@ -40,7 +40,7 @@ const filteredChapters = computed(() => {
 });
 
 const apply = () => {
-    router.get(route('admin.question-bank.index'), { ...filters.value }, { preserveState: true, preserveScroll: true });
+    router.get(route('super-admin.question-bank.index'), { ...filters.value }, { preserveState: true, preserveScroll: true });
 };
 
 const reset = () => {
@@ -82,7 +82,7 @@ const bulkDelete = () => {
     if (!confirm(`Delete ${selectedIds.value.length} selected question(s)?`)) return;
 
     router.post(
-        route('admin.question-bank.bulkDestroy'),
+        route('super-admin.question-bank.bulkDestroy'),
         { ids: selectedIds.value },
         {
             preserveScroll: true,
@@ -101,6 +101,7 @@ const createForm = useForm({
     text_ur: '',
     image: null,
     is_active: true,
+    correct_answer: '',
     mcq: { option_a_en: '', option_b_en: '', option_c_en: '', option_d_en: '', correct_option: 'a' },
     past: { board_name: '', year: '', session: '' },
 });
@@ -114,6 +115,7 @@ const editForm = useForm({
     image: null,
     remove_image: false,
     is_active: true,
+    correct_answer: '',
     mcq: { option_a_en: '', option_b_en: '', option_c_en: '', option_d_en: '', correct_option: 'a' },
     past: { board_name: '', year: '', session: '' },
 });
@@ -129,6 +131,7 @@ const openEdit = (q) => {
         image: null,
         remove_image: false,
         is_active: !!q.is_active,
+        correct_answer: q.correct_answer ?? '',
         mcq: q.mcq_options
             ? {
                   option_a_en: q.mcq_options.option_a_en ?? '',
@@ -157,7 +160,7 @@ const closeEdit = () => {
 };
 
 const saveEdit = () => {
-    editForm.patch(route('admin.question-bank.update', editingQuestion.value.id), {
+    editForm.patch(route('super-admin.question-bank.update', editingQuestion.value.id), {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => closeEdit(),
@@ -176,7 +179,7 @@ const currentImageUrl = computed(() => {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-gray-800">Question Bank</h2>
-                <div class="flex gap-2">
+                    <div class="flex gap-2">
                     <DangerButton
                         v-if="selectedIds.length"
                         type="button"
@@ -184,8 +187,11 @@ const currentImageUrl = computed(() => {
                     >
                         Delete selected ({{ selectedIds.length }})
                     </DangerButton>
-                    <Link :href="route('admin.question-bank.importForm')" class="rounded bg-indigo-600 px-4 py-2 text-sm text-white">
-                        Import
+                    <Link :href="route('super-admin.question-bank.jsonImportForm')" class="rounded bg-emerald-600 px-4 py-2 text-sm text-white">
+                        Import JSON
+                    </Link>
+                    <Link :href="route('super-admin.question-bank.importForm')" class="rounded bg-indigo-600 px-4 py-2 text-sm text-white">
+                        Import Excel
                     </Link>
                 </div>
             </div>
@@ -270,6 +276,13 @@ const currentImageUrl = computed(() => {
                             <option value="d">Correct: D</option>
                         </select>
                     </div>
+                    <div v-if="createForm.type === 'truefalse'" class="md:col-span-2">
+                        <select v-model="createForm.correct_answer" class="rounded border-gray-300">
+                            <option value="">Correct answer (optional)</option>
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>
+                    </div>
                     <div v-if="createForm.source === 'past_paper'" class="md:col-span-2 grid gap-2 md:grid-cols-3">
                         <input v-model="createForm.past.board_name" class="rounded border-gray-300" placeholder="Board name" />
                         <input v-model="createForm.past.year" type="number" class="rounded border-gray-300" placeholder="Year" />
@@ -283,7 +296,7 @@ const currentImageUrl = computed(() => {
                 <PrimaryButton
                     class="mt-4"
                     :disabled="createForm.processing"
-                    @click="createForm.post(route('admin.question-bank.store'), { forceFormData: true, onSuccess: () => createForm.reset() })"
+                    @click="createForm.post(route('super-admin.question-bank.store'), { forceFormData: true, onSuccess: () => createForm.reset() })"
                 >
                     Create
                 </PrimaryButton>
@@ -327,7 +340,7 @@ const currentImageUrl = computed(() => {
                             <td class="space-x-2 px-4 py-3 text-right">
                                 <button type="button" class="text-indigo-600 hover:underline" @click="openEdit(q)">Edit</button>
                                 <Link
-                                    :href="route('admin.question-bank.destroy', q.id)"
+                                    :href="route('super-admin.question-bank.destroy', q.id)"
                                     method="delete"
                                     as="button"
                                     class="text-red-600 hover:underline"
@@ -416,6 +429,15 @@ const currentImageUrl = computed(() => {
                             <option value="b">Correct: B</option>
                             <option value="c">Correct: C</option>
                             <option value="d">Correct: D</option>
+                        </select>
+                    </div>
+
+                    <div v-if="editForm.type === 'truefalse'" class="md:col-span-2">
+                        <InputLabel value="Correct Answer" />
+                        <select v-model="editForm.correct_answer" class="mt-1 rounded border-gray-300">
+                            <option value="">—</option>
+                            <option value="true">True</option>
+                            <option value="false">False</option>
                         </select>
                     </div>
 

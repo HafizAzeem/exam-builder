@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Admin\InstituteProfileController;
-use App\Http\Controllers\Admin\QuestionBankController;
 use App\Http\Controllers\Admin\TeacherController;
 use App\Http\Controllers\Dashboard\ActivityLogController;
 use App\Http\Controllers\Dashboard\DashboardController;
@@ -16,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\AIImportController;
 use App\Http\Controllers\SuperAdmin\ImportHistoryController;
 use App\Http\Controllers\SuperAdmin\PastPaperCollectorController;
+use App\Http\Controllers\SuperAdmin\QuestionBankController;
 use App\Http\Controllers\SuperAdmin\ReviewController;
 use App\Http\Controllers\SuperAdmin\SettingsController;
 use Illuminate\Support\Facades\Route;
@@ -66,14 +66,6 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
         Route::post('/profile', [InstituteProfileController::class, 'update'])->name('admin.profile.update');
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs');
         Route::get('/login-history', [LoginHistoryController::class, 'index'])->name('admin.login-history');
-
-        Route::get('/question-bank', [QuestionBankController::class, 'index'])->name('admin.question-bank.index');
-        Route::post('/question-bank', [QuestionBankController::class, 'store'])->name('admin.question-bank.store');
-        Route::patch('/question-bank/{question}', [QuestionBankController::class, 'update'])->name('admin.question-bank.update');
-        Route::delete('/question-bank/{question}', [QuestionBankController::class, 'destroy'])->name('admin.question-bank.destroy');
-        Route::post('/question-bank/bulk-delete', [QuestionBankController::class, 'bulkDestroy'])->name('admin.question-bank.bulkDestroy');
-        Route::get('/question-bank/import', [QuestionBankController::class, 'importForm'])->name('admin.question-bank.importForm');
-        Route::post('/question-bank/import', [QuestionBankController::class, 'import'])->name('admin.question-bank.import');
     });
 });
 
@@ -98,6 +90,17 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::get('/ai-import-history', [ImportHistoryController::class, 'index'])->name('ai-import.history');
     Route::get('/ai-settings', [SettingsController::class, 'edit'])->name('ai-import.settings');
     Route::put('/ai-settings', [SettingsController::class, 'update'])->name('ai-import.settings.update');
+
+    Route::get('/question-bank', [QuestionBankController::class, 'index'])->name('question-bank.index');
+    Route::post('/question-bank', [QuestionBankController::class, 'store'])->name('question-bank.store');
+    Route::patch('/question-bank/{question}', [QuestionBankController::class, 'update'])->name('question-bank.update');
+    Route::delete('/question-bank/{question}', [QuestionBankController::class, 'destroy'])->name('question-bank.destroy');
+    Route::post('/question-bank/bulk-delete', [QuestionBankController::class, 'bulkDestroy'])->name('question-bank.bulkDestroy');
+    Route::get('/question-bank/import', [QuestionBankController::class, 'importForm'])->name('question-bank.importForm');
+    Route::post('/question-bank/import', [QuestionBankController::class, 'import'])->name('question-bank.import');
+    Route::get('/question-bank/import-json', [QuestionBankController::class, 'jsonImportForm'])->name('question-bank.jsonImportForm');
+    Route::post('/question-bank/import-json/preview', [QuestionBankController::class, 'jsonPreview'])->name('question-bank.jsonPreview');
+    Route::post('/question-bank/import-json', [QuestionBankController::class, 'jsonImport'])->name('question-bank.jsonImport');
 
     Route::get('/past-paper-collector', [PastPaperCollectorController::class, 'create'])->name('past-paper-collector.create');
     Route::post('/past-paper-collector', [PastPaperCollectorController::class, 'store'])->name('past-paper-collector.store');

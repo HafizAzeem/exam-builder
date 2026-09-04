@@ -13,6 +13,7 @@ class Question extends Model
         'chapter_id',
         'topic_id',
         'type',
+        'correct_answer',
         'source',
         'text_en',
         'text_ur',
