@@ -93,7 +93,8 @@ return [
 
         'gemini' => [
             'driver' => 'gemini',
-            'key' => env('GEMINI_API_KEY'),
+            // Key is set at runtime from Super Admin AI Settings (ai_settings.gemini_api_key).
+            'key' => null,
             'url' => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta/'),
         ],
 
@@ -120,13 +121,15 @@ return [
 
         'openai' => [
             'driver' => 'openai',
-            'key' => env('OPENAI_API_KEY'),
+            // Key is set at runtime from Super Admin AI Settings (ai_settings.openai_api_key).
+            'key' => null,
             'url' => env('OPENAI_URL', 'https://api.openai.com/v1'),
         ],
 
         'openrouter' => [
             'driver' => 'openrouter',
-            'key' => env('OPENROUTER_API_KEY'),
+            // Key is set at runtime from Super Admin AI Settings (ai_settings.openrouter_api_key).
+            'key' => null,
         ],
 
         'voyageai' => [

@@ -7,19 +7,18 @@ use App\Contracts\PastPaperCollector\QuestionProcessingProvider;
 use App\Models\AIImport;
 use App\Models\AIImportLog;
 use App\Models\AISetting;
-use Laravel\Ai\Enums\Lab;
 use Throwable;
 
 class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
 {
     public function name(): string
     {
-        return 'gemini';
+        return AISetting::current()->preferred_text_provider ?: 'gemini';
     }
 
     public function isConfigured(): bool
     {
-        return filled(AISetting::current()->resolvedGeminiApiKey());
+        return AISetting::current()->isTextProviderConfigured();
     }
 
     public function extractQuestions(
@@ -29,14 +28,11 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
         ?string $chunkTitle = null,
         array $extraMeta = [],
     ): array {
-        if (! $this->isConfigured()) {
-            throw new \RuntimeException('Gemini API key is not configured.');
-        }
-
         $settings = AISetting::current();
-        $resolvedKey = $settings->resolvedGeminiApiKey();
-        if (filled($resolvedKey)) {
-            config(['ai.providers.gemini.key' => $resolvedKey]);
+        $settings->applyProviderConfig();
+
+        if (! $settings->isTextProviderConfigured()) {
+            throw new \RuntimeException('AI text provider is not configured. Set keys in Super Admin AI Settings.');
         }
 
         $source = $import->sourceForBookType();
@@ -66,8 +62,8 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
 
                 $response = $agent->prompt(
                     $prompt,
-                    provider: Lab::Gemini,
-                    model: $settings->model_name,
+                    provider: $settings->resolvedTextProvider(),
+                    model: $settings->resolvedTextModel(),
                     timeout: max(60, (int) $settings->search_timeout * 6),
                 );
 

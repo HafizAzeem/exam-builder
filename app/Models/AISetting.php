@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Ai\Enums\Lab;
 
 class AISetting extends Model
 {
@@ -19,6 +20,10 @@ class AISetting extends Model
         'gemini_api_key',
         'google_search_api_key',
         'google_cse_id',
+        'openrouter_api_key',
+        'openai_api_key',
+        'preferred_text_provider',
+        'openrouter_model',
         'max_urls_per_search',
         'max_pages_per_source',
         'search_timeout',
@@ -31,6 +36,8 @@ class AISetting extends Model
     protected $hidden = [
         'gemini_api_key',
         'google_search_api_key',
+        'openrouter_api_key',
+        'openai_api_key',
     ];
 
     protected $casts = [
@@ -41,6 +48,8 @@ class AISetting extends Model
         'enable_queue' => 'boolean',
         'gemini_api_key' => 'encrypted',
         'google_search_api_key' => 'encrypted',
+        'openrouter_api_key' => 'encrypted',
+        'openai_api_key' => 'encrypted',
         'max_urls_per_search' => 'integer',
         'max_pages_per_source' => 'integer',
         'search_timeout' => 'integer',
@@ -60,6 +69,7 @@ class AISetting extends Model
             'chunk_size' => 8000,
             'retry_count' => 3,
             'enable_queue' => true,
+            'preferred_text_provider' => 'gemini',
             'max_urls_per_search' => 10,
             'max_pages_per_source' => 20,
             'search_timeout' => 30,
@@ -70,19 +80,71 @@ class AISetting extends Model
         ]);
     }
 
+    /**
+     * Push DB credentials into runtime config.
+     * Super Admin AI Settings is the only source — clears env-based leftovers.
+     */
+    public function applyProviderConfig(): void
+    {
+        config([
+            'ai.providers.gemini.key' => $this->gemini_api_key,
+            'ai.providers.openrouter.key' => $this->openrouter_api_key,
+            'ai.providers.openai.key' => $this->openai_api_key,
+            'services.google_cse.key' => $this->google_search_api_key,
+            'services.google_cse.cx' => $this->google_cse_id,
+        ]);
+    }
+
+    public function resolvedTextProvider(): Lab
+    {
+        return match ($this->preferred_text_provider) {
+            'openrouter' => Lab::OpenRouter,
+            'openai' => Lab::OpenAI,
+            default => Lab::Gemini,
+        };
+    }
+
+    public function resolvedTextModel(): string
+    {
+        if ($this->preferred_text_provider === 'openrouter') {
+            return $this->openrouter_model ?: $this->model_name;
+        }
+
+        return $this->model_name;
+    }
+
     public function resolvedGeminiApiKey(): ?string
     {
-        return $this->gemini_api_key ?: config('ai.providers.gemini.key');
+        return filled($this->gemini_api_key) ? $this->gemini_api_key : null;
+    }
+
+    public function resolvedOpenRouterApiKey(): ?string
+    {
+        return filled($this->openrouter_api_key) ? $this->openrouter_api_key : null;
+    }
+
+    public function resolvedOpenAiApiKey(): ?string
+    {
+        return filled($this->openai_api_key) ? $this->openai_api_key : null;
     }
 
     public function resolvedGoogleSearchApiKey(): ?string
     {
-        return $this->google_search_api_key ?: config('services.google_cse.key');
+        return filled($this->google_search_api_key) ? $this->google_search_api_key : null;
     }
 
     public function resolvedGoogleCseId(): ?string
     {
-        return $this->google_cse_id ?: config('services.google_cse.cx');
+        return filled($this->google_cse_id) ? $this->google_cse_id : null;
+    }
+
+    public function isTextProviderConfigured(): bool
+    {
+        return match ($this->preferred_text_provider) {
+            'openrouter' => filled($this->resolvedOpenRouterApiKey()),
+            'openai' => filled($this->resolvedOpenAiApiKey()),
+            default => filled($this->resolvedGeminiApiKey()),
+        };
     }
 
     public function toPublicArray(): array
@@ -97,6 +159,8 @@ class AISetting extends Model
             'retry_count' => $this->retry_count,
             'enable_queue' => $this->enable_queue,
             'google_cse_id' => $this->google_cse_id,
+            'preferred_text_provider' => $this->preferred_text_provider ?: 'gemini',
+            'openrouter_model' => $this->openrouter_model,
             'max_urls_per_search' => $this->max_urls_per_search,
             'max_pages_per_source' => $this->max_pages_per_source,
             'search_timeout' => $this->search_timeout,
@@ -105,9 +169,14 @@ class AISetting extends Model
             'queue_size' => $this->queue_size,
             'max_source_bytes' => $this->max_source_bytes,
             'has_gemini_api_key' => filled($this->resolvedGeminiApiKey()),
+            'has_openrouter_api_key' => filled($this->resolvedOpenRouterApiKey()),
+            'has_openai_api_key' => filled($this->resolvedOpenAiApiKey()),
             'has_google_search_api_key' => filled($this->resolvedGoogleSearchApiKey()),
             'gemini_key_masked' => $this->maskSecret($this->resolvedGeminiApiKey()),
+            'openrouter_key_masked' => $this->maskSecret($this->resolvedOpenRouterApiKey()),
+            'openai_key_masked' => $this->maskSecret($this->resolvedOpenAiApiKey()),
             'google_search_key_masked' => $this->maskSecret($this->resolvedGoogleSearchApiKey()),
+            'text_provider_configured' => $this->isTextProviderConfigured(),
         ];
     }
 

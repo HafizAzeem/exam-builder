@@ -6,11 +6,15 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import { Head, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 const props = defineProps({
     settings: { type: Object, required: true },
     gemini_configured: { type: Boolean, default: false },
+    openrouter_configured: { type: Boolean, default: false },
+    openai_configured: { type: Boolean, default: false },
     google_search_configured: { type: Boolean, default: false },
+    text_provider_configured: { type: Boolean, default: false },
     providers: { type: Object, default: () => ({}) },
 });
 
@@ -22,7 +26,11 @@ const form = useForm({
     chunk_size: props.settings.chunk_size,
     retry_count: props.settings.retry_count,
     enable_queue: !!props.settings.enable_queue,
+    preferred_text_provider: props.settings.preferred_text_provider || 'gemini',
+    openrouter_model: props.settings.openrouter_model || '',
     gemini_api_key: '',
+    openrouter_api_key: '',
+    openai_api_key: '',
     google_search_api_key: '',
     google_cse_id: props.settings.google_cse_id || '',
     max_urls_per_search: props.settings.max_urls_per_search ?? 10,
@@ -33,8 +41,12 @@ const form = useForm({
     queue_size: props.settings.queue_size ?? 5,
     max_source_bytes: props.settings.max_source_bytes ?? 15000000,
     clear_gemini_api_key: false,
+    clear_openrouter_api_key: false,
+    clear_openai_api_key: false,
     clear_google_search_api_key: false,
 });
+
+const showOpenRouterModel = computed(() => form.preferred_text_provider === 'openrouter');
 
 const submit = () => {
     form.put(route('super-admin.ai-import.settings.update'));
@@ -51,24 +63,58 @@ const submit = () => {
 
         <div class="py-8">
             <div class="mx-auto max-w-3xl space-y-4 px-4 sm:px-6 lg:px-8">
-                <div class="rounded-lg border px-4 py-3 text-sm" :class="gemini_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
-                    Gemini ({{ providers.questions || 'gemini' }}):
-                    <strong>{{ gemini_configured ? 'Configured' : 'Missing' }}</strong>
-                    <span v-if="settings.gemini_key_masked" class="ms-2 font-mono text-xs">{{ settings.gemini_key_masked }}</span>
+                <div class="rounded-lg border px-4 py-3 text-sm" :class="text_provider_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                    Preferred text provider (<strong>{{ providers.preferred_text || 'gemini' }}</strong>):
+                    <strong>{{ text_provider_configured ? 'Ready' : 'Missing key' }}</strong>
                 </div>
-                <div class="rounded-lg border px-4 py-3 text-sm" :class="google_search_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
-                    Google Programmable Search ({{ providers.search || 'google_cse' }}):
-                    <strong>{{ google_search_configured ? 'Configured' : 'Missing' }}</strong>
-                    <span v-if="settings.google_search_key_masked" class="ms-2 font-mono text-xs">{{ settings.google_search_key_masked }}</span>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg border px-4 py-3 text-sm" :class="gemini_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                        Gemini:
+                        <strong>{{ gemini_configured ? 'Configured' : 'Missing' }}</strong>
+                        <div v-if="settings.gemini_key_masked" class="mt-1 font-mono text-xs">{{ settings.gemini_key_masked }}</div>
+                    </div>
+                    <div class="rounded-lg border px-4 py-3 text-sm" :class="openrouter_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                        OpenRouter:
+                        <strong>{{ openrouter_configured ? 'Configured' : 'Missing' }}</strong>
+                        <div v-if="settings.openrouter_key_masked" class="mt-1 font-mono text-xs">{{ settings.openrouter_key_masked }}</div>
+                    </div>
+                    <div class="rounded-lg border px-4 py-3 text-sm" :class="openai_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                        OpenAI:
+                        <strong>{{ openai_configured ? 'Configured' : 'Missing' }}</strong>
+                        <div v-if="settings.openai_key_masked" class="mt-1 font-mono text-xs">{{ settings.openai_key_masked }}</div>
+                    </div>
+                    <div class="rounded-lg border px-4 py-3 text-sm" :class="google_search_configured ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'">
+                        Google Search ({{ providers.search || 'google_cse' }}):
+                        <strong>{{ google_search_configured ? 'Configured' : 'Missing' }}</strong>
+                        <div v-if="settings.google_search_key_masked" class="mt-1 font-mono text-xs">{{ settings.google_search_key_masked }}</div>
+                    </div>
                 </div>
 
                 <form class="space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm" @submit.prevent="submit">
-                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Model</h3>
+                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Text Provider</h3>
+
+                    <div>
+                        <InputLabel value="Preferred provider (question extraction)" />
+                        <select v-model="form.preferred_text_provider" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="gemini">Gemini</option>
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="openai">OpenAI</option>
+                        </select>
+                        <InputError :message="form.errors.preferred_text_provider" class="mt-1" />
+                    </div>
 
                     <div>
                         <InputLabel value="Model Name" />
-                        <TextInput v-model="form.model_name" class="mt-1 block w-full" />
+                        <TextInput v-model="form.model_name" class="mt-1 block w-full" placeholder="gemini-2.5-flash" />
                         <InputError :message="form.errors.model_name" class="mt-1" />
+                    </div>
+
+                    <div v-if="showOpenRouterModel">
+                        <InputLabel value="OpenRouter model override (optional)" />
+                        <TextInput v-model="form.openrouter_model" class="mt-1 block w-full" placeholder="google/gemini-2.5-flash" />
+                        <p class="mt-1 text-xs text-gray-500">If blank, Model Name above is used with OpenRouter.</p>
+                        <InputError :message="form.errors.openrouter_model" class="mt-1" />
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">
@@ -113,25 +159,48 @@ const submit = () => {
                     </label>
 
                     <hr class="border-gray-200">
-                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Credentials</h3>
-                    <p class="text-xs text-gray-500">Leave blank to keep existing keys. Values are encrypted at rest and never returned in full.</p>
+                    <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">API Credentials</h3>
+                    <p class="text-xs text-gray-500">
+                        Stored encrypted in the database. Leave blank to keep the existing key.
+                        Keys are managed only here — not from <code>.env</code>.
+                    </p>
 
                     <div>
-                        <InputLabel value="Gemini API Key (optional override)" />
+                        <InputLabel value="Gemini API Key" />
                         <TextInput v-model="form.gemini_api_key" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="••••••••" />
                         <label class="mt-2 flex items-center gap-2 text-sm text-gray-600">
                             <Checkbox v-model:checked="form.clear_gemini_api_key" />
-                            Clear stored Gemini key (fall back to .env)
+                            Clear Gemini key
                         </label>
                         <InputError :message="form.errors.gemini_api_key" class="mt-1" />
                     </div>
 
                     <div>
-                        <InputLabel value="Google Search API Key" />
+                        <InputLabel value="OpenRouter API Key" />
+                        <TextInput v-model="form.openrouter_api_key" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="••••••••" />
+                        <label class="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                            <Checkbox v-model:checked="form.clear_openrouter_api_key" />
+                            Clear OpenRouter key
+                        </label>
+                        <InputError :message="form.errors.openrouter_api_key" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <InputLabel value="OpenAI API Key" />
+                        <TextInput v-model="form.openai_api_key" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="••••••••" />
+                        <label class="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                            <Checkbox v-model:checked="form.clear_openai_api_key" />
+                            Clear OpenAI key
+                        </label>
+                        <InputError :message="form.errors.openai_api_key" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <InputLabel value="Google Programmable Search API Key" />
                         <TextInput v-model="form.google_search_api_key" type="password" class="mt-1 block w-full" autocomplete="new-password" placeholder="••••••••" />
                         <label class="mt-2 flex items-center gap-2 text-sm text-gray-600">
                             <Checkbox v-model:checked="form.clear_google_search_api_key" />
-                            Clear stored Google Search key (fall back to .env)
+                            Clear Google Search key
                         </label>
                         <InputError :message="form.errors.google_search_api_key" class="mt-1" />
                     </div>

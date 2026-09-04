@@ -3,6 +3,7 @@
 namespace App\Http\Requests\SuperAdmin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateAISettingsRequest extends FormRequest
 {
@@ -21,7 +22,11 @@ class UpdateAISettingsRequest extends FormRequest
             'chunk_size' => ['required', 'integer', 'min:1000', 'max:50000'],
             'retry_count' => ['required', 'integer', 'min:1', 'max:10'],
             'enable_queue' => ['required', 'boolean'],
+            'preferred_text_provider' => ['required', Rule::in(['gemini', 'openrouter', 'openai'])],
+            'openrouter_model' => ['nullable', 'string', 'max:150'],
             'gemini_api_key' => ['nullable', 'string', 'max:500'],
+            'openrouter_api_key' => ['nullable', 'string', 'max:500'],
+            'openai_api_key' => ['nullable', 'string', 'max:500'],
             'google_search_api_key' => ['nullable', 'string', 'max:500'],
             'google_cse_id' => ['nullable', 'string', 'max:100'],
             'max_urls_per_search' => ['required', 'integer', 'min:1', 'max:20'],
@@ -32,6 +37,8 @@ class UpdateAISettingsRequest extends FormRequest
             'queue_size' => ['required', 'integer', 'min:1', 'max:20'],
             'max_source_bytes' => ['required', 'integer', 'min:100000', 'max:50000000'],
             'clear_gemini_api_key' => ['sometimes', 'boolean'],
+            'clear_openrouter_api_key' => ['sometimes', 'boolean'],
+            'clear_openai_api_key' => ['sometimes', 'boolean'],
             'clear_google_search_api_key' => ['sometimes', 'boolean'],
         ];
     }

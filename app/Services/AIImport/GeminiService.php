@@ -6,7 +6,6 @@ use App\Ai\Agents\QuestionExtractionAgent;
 use App\Models\AIImport;
 use App\Models\AIImportLog;
 use App\Models\AISetting;
-use Laravel\Ai\Enums\Lab;
 use Throwable;
 
 class GeminiService
@@ -21,6 +20,12 @@ class GeminiService
         ?string $chunkTitle = null,
     ): array {
         $settings = AISetting::current();
+        $settings->applyProviderConfig();
+
+        if (! $settings->isTextProviderConfigured()) {
+            throw new \RuntimeException('AI text provider is not configured. Set Gemini / OpenRouter / OpenAI key in AI Settings.');
+        }
+
         $source = $import->sourceForBookType();
 
         $prompt = $this->buildUserPrompt($import, $chunkText, $chunkTitle, $source);
@@ -48,8 +53,8 @@ class GeminiService
 
                 $response = $agent->prompt(
                     $prompt,
-                    provider: Lab::Gemini,
-                    model: $settings->model_name,
+                    provider: $settings->resolvedTextProvider(),
+                    model: $settings->resolvedTextModel(),
                     timeout: 180,
                 );
 

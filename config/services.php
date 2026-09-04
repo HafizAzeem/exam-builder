@@ -36,8 +36,9 @@ return [
     ],
 
     'google_cse' => [
-        'key' => env('GOOGLE_CSE_API_KEY'),
-        'cx' => env('GOOGLE_CSE_ID'),
+        // Keys are set at runtime from Super Admin AI Settings.
+        'key' => null,
+        'cx' => null,
     ],
 
 ];
