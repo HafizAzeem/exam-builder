@@ -80,6 +80,7 @@ class CurriculumSeeder extends Seeder
         $chapterCount = match ($subject->name_en) {
             'Mathematics' => 8,
             'Physics', 'Chemistry', 'Biology', 'Computer Science' => 6,
+            'English' => ($gradeNumber === 9 ? 12 : ($gradeNumber <= 5 ? 10 : 7)),
             default => ($gradeNumber <= 5 ? 10 : 7),
         };
 

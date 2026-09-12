@@ -18,12 +18,7 @@ class AISetting extends Model
         'retry_count',
         'enable_queue',
         'gemini_api_key',
-        'google_search_api_key',
-        'google_cse_id',
-        'openrouter_api_key',
-        'openai_api_key',
         'preferred_text_provider',
-        'openrouter_model',
         'max_urls_per_search',
         'max_pages_per_source',
         'search_timeout',
@@ -35,9 +30,6 @@ class AISetting extends Model
 
     protected $hidden = [
         'gemini_api_key',
-        'google_search_api_key',
-        'openrouter_api_key',
-        'openai_api_key',
     ];
 
     protected $casts = [
@@ -47,9 +39,6 @@ class AISetting extends Model
         'retry_count' => 'integer',
         'enable_queue' => 'boolean',
         'gemini_api_key' => 'encrypted',
-        'google_search_api_key' => 'encrypted',
-        'openrouter_api_key' => 'encrypted',
-        'openai_api_key' => 'encrypted',
         'max_urls_per_search' => 'integer',
         'max_pages_per_source' => 'integer',
         'search_timeout' => 'integer',
@@ -62,7 +51,7 @@ class AISetting extends Model
     public static function current(): self
     {
         return static::query()->firstOrCreate([], [
-            'model_name' => 'gemini-2.5-flash',
+            'model_name' => 'gemini-3.5-flash-lite',
             'temperature' => 0.2,
             'max_tokens' => 8192,
             'prompt_template' => static::defaultPromptTemplate(),
@@ -88,29 +77,46 @@ class AISetting extends Model
     {
         config([
             'ai.providers.gemini.key' => $this->gemini_api_key,
-            'ai.providers.openrouter.key' => $this->openrouter_api_key,
-            'ai.providers.openai.key' => $this->openai_api_key,
-            'services.google_cse.key' => $this->google_search_api_key,
-            'services.google_cse.cx' => $this->google_cse_id,
+            'ai.providers.openrouter.key' => null,
+            'ai.providers.openai.key' => null,
+            'services.google_cse.key' => null,
+            'services.google_cse.cx' => null,
         ]);
     }
 
     public function resolvedTextProvider(): Lab
     {
-        return match ($this->preferred_text_provider) {
-            'openrouter' => Lab::OpenRouter,
-            'openai' => Lab::OpenAI,
-            default => Lab::Gemini,
-        };
+        return Lab::Gemini;
     }
 
     public function resolvedTextModel(): string
     {
-        if ($this->preferred_text_provider === 'openrouter') {
-            return $this->openrouter_model ?: $this->model_name;
-        }
+        $model = $this->model_name ?: 'gemini-3.5-flash-lite';
 
-        return $this->model_name;
+        return static::migrateDeprecatedModel($model);
+    }
+
+    /**
+     * Map shut-down / new-user-blocked model IDs to current Gemini 3.x models.
+     */
+    public static function migrateDeprecatedModel(string $model): string
+    {
+        return match ($model) {
+            'gemini-2.5-flash',
+            'gemini-2.5-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-001',
+            'gemini-2.0-flash-lite',
+            'gemini-2.0-flash-lite-001',
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-001',
+            'gemini-1.5-flash-002' => 'gemini-3.5-flash-lite',
+            'gemini-2.5-pro',
+            'gemini-1.5-pro',
+            'gemini-1.5-pro-001',
+            'gemini-1.5-pro-002' => 'gemini-3.5-flash',
+            default => $model,
+        };
     }
 
     public function resolvedGeminiApiKey(): ?string
@@ -118,33 +124,9 @@ class AISetting extends Model
         return filled($this->gemini_api_key) ? $this->gemini_api_key : null;
     }
 
-    public function resolvedOpenRouterApiKey(): ?string
-    {
-        return filled($this->openrouter_api_key) ? $this->openrouter_api_key : null;
-    }
-
-    public function resolvedOpenAiApiKey(): ?string
-    {
-        return filled($this->openai_api_key) ? $this->openai_api_key : null;
-    }
-
-    public function resolvedGoogleSearchApiKey(): ?string
-    {
-        return filled($this->google_search_api_key) ? $this->google_search_api_key : null;
-    }
-
-    public function resolvedGoogleCseId(): ?string
-    {
-        return filled($this->google_cse_id) ? $this->google_cse_id : null;
-    }
-
     public function isTextProviderConfigured(): bool
     {
-        return match ($this->preferred_text_provider) {
-            'openrouter' => filled($this->resolvedOpenRouterApiKey()),
-            'openai' => filled($this->resolvedOpenAiApiKey()),
-            default => filled($this->resolvedGeminiApiKey()),
-        };
+        return filled($this->resolvedGeminiApiKey());
     }
 
     public function toPublicArray(): array
@@ -158,9 +140,7 @@ class AISetting extends Model
             'chunk_size' => $this->chunk_size,
             'retry_count' => $this->retry_count,
             'enable_queue' => $this->enable_queue,
-            'google_cse_id' => $this->google_cse_id,
-            'preferred_text_provider' => $this->preferred_text_provider ?: 'gemini',
-            'openrouter_model' => $this->openrouter_model,
+            'preferred_text_provider' => 'gemini',
             'max_urls_per_search' => $this->max_urls_per_search,
             'max_pages_per_source' => $this->max_pages_per_source,
             'search_timeout' => $this->search_timeout,
@@ -169,13 +149,7 @@ class AISetting extends Model
             'queue_size' => $this->queue_size,
             'max_source_bytes' => $this->max_source_bytes,
             'has_gemini_api_key' => filled($this->resolvedGeminiApiKey()),
-            'has_openrouter_api_key' => filled($this->resolvedOpenRouterApiKey()),
-            'has_openai_api_key' => filled($this->resolvedOpenAiApiKey()),
-            'has_google_search_api_key' => filled($this->resolvedGoogleSearchApiKey()),
             'gemini_key_masked' => $this->maskSecret($this->resolvedGeminiApiKey()),
-            'openrouter_key_masked' => $this->maskSecret($this->resolvedOpenRouterApiKey()),
-            'openai_key_masked' => $this->maskSecret($this->resolvedOpenAiApiKey()),
-            'google_search_key_masked' => $this->maskSecret($this->resolvedGoogleSearchApiKey()),
             'text_provider_configured' => $this->isTextProviderConfigured(),
         ];
     }

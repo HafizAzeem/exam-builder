@@ -199,6 +199,21 @@ class Class9TopicsSeeder extends Seeder
                 'Computer Networks',
                 'Computer Security and Ethics',
             ], 'کمپیوٹر'),
+            // PCTB Class 9 English (NCP 2023): 11 textbook units + Grammar & Composition companion.
+            'English' => $this->genericChapters('English', 'انگریزی', [
+                'The Saviour of Mankind',
+                'Patriotism',
+                'Daffodils',
+                'Hazrat Asma (R.A.)',
+                'Women Empowerment through Entrepreneurship',
+                'The Value of Time',
+                'If',
+                'The Impact of Globalisation on Culture and Economy',
+                'Quality Education: A Key to Success',
+                'The Silent Predator and the Majestic Prey — Snow Leopard and Markhor',
+                'The Dear Departed',
+                'English Grammar and Composition',
+            ], 'انگریزی'),
             default => $this->genericChapters(
                 $subjectName,
                 $subjectName,

@@ -185,25 +185,47 @@ class DuplicateAndImportTest extends TestCase
         $this->assertSame('Lahore Board', $question->pastPaperTag->board_name);
     }
 
-    public function test_google_cse_provider_parses_results(): void
+    public function test_gemini_web_search_provider_parses_results(): void
     {
-        config([
-            'services.google_cse.key' => 'test-key',
-            'services.google_cse.cx' => 'test-cx',
+        AISetting::current()->update([
+            'model_name' => 'gemini-3.5-flash-lite',
+            'gemini_api_key' => 'test-gemini-key',
         ]);
 
         Http::fake([
-            'www.googleapis.com/customsearch/v1*' => Http::response([
-                'items' => [
+            'generativelanguage.googleapis.com/*' => Http::response([
+                'candidates' => [
                     [
-                        'title' => 'Physics Paper',
-                        'link' => 'https://example.com/a.pdf',
-                        'snippet' => 'Past paper',
-                    ],
-                    [
-                        'title' => 'Physics Paper Dup',
-                        'link' => 'https://example.com/a.pdf',
-                        'snippet' => 'Past paper',
+                        'content' => [
+                            'parts' => [
+                                [
+                                    'text' => json_encode([
+                                        'results' => [
+                                            [
+                                                'title' => 'Physics Paper',
+                                                'url' => 'https://example.com/a.pdf',
+                                                'snippet' => 'Past paper',
+                                            ],
+                                            [
+                                                'title' => 'Physics Paper Dup',
+                                                'url' => 'https://example.com/a.pdf',
+                                                'snippet' => 'Past paper',
+                                            ],
+                                        ],
+                                    ]),
+                                ],
+                            ],
+                        ],
+                        'groundingMetadata' => [
+                            'groundingChunks' => [
+                                [
+                                    'web' => [
+                                        'uri' => 'https://example.com/b.pdf',
+                                        'title' => 'Another Paper',
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
                 ],
             ], 200),
@@ -212,7 +234,9 @@ class DuplicateAndImportTest extends TestCase
         $results = app(WebSearchProvider::class)
             ->search('Lahore Board Physics', 5);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('https://example.com/a.pdf', $results[0]['url']);
+        $this->assertSame('gemini', app(WebSearchProvider::class)->name());
+        $this->assertCount(2, $results);
+        $this->assertSame('https://example.com/b.pdf', $results[0]['url']);
+        $this->assertSame('https://example.com/a.pdf', $results[1]['url']);
     }
 }

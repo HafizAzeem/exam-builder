@@ -13,7 +13,7 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
 {
     public function name(): string
     {
-        return AISetting::current()->preferred_text_provider ?: 'gemini';
+        return 'gemini';
     }
 
     public function isConfigured(): bool
@@ -32,7 +32,7 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
         $settings->applyProviderConfig();
 
         if (! $settings->isTextProviderConfigured()) {
-            throw new \RuntimeException('AI text provider is not configured. Set keys in Super Admin AI Settings.');
+            throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
         }
 
         $source = $import->sourceForBookType();

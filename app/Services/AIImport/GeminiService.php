@@ -23,7 +23,7 @@ class GeminiService
         $settings->applyProviderConfig();
 
         if (! $settings->isTextProviderConfigured()) {
-            throw new \RuntimeException('AI text provider is not configured. Set Gemini / OpenRouter / OpenAI key in AI Settings.');
+            throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
         }
 
         $source = $import->sourceForBookType();

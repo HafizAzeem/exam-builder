@@ -31,6 +31,19 @@ class ReviewController extends Controller
     {
         $this->authorize('view', $import);
 
+        $status = $request->string('status')->toString();
+        if ($status === '') {
+            $status = 'pending';
+        }
+
+        $statusCounts = [
+            'pending' => $import->questions()->where('status', 'pending')->count(),
+            'approved' => $import->questions()->where('status', 'approved')->count(),
+            'rejected' => $import->questions()->where('status', 'rejected')->count(),
+            'imported' => $import->questions()->where('status', 'imported')->count(),
+            'all' => $import->questions()->count(),
+        ];
+
         $questions = $import->questions()
             ->with([
                 'chapter:id,number,title_en',
@@ -38,7 +51,7 @@ class ReviewController extends Controller
                 'paperSource:id,url,title,status,extracted_text',
                 'duplicateOf:id,text_en,text_ur,type,chapter_id,topic_id,difficulty,estimated_marks',
             ])
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($request->filled('match_status'), fn ($q) => $q->where('match_status', $request->string('match_status')))
             ->when($request->boolean('duplicates_only'), fn ($q) => $q->where('is_duplicate', true))
             ->orderBy('id')
@@ -60,7 +73,11 @@ class ReviewController extends Controller
             'questions' => $questions,
             'chapters' => $chapters,
             'topics' => $topics,
-            'filters' => $request->only(['status', 'match_status', 'duplicates_only']),
+            'statusCounts' => $statusCounts,
+            'filters' => array_merge(
+                $request->only(['match_status', 'duplicates_only']),
+                ['status' => $status],
+            ),
         ]);
     }
 

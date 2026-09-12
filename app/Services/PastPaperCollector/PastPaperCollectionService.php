@@ -89,10 +89,10 @@ class PastPaperCollectionService
 
         try {
             if (! $this->searchProvider->isConfigured()) {
-                throw new \RuntimeException('Web search provider is not configured.');
+                throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
             }
             if (! $this->questionProcessor->isConfigured()) {
-                throw new \RuntimeException('Question processing provider is not configured.');
+                throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
             }
 
             $collection->markStage('searching');

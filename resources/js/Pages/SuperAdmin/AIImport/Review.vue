@@ -12,6 +12,7 @@ const props = defineProps({
     chapters: { type: Array, required: true },
     topics: { type: Array, required: true },
     filters: { type: Object, default: () => ({}) },
+    statusCounts: { type: Object, default: () => ({}) },
 });
 
 const selected = ref([]);
@@ -35,6 +36,16 @@ const bulkForm = useForm({
     source: null,
     status: null,
 });
+
+const activeStatus = computed(() => props.filters.status || 'pending');
+
+const statusTabs = computed(() => [
+    { key: 'pending', label: 'Pending', count: props.statusCounts.pending ?? 0 },
+    { key: 'approved', label: 'Approved', count: props.statusCounts.approved ?? 0 },
+    { key: 'rejected', label: 'Rejected', count: props.statusCounts.rejected ?? 0 },
+    { key: 'imported', label: 'Imported', count: props.statusCounts.imported ?? 0 },
+    { key: 'all', label: 'All', count: props.statusCounts.all ?? 0 },
+]);
 
 const allSelected = computed(() =>
     props.questions.data.length > 0 && selected.value.length === props.questions.data.length
@@ -93,10 +104,15 @@ const importApproved = () => {
 };
 
 const applyFilters = (key, value) => {
+    selected.value = [];
     router.get(route('super-admin.ai-import.review', props.aiImport.id), {
         ...props.filters,
         [key]: value || undefined,
     }, { preserveState: true, replace: true });
+};
+
+const setStatusTab = (status) => {
+    applyFilters('status', status);
 };
 </script>
 
@@ -123,68 +139,89 @@ const applyFilters = (key, value) => {
 
         <div class="py-6">
             <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                    <select
-                        class="rounded-md border-gray-300 text-sm"
-                        :value="filters.status || ''"
-                        @change="applyFilters('status', $event.target.value)"
-                    >
-                        <option value="">All statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="imported">Imported</option>
-                        <option value="duplicate">Duplicate</option>
-                    </select>
-                    <select
-                        class="rounded-md border-gray-300 text-sm"
-                        :value="filters.match_status || ''"
-                        @change="applyFilters('match_status', $event.target.value)"
-                    >
-                        <option value="">All match states</option>
-                        <option value="matched">Matched</option>
-                        <option value="unmatched_chapter">Unmatched chapter</option>
-                        <option value="unmatched_topic">Unmatched topic</option>
-                        <option value="manual">Manual</option>
-                    </select>
-                    <label class="flex items-center gap-2 text-sm text-gray-600">
-                        <input
-                            type="checkbox"
-                            :checked="!!filters.duplicates_only"
-                            @change="applyFilters('duplicates_only', $event.target.checked ? 1 : '')"
-                        >
-                        Duplicates only
-                    </label>
-                    <div class="ms-auto flex flex-wrap gap-2">
-                        <SecondaryButton :disabled="!selected.length" @click="runBulk('approve')">Bulk Approve</SecondaryButton>
-                        <DangerButton :disabled="!selected.length" @click="runBulk('reject')">Bulk Reject</DangerButton>
-                        <SecondaryButton
-                            :disabled="!selected.length || !bulkForm.chapter_id"
-                            @click="runBulk('edit')"
-                        >
-                            Bulk Map Chapter
-                        </SecondaryButton>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4 text-sm">
-                    <div>
-                        <label class="text-gray-500">Bulk chapter</label>
-                        <select v-model="bulkForm.chapter_id" class="mt-1 block rounded-md border-gray-300">
-                            <option :value="null">—</option>
-                            <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-gray-500">Bulk topic</label>
-                        <select v-model="bulkForm.topic_id" class="mt-1 block rounded-md border-gray-300">
-                            <option :value="null">—</option>
-                            <option v-for="t in topicsFor(bulkForm.chapter_id)" :key="t.id" :value="t.id">{{ t.title_en }}</option>
-                        </select>
-                    </div>
-                </div>
-
                 <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex flex-wrap gap-1 border-b border-gray-200 bg-gray-50 px-2 pt-2">
+                        <button
+                            v-for="tab in statusTabs"
+                            :key="tab.key"
+                            type="button"
+                            class="rounded-t-md px-4 py-2 text-sm font-medium transition"
+                            :class="activeStatus === tab.key
+                                ? 'border border-b-0 border-gray-200 bg-white text-indigo-700'
+                                : 'text-gray-600 hover:bg-white/70 hover:text-gray-900'"
+                            @click="setStatusTab(tab.key)"
+                        >
+                            {{ tab.label }}
+                            <span
+                                class="ms-1.5 inline-flex min-w-[1.25rem] justify-center rounded-full px-1.5 py-0.5 text-xs"
+                                :class="activeStatus === tab.key ? 'bg-indigo-100 text-indigo-800' : 'bg-gray-200 text-gray-700'"
+                            >
+                                {{ tab.count }}
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
+                        <select
+                            class="rounded-md border-gray-300 text-sm"
+                            :value="filters.match_status || ''"
+                            @change="applyFilters('match_status', $event.target.value)"
+                        >
+                            <option value="">All match states</option>
+                            <option value="matched">Matched</option>
+                            <option value="unmatched_chapter">Unmatched chapter</option>
+                            <option value="unmatched_topic">Unmatched topic</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                        <label class="flex items-center gap-2 text-sm text-gray-600">
+                            <input
+                                type="checkbox"
+                                :checked="!!filters.duplicates_only"
+                                @change="applyFilters('duplicates_only', $event.target.checked ? 1 : '')"
+                            >
+                            Duplicates only
+                        </label>
+                        <div class="ms-auto flex flex-wrap gap-2">
+                            <SecondaryButton
+                                v-if="activeStatus === 'pending' || activeStatus === 'all'"
+                                :disabled="!selected.length"
+                                @click="runBulk('approve')"
+                            >
+                                Bulk Approve
+                            </SecondaryButton>
+                            <DangerButton
+                                v-if="activeStatus === 'pending' || activeStatus === 'all' || activeStatus === 'approved'"
+                                :disabled="!selected.length"
+                                @click="runBulk('reject')"
+                            >
+                                Bulk Reject
+                            </DangerButton>
+                            <SecondaryButton
+                                :disabled="!selected.length || !bulkForm.chapter_id"
+                                @click="runBulk('edit')"
+                            >
+                                Bulk Map Chapter
+                            </SecondaryButton>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3 border-b border-dashed border-gray-200 bg-gray-50 p-4 text-sm">
+                        <div>
+                            <label class="text-gray-500">Bulk chapter</label>
+                            <select v-model="bulkForm.chapter_id" class="mt-1 block rounded-md border-gray-300">
+                                <option :value="null">—</option>
+                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.title_en }} (Chapter No: {{ c.number }})</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-gray-500">Bulk topic</label>
+                            <select v-model="bulkForm.topic_id" class="mt-1 block rounded-md border-gray-300">
+                                <option :value="null">—</option>
+                                <option v-for="t in topicsFor(bulkForm.chapter_id)" :key="t.id" :value="t.id">{{ t.title_en }}</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-sm">
                             <thead class="bg-gray-50">
@@ -247,12 +284,15 @@ const applyFilters = (key, value) => {
                                         <template v-if="editingId === q.id">
                                             <select v-model="editForm.chapter_id" class="w-full rounded-md border-gray-300 text-sm" @change="editForm.topic_id = null">
                                                 <option :value="null">Select</option>
-                                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
+                                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.title_en }} (Chapter No: {{ c.number }})</option>
                                             </select>
                                         </template>
                                         <template v-else>
-                                            <span v-if="q.chapter">{{ q.chapter.number }}. {{ q.chapter.title_en }}</span>
-                                            <span v-else class="text-rose-600">{{ q.chapter_title || 'Unmatched' }}</span>
+                                            <span v-if="q.chapter">{{ q.chapter.title_en }} (Chapter No: {{ q.chapter.number }})</span>
+                                            <span v-else class="text-rose-600">
+                                                {{ q.chapter_title || 'Unmatched' }}
+                                                <template v-if="q.chapter_number"> (Chapter No: {{ q.chapter_number }})</template>
+                                            </span>
                                         </template>
                                     </td>
                                     <td class="px-3 py-3 align-top">
@@ -278,7 +318,18 @@ const applyFilters = (key, value) => {
                                     </td>
                                     <td class="px-3 py-3 align-top">{{ q.source }}</td>
                                     <td class="px-3 py-3 align-top">
-                                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs capitalize">{{ q.status }}</span>
+                                        <span
+                                            class="rounded-full px-2 py-0.5 text-xs capitalize"
+                                            :class="{
+                                                'bg-amber-100 text-amber-800': q.status === 'pending',
+                                                'bg-emerald-100 text-emerald-800': q.status === 'approved',
+                                                'bg-rose-100 text-rose-800': q.status === 'rejected',
+                                                'bg-indigo-100 text-indigo-800': q.status === 'imported',
+                                                'bg-gray-100 text-gray-700': !['pending','approved','rejected','imported'].includes(q.status),
+                                            }"
+                                        >
+                                            {{ q.status }}
+                                        </span>
                                     </td>
                                     <td class="space-y-1 px-3 py-3 text-right align-top">
                                         <template v-if="editingId === q.id">
@@ -287,8 +338,22 @@ const applyFilters = (key, value) => {
                                         </template>
                                         <template v-else>
                                             <button type="button" class="block w-full text-indigo-600" @click="startEdit(q)">Edit</button>
-                                            <button type="button" class="block w-full text-emerald-600" @click="approve(q)">Approve</button>
-                                            <button type="button" class="block w-full text-rose-600" @click="reject(q)">Reject</button>
+                                            <button
+                                                v-if="q.status === 'pending' || q.status === 'rejected'"
+                                                type="button"
+                                                class="block w-full text-emerald-600"
+                                                @click="approve(q)"
+                                            >
+                                                Approve
+                                            </button>
+                                            <button
+                                                v-if="q.status === 'pending' || q.status === 'approved'"
+                                                type="button"
+                                                class="block w-full text-rose-600"
+                                                @click="reject(q)"
+                                            >
+                                                Reject
+                                            </button>
                                             <button
                                                 v-if="q.is_duplicate && q.duplicate_of_question_id"
                                                 type="button"
@@ -301,7 +366,9 @@ const applyFilters = (key, value) => {
                                     </td>
                                 </tr>
                                 <tr v-if="!questions.data.length">
-                                    <td colspan="8" class="px-4 py-10 text-center text-gray-500">No questions to review.</td>
+                                    <td colspan="8" class="px-4 py-10 text-center text-gray-500">
+                                        No {{ activeStatus === 'all' ? '' : activeStatus + ' ' }}questions to review.
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
