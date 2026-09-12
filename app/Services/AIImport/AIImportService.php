@@ -43,6 +43,34 @@ class AIImportService
         return $import->fresh(['grade', 'subject', 'user']);
     }
 
+    public function createFromPastedText(array $data, string $rawText, int $userId): AIImport
+    {
+        $text = trim(preg_replace("/\r\n?/", "\n", $rawText) ?? $rawText);
+
+        $import = AIImport::create([
+            'user_id' => $userId,
+            'grade_id' => $data['grade_id'],
+            'subject_id' => $data['subject_id'],
+            'book_type' => $data['book_type'],
+            'board' => $data['board'] ?? null,
+            'year' => $data['year'] ?? null,
+            'session' => $data['session'] ?? null,
+            'language' => $data['language'] ?? 'english',
+            'original_filename' => 'pasted-text-'.now()->format('Ymd-His').'.txt',
+            'stored_path' => '',
+            'mime_type' => 'text/plain',
+            'file_size' => strlen($text),
+            'status' => 'uploaded',
+        ]);
+
+        $path = "ai-imports/{$import->id}/".Str::uuid()->toString().'.txt';
+        Storage::disk($this->disk())->put($path, $text);
+
+        $import->update(['stored_path' => $path]);
+
+        return $import->fresh(['grade', 'subject', 'user']);
+    }
+
     public function updateProgress(AIImport $import, int $processedChunks): void
     {
         $total = max(1, (int) $import->total_chunks);

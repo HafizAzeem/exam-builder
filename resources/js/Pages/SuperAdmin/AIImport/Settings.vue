@@ -6,7 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
     settings: { type: Object, required: true },
@@ -16,7 +16,31 @@ const props = defineProps({
     google_search_configured: { type: Boolean, default: false },
     text_provider_configured: { type: Boolean, default: false },
     providers: { type: Object, default: () => ({}) },
+    model_presets: { type: Object, default: () => ({}) },
 });
+
+const CUSTOM = '__custom__';
+
+const geminiPresets = computed(() => props.model_presets.gemini || [
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (recommended)' },
+    { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+]);
+
+const openaiPresets = computed(() => props.model_presets.openai || [
+    { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
+    { id: 'gpt-4o', label: 'GPT-4o' },
+    { id: 'gpt-4.1-mini', label: 'GPT-4.1 mini' },
+]);
+
+const openrouterPresets = computed(() => props.model_presets.openrouter || [
+    { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B (free)', free: true },
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (free)', free: true },
+    { id: 'qwen/qwen3-4b:free', label: 'Qwen3 4B (free)', free: true },
+    { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash via OpenRouter' },
+    { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini via OpenRouter' },
+]);
 
 const form = useForm({
     model_name: props.settings.model_name,
@@ -46,7 +70,71 @@ const form = useForm({
     clear_google_search_api_key: false,
 });
 
+const matchPreset = (value, presets) => {
+    const found = presets.find((p) => p.id === value);
+    return found ? found.id : CUSTOM;
+};
+
+const modelPreset = ref(matchPreset(
+    form.model_name,
+    form.preferred_text_provider === 'openai' ? openaiPresets.value : geminiPresets.value,
+));
+const openrouterPreset = ref(matchPreset(form.openrouter_model, openrouterPresets.value));
+
 const showOpenRouterModel = computed(() => form.preferred_text_provider === 'openrouter');
+const showOpenAiModel = computed(() => form.preferred_text_provider === 'openai');
+const showGeminiModel = computed(() => form.preferred_text_provider === 'gemini');
+
+const activeModelPresets = computed(() => {
+    if (showOpenAiModel.value) {
+        return openaiPresets.value;
+    }
+    return geminiPresets.value;
+});
+
+const activeModel = computed(() => {
+    if (showOpenRouterModel.value) {
+        return form.openrouter_model || form.model_name || '—';
+    }
+    return form.model_name || '—';
+});
+
+watch(() => form.preferred_text_provider, (provider) => {
+    if (provider === 'openrouter') {
+        openrouterPreset.value = matchPreset(form.openrouter_model, openrouterPresets.value);
+        if (!form.openrouter_model) {
+            const free = openrouterPresets.value.find((p) => p.free) || openrouterPresets.value[0];
+            if (free) {
+                form.openrouter_model = free.id;
+                openrouterPreset.value = free.id;
+            }
+        }
+        return;
+    }
+
+    const presets = provider === 'openai' ? openaiPresets.value : geminiPresets.value;
+    modelPreset.value = matchPreset(form.model_name, presets);
+});
+
+watch(modelPreset, (value) => {
+    if (value !== CUSTOM) {
+        form.model_name = value;
+    }
+});
+
+watch(openrouterPreset, (value) => {
+    if (value !== CUSTOM) {
+        form.openrouter_model = value;
+    }
+});
+
+watch(() => form.model_name, (value) => {
+    modelPreset.value = matchPreset(value, activeModelPresets.value);
+});
+
+watch(() => form.openrouter_model, (value) => {
+    openrouterPreset.value = matchPreset(value, openrouterPresets.value);
+});
 
 const submit = () => {
     form.put(route('super-admin.ai-import.settings.update'));
@@ -104,17 +192,63 @@ const submit = () => {
                         <InputError :message="form.errors.preferred_text_provider" class="mt-1" />
                     </div>
 
-                    <div>
-                        <InputLabel value="Model Name" />
-                        <TextInput v-model="form.model_name" class="mt-1 block w-full" placeholder="gemini-2.5-flash" />
-                        <InputError :message="form.errors.model_name" class="mt-1" />
+                    <div class="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                        Active model for imports:
+                        <strong class="ml-1 font-mono text-xs sm:text-sm">{{ activeModel }}</strong>
                     </div>
 
-                    <div v-if="showOpenRouterModel">
-                        <InputLabel value="OpenRouter model override (optional)" />
-                        <TextInput v-model="form.openrouter_model" class="mt-1 block w-full" placeholder="google/gemini-2.5-flash" />
-                        <p class="mt-1 text-xs text-gray-500">If blank, Model Name above is used with OpenRouter.</p>
-                        <InputError :message="form.errors.openrouter_model" class="mt-1" />
+                    <div v-if="!showOpenRouterModel" class="space-y-3">
+                        <div>
+                            <InputLabel :value="showOpenAiModel ? 'OpenAI model preset' : 'Gemini model preset'" />
+                            <select v-model="modelPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <option v-for="preset in activeModelPresets" :key="preset.id" :value="preset.id">
+                                    {{ preset.label }}
+                                </option>
+                                <option :value="CUSTOM">Custom model ID…</option>
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Model ID (editable)" />
+                            <TextInput
+                                v-model="form.model_name"
+                                class="mt-1 block w-full font-mono text-sm"
+                                :placeholder="showOpenAiModel ? 'gpt-4o-mini' : 'gemini-2.5-flash'"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">
+                                Pick a preset or type any model ID. Saved in AI settings and used for every import.
+                            </p>
+                            <InputError :message="form.errors.model_name" class="mt-1" />
+                        </div>
+                    </div>
+
+                    <div v-else class="space-y-3">
+                        <div>
+                            <InputLabel value="OpenRouter model preset" />
+                            <select v-model="openrouterPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <option v-for="preset in openrouterPresets" :key="preset.id" :value="preset.id">
+                                    {{ preset.label }}
+                                </option>
+                                <option :value="CUSTOM">Custom model ID…</option>
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="OpenRouter model ID (editable)" />
+                            <TextInput
+                                v-model="form.openrouter_model"
+                                class="mt-1 block w-full font-mono text-sm"
+                                placeholder="google/gemma-4-31b-it:free"
+                            />
+                            <p class="mt-1 text-xs text-gray-500">
+                                Free models end with <code>:free</code> (e.g. <code>google/gemma-4-31b-it:free</code>).
+                                No OpenRouter top-up needed for those, but they can be rate-limited.
+                            </p>
+                            <InputError :message="form.errors.openrouter_model" class="mt-1" />
+                        </div>
+                        <div>
+                            <InputLabel value="Fallback Model Name (optional)" />
+                            <TextInput v-model="form.model_name" class="mt-1 block w-full font-mono text-sm" placeholder="Used only if OpenRouter model ID is blank" />
+                            <InputError :message="form.errors.model_name" class="mt-1" />
+                        </div>
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-2">

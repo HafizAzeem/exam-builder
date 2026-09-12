@@ -34,6 +34,26 @@ class SettingsController extends Controller
                 'questions' => $questionProvider->name(),
                 'preferred_text' => $settings->preferred_text_provider ?: 'gemini',
             ],
+            'model_presets' => [
+                'gemini' => [
+                    ['id' => 'gemini-2.5-flash', 'label' => 'Gemini 2.5 Flash (recommended)'],
+                    ['id' => 'gemini-2.5-pro', 'label' => 'Gemini 2.5 Pro'],
+                    ['id' => 'gemini-2.0-flash', 'label' => 'Gemini 2.0 Flash'],
+                    ['id' => 'gemini-1.5-flash', 'label' => 'Gemini 1.5 Flash'],
+                ],
+                'openai' => [
+                    ['id' => 'gpt-4o-mini', 'label' => 'GPT-4o mini'],
+                    ['id' => 'gpt-4o', 'label' => 'GPT-4o'],
+                    ['id' => 'gpt-4.1-mini', 'label' => 'GPT-4.1 mini'],
+                ],
+                'openrouter' => [
+                    ['id' => 'google/gemma-4-31b-it:free', 'label' => 'Gemma 4 31B (free)', 'free' => true],
+                    ['id' => 'meta-llama/llama-3.3-70b-instruct:free', 'label' => 'Llama 3.3 70B (free)', 'free' => true],
+                    ['id' => 'qwen/qwen3-4b:free', 'label' => 'Qwen3 4B (free)', 'free' => true],
+                    ['id' => 'google/gemini-2.5-flash', 'label' => 'Gemini 2.5 Flash via OpenRouter', 'free' => false],
+                    ['id' => 'openai/gpt-4o-mini', 'label' => 'GPT-4o mini via OpenRouter', 'free' => false],
+                ],
+            ],
         ]);
     }
 

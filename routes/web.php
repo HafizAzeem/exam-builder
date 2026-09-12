@@ -74,6 +74,8 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::get('/ai-import', [AIImportController::class, 'dashboard'])->name('ai-import.index');
     Route::get('/ai-import/upload', [AIImportController::class, 'create'])->name('ai-import.create');
     Route::post('/ai-import', [AIImportController::class, 'store'])->name('ai-import.store');
+    Route::get('/ai-import/paste', [AIImportController::class, 'pasteForm'])->name('ai-import.paste');
+    Route::post('/ai-import/paste', [AIImportController::class, 'storePaste'])->name('ai-import.paste.store');
     Route::get('/ai-import/{import}', [AIImportController::class, 'show'])->name('ai-import.show');
     Route::get('/ai-import/{import}/status', [AIImportController::class, 'status'])->name('ai-import.status');
     Route::get('/ai-import/{import}/download', [AIImportController::class, 'download'])->name('ai-import.download');

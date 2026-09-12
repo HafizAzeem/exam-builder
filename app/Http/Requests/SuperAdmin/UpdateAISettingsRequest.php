@@ -15,7 +15,7 @@ class UpdateAISettingsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'model_name' => ['required', 'string', 'max:100'],
+            'model_name' => ['required', 'string', 'max:200'],
             'temperature' => ['required', 'numeric', 'min:0', 'max:2'],
             'max_tokens' => ['required', 'integer', 'min:256', 'max:65536'],
             'prompt_template' => ['required', 'string'],
@@ -23,7 +23,12 @@ class UpdateAISettingsRequest extends FormRequest
             'retry_count' => ['required', 'integer', 'min:1', 'max:10'],
             'enable_queue' => ['required', 'boolean'],
             'preferred_text_provider' => ['required', Rule::in(['gemini', 'openrouter', 'openai'])],
-            'openrouter_model' => ['nullable', 'string', 'max:150'],
+            'openrouter_model' => [
+                Rule::requiredIf(fn () => $this->input('preferred_text_provider') === 'openrouter'),
+                'nullable',
+                'string',
+                'max:200',
+            ],
             'gemini_api_key' => ['nullable', 'string', 'max:500'],
             'openrouter_api_key' => ['nullable', 'string', 'max:500'],
             'openai_api_key' => ['nullable', 'string', 'max:500'],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SuperAdmin\StoreAIImportPasteRequest;
 use App\Http\Requests\SuperAdmin\StoreAIImportRequest;
 use App\Jobs\ProcessUploadedDocumentJob;
 use App\Models\AIImport;
@@ -67,6 +68,39 @@ class AIImportController extends Controller
         return redirect()
             ->route('super-admin.ai-import.show', $import)
             ->with('success', 'File uploaded. AI processing has started.');
+    }
+
+    public function pasteForm(): Response
+    {
+        $this->authorize('create', AIImport::class);
+
+        return Inertia::render('SuperAdmin/AIImport/Paste', [
+            'grades' => Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']),
+            'subjects' => Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']),
+        ]);
+    }
+
+    public function storePaste(StoreAIImportPasteRequest $request): RedirectResponse
+    {
+        $this->authorize('create', AIImport::class);
+
+        $import = $this->imports->createFromPastedText(
+            $request->validated(),
+            $request->validated('raw_text'),
+            $request->user()->id,
+        );
+
+        $settings = AISetting::current();
+
+        if ($settings->enable_queue) {
+            ProcessUploadedDocumentJob::dispatch($import);
+        } else {
+            ProcessUploadedDocumentJob::dispatchSync($import);
+        }
+
+        return redirect()
+            ->route('super-admin.ai-import.show', $import)
+            ->with('success', 'Pasted text submitted. AI is classifying and organizing questions.');
     }
 
     public function show(AIImport $import): Response

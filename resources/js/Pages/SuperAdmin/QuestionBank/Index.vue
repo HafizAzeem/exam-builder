@@ -187,6 +187,9 @@ const currentImageUrl = computed(() => {
                     >
                         Delete selected ({{ selectedIds.length }})
                     </DangerButton>
+                    <Link :href="route('super-admin.ai-import.paste')" class="rounded bg-violet-600 px-4 py-2 text-sm text-white">
+                        AI Paste Text
+                    </Link>
                     <Link :href="route('super-admin.question-bank.jsonImportForm')" class="rounded bg-emerald-600 px-4 py-2 text-sm text-white">
                         Import JSON
                     </Link>

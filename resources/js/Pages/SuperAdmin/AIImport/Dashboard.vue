@@ -17,9 +17,14 @@ defineProps({
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">AI Question Import</h2>
-                <Link :href="route('super-admin.ai-import.create')">
-                    <PrimaryButton>Upload Document</PrimaryButton>
-                </Link>
+                <div class="flex flex-wrap gap-2">
+                    <Link :href="route('super-admin.ai-import.paste')" class="inline-flex items-center rounded-md border border-indigo-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-indigo-700 shadow-sm hover:bg-indigo-50">
+                        Paste Text
+                    </Link>
+                    <Link :href="route('super-admin.ai-import.create')">
+                        <PrimaryButton>Upload Document</PrimaryButton>
+                    </Link>
+                </div>
             </div>
         </template>
 
