@@ -5,9 +5,9 @@ import QuestionMenuModal from '@/Components/PaperBuilder/QuestionMenuModal.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE } from '@/utils/paperContent';
-import { applyPrintStyles, clearPrintStyles } from '@/utils/printStyles';
+import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     grades: Array,
@@ -24,11 +24,13 @@ const props = defineProps({
 const showQuestionMenu = ref(false);
 const showEditMeta = ref(false);
 const showSaveModal = ref(false);
+const showPrintLandscapeHint = ref(false);
 const saving = ref(false);
 const paperTitle = ref('Mid Term Examination');
 const editingPaper = ref(false);
 const editDraft = ref(null);
 const paperContent = ref(null);
+const pageView = ref('single'); // single | double (2-up print)
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -92,8 +94,8 @@ const resolvedSubject = computed(() =>
 );
 
 const settings = ref({
-    blank_lines: 3,
-    questions_per_line: 1,
+    blank_lines: 0,
+    questions_per_line: 2,
     tabular_mcqs: true,
     enable_omr: true,
     enable_answer_key: true,
@@ -103,7 +105,7 @@ const settings = ref({
 
 const sectionSettings = ref({
     mcq: { marks: 1, tabular_mcqs: true },
-    short: { marks: 2, blank_lines: 3, questions_per_line: 1, choice_questions: 0 },
+    short: { marks: 2, blank_lines: 0, questions_per_line: 2, choice_questions: 0 },
     long: { marks: 5, blank_lines: 0, choice_questions: 0, show_parts: true },
     fill: { marks: 1 },
     truefalse: { marks: 1 },
@@ -141,16 +143,16 @@ const previewLayout = computed(() => ({
     heading_font_size: 12,
     font_weight: 'normal',
     font_color: '#000000',
-    line_height: 1.5,
+    line_height: 1.35,
     dual_medium: dualMedium.value,
     enable_omr: settings.value.enable_omr,
     enable_answer_key: settings.value.enable_answer_key,
     enable_watermark: settings.value.enable_watermark,
     watermark_type: settings.value.enable_watermark ? 'text' : 'none',
     watermark_text: settings.value.enable_watermark ? buildWatermarkText(props.institution) : '',
-    watermark_opacity: 0.18,
+    watermark_opacity: 0.16,
     watermark_angle: 45,
-    watermark_size: 22,
+    watermark_size: 20,
     show_past_paper_tags: settings.value.show_past_paper_tags,
     show_note: true,
     show_paper_note: true,
@@ -158,9 +160,11 @@ const previewLayout = computed(() => ({
     questions_per_line: settings.value.questions_per_line,
     section_settings: sectionSettings.value,
     paper_size: 'A4',
-    orientation: 'portrait',
+    orientation: pageView.value === 'double' ? 'landscape' : 'portrait',
+    page_view: pageView.value,
     scale: 100,
-    margins: { top: 15, right: 15, bottom: 15, left: 15 },
+    // Tighter Lahore-board style margins for A4 fitting
+    margins: { top: 8, right: 8, bottom: 8, left: 8 },
 }));
 
 const previewOmrRows = computed(() => {
@@ -350,11 +354,12 @@ const onAddQuestions = ({ questions, options }) => {
     const toAdd = questions.filter((q) => !existing.has(q.id));
     if (!toAdd.length) {
         addFeedback.value = 'Those questions are already on the paper.';
+        showQuestionMenu.value = false;
         return;
     }
 
     selectedQuestions.value = [...selectedQuestions.value, ...toAdd];
-    addFeedback.value = `Added ${toAdd.length} question(s). You can search again or close the menu.`;
+    addFeedback.value = `Added ${toAdd.length} question(s) to the paper.`;
 
     if (options?.dualMedium !== undefined) {
         dualMedium.value = options.dualMedium;
@@ -376,7 +381,7 @@ const onAddQuestions = ({ questions, options }) => {
     if (type === 'short' || type === 'long') {
         nextType.blank_lines = Number(options?.blankLines) || 0;
         nextType.choice_questions = Number(options?.choiceQuestions) || 0;
-        nextType.questions_per_line = Number(options?.questionsPerLine) || 1;
+        nextType.questions_per_line = Number(options?.questionsPerLine) || (type === 'short' ? 2 : 1);
         if (type === 'long') {
             nextType.show_parts = options?.showParts !== false;
         }
@@ -402,15 +407,20 @@ const onAddQuestions = ({ questions, options }) => {
     }, 0);
     examMeta.value.marks = String(marks);
 
-    // Keep prior text edits when new questions are added.
-    if (paperContent.value || editingPaper.value) {
-        const previous = editingPaper.value ? editDraft.value : paperContent.value;
-        const merged = mergePaperContentEdits(buildCurrentPaperContent(), previous);
-        paperContent.value = merged;
-        if (editingPaper.value) {
-            editDraft.value = clonePaperContent(merged);
-        }
+    // Always rebuild paper content so the preview matches the Layout Editor.
+    const previous = editingPaper.value ? editDraft.value : paperContent.value;
+    const merged = previous
+        ? mergePaperContentEdits(buildCurrentPaperContent(), previous)
+        : buildCurrentPaperContent();
+    paperContent.value = merged;
+    if (editingPaper.value) {
+        editDraft.value = clonePaperContent(merged);
     }
+
+    showQuestionMenu.value = false;
+    nextTick(() => {
+        document.getElementById('compose-paper-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 };
 
 const openSaveModal = () => {
@@ -488,9 +498,9 @@ const savePaper = () => {
                 enable_watermark: settings.value.enable_watermark,
                 watermark_type: settings.value.enable_watermark ? 'text' : 'none',
                 watermark_text: settings.value.enable_watermark ? buildWatermarkText(props.institution) : '',
-                watermark_opacity: 0.18,
+                watermark_opacity: 0.16,
                 watermark_angle: 45,
-                watermark_size: 22,
+                watermark_size: 20,
                 show_past_paper_tags: settings.value.show_past_paper_tags,
                 show_note: true,
                 show_paper_note: true,
@@ -498,8 +508,9 @@ const savePaper = () => {
                 questions_per_line: settings.value.questions_per_line,
                 section_settings: sectionSettings.value,
                 paper_size: 'A4',
-                orientation: 'portrait',
-                margins: { top: 15, right: 15, bottom: 15, left: 15 },
+                orientation: pageView.value === 'double' ? 'landscape' : 'portrait',
+                page_view: pageView.value,
+                margins: { top: 8, right: 8, bottom: 8, left: 8 },
                 paper_content: content,
             },
         },
@@ -509,22 +520,42 @@ const savePaper = () => {
     });
 };
 
-const printPaper = () => {
-    applyPrintStyles();
+const runPrint = () => {
+    const dual = pageView.value === 'double';
+    // Measure before print-active so we can auto-fit to 1 page when close.
+    const fitScale = measurePrintFitScale({ dual });
+    applyPrintStyles({ dual, fitScale });
     document.body.classList.add('print-active');
+    document.body.classList.toggle('print-dual', dual);
+    document.body.classList.toggle('print-single', !dual);
     window.addEventListener('afterprint', onAfterPrint);
-    window.print();
+    requestAnimationFrame(() => {
+        setTimeout(() => window.print(), 50);
+    });
+};
+
+const printPaper = () => {
+    if (pageView.value === 'double') {
+        showPrintLandscapeHint.value = true;
+        return;
+    }
+    runPrint();
+};
+
+const confirmDualPrint = () => {
+    showPrintLandscapeHint.value = false;
+    runPrint();
 };
 
 const onAfterPrint = () => {
     clearPrintStyles();
-    document.body.classList.remove('print-active');
+    document.body.classList.remove('print-active', 'print-dual', 'print-single');
     window.removeEventListener('afterprint', onAfterPrint);
 };
 
 onUnmounted(() => {
     clearPrintStyles();
-    document.body.classList.remove('print-active');
+    document.body.classList.remove('print-active', 'print-dual', 'print-single');
     window.removeEventListener('afterprint', onAfterPrint);
 });
 
@@ -681,8 +712,25 @@ const cancelPaper = () => {
                 </p>
 
                 <!-- Screen preview: same Layout Template 1 A4 format as editor -->
-                <div class="overflow-x-auto rounded-lg bg-gray-100 py-4">
+                <div id="compose-paper-preview" class="overflow-x-auto rounded-lg bg-gray-100 py-4">
+                    <div v-if="pageView === 'double'" class="mx-auto">
+                        <p class="mb-2 text-center text-xs font-medium text-slate-500">
+                            Dual page · two complete copies side-by-side (print in Landscape)
+                        </p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <PaperPreview
+                                v-bind="paperPreviewProps"
+                                :editable="editingPaper"
+                                @update:paper-content="onContentUpdate"
+                            />
+                            <PaperPreview
+                                v-bind="paperPreviewProps"
+                                :editable="false"
+                            />
+                        </div>
+                    </div>
                     <PaperPreview
+                        v-else
                         v-bind="paperPreviewProps"
                         :editable="editingPaper"
                         @update:paper-content="onContentUpdate"
@@ -693,8 +741,28 @@ const cancelPaper = () => {
 
         <!-- Print clone: same as Layout Editor Template 1 -->
         <Teleport to="body">
-            <div id="exam-print-root" class="print-paper-root">
-                <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+            <div
+                id="exam-print-root"
+                class="print-paper-root"
+                :class="{ 'exam-print-dual': pageView === 'double' }"
+            >
+                <div v-if="pageView === 'double'" class="exam-print-dual-sheet">
+                    <div class="exam-print-dual-slot">
+                        <div class="exam-print-dual-scaler">
+                            <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+                        </div>
+                    </div>
+                    <div class="exam-print-dual-slot">
+                        <div class="exam-print-dual-scaler">
+                            <PaperPreview v-bind="paperPreviewProps" :editable="false" />
+                        </div>
+                    </div>
+                </div>
+                <PaperPreview
+                    v-else
+                    v-bind="paperPreviewProps"
+                    :editable="false"
+                />
             </div>
         </Teleport>
 
@@ -751,10 +819,65 @@ const cancelPaper = () => {
                             <span class="font-medium text-slate-700">Subject</span>
                             <input v-model="examMeta.subject" class="mt-1 w-full rounded-lg border-slate-300" />
                         </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                            <input
+                                v-model="pageView"
+                                type="checkbox"
+                                class="mt-0.5 rounded text-teal-600"
+                                true-value="double"
+                                false-value="single"
+                            />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-800">Dual page print (2 copies / sheet)</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">
+                                    Prints two complete papers on one landscape A4 sheet to save paper.
+                                </span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                            <input v-model="settings.enable_watermark" type="checkbox" class="mt-0.5 rounded text-teal-600" />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-800">Protect print (watermark)</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">
+                                    Overlays institute name on the paper to discourage unauthorized copies.
+                                </span>
+                            </span>
+                        </label>
                     </div>
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" class="rounded-lg border px-4 py-2 text-sm" @click="showEditMeta = false">Done</button>
                     </div>
+                </div>
+            </div>
+        </Modal>
+
+        <Modal :show="showPrintLandscapeHint" max-width="md" @close="showPrintLandscapeHint = false">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-slate-900">Print dual page</h3>
+                <p class="mt-2 text-sm text-slate-600">
+                    In the print dialog, set <strong>Layout</strong> to <strong>Landscape</strong>
+                    so both complete copies fit on one sheet.
+                </p>
+                <ol class="mt-4 list-decimal space-y-1.5 pl-5 text-sm text-slate-700">
+                    <li>Open <strong>More settings</strong> if needed</li>
+                    <li>Choose <strong>Layout → Landscape</strong></li>
+                    <li>Confirm preview shows two pages side-by-side on <strong>1 sheet</strong></li>
+                </ol>
+                <div class="mt-6 flex justify-end gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="showPrintLandscapeHint = false"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                        @click="confirmDualPrint"
+                    >
+                        Continue to print
+                    </button>
                 </div>
             </div>
         </Modal>

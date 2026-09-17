@@ -5,7 +5,7 @@ import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
-import { applyPrintStyles, clearPrintStyles } from '@/utils/printStyles';
+import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -394,7 +394,8 @@ const runPrint = () => {
         layout.value.orientation = 'landscape';
     }
 
-    applyPrintStyles({ dual });
+    const fitScale = measurePrintFitScale({ dual });
+    applyPrintStyles({ dual, fitScale });
     document.body.classList.add('print-active');
     document.body.classList.toggle('print-dual', dual);
     document.body.classList.toggle('print-single', !dual);

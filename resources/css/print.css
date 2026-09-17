@@ -80,15 +80,22 @@
         print-color-adjust: exact;
     }
 
-    /* ─── Template 1: restore its structural border and margin-based padding ─── */
+    /* ─── Template 1: keep header/table borders; drop page-frame box on print.
+       The outer 2px frame sat under the last question (or at page bottom) as a
+       stray horizontal line in Chrome print preview. */
     .paper-preview--tpl1 {
-        border: 2px solid #000 !important;
+        border: none !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         padding: var(--paper-padding-top, 10mm) var(--paper-padding-right, 8mm)
             var(--paper-padding-bottom, 10mm) var(--paper-padding-left, 8mm) !important;
         width: 100% !important;
         box-sizing: border-box !important;
+        min-height: 0 !important;
+    }
+
+    body.print-active > #exam-print-root.exam-print-fit > .paper-preview--tpl1 {
+        min-height: 0 !important;
     }
 
     /*
@@ -115,8 +122,8 @@
         justify-content: flex-start !important;
         gap: 2mm !important;
         width: 100% !important;
-        max-height: 200mm !important;
-        overflow: hidden !important;
+        max-height: 287mm !important;
+        overflow: visible !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
@@ -125,27 +132,26 @@
         flex: 0 0 calc(50% - 1mm) !important;
         width: calc(50% - 1mm) !important;
         max-width: calc(50% - 1mm) !important;
-        overflow: hidden !important;
+        overflow: visible !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
-    /* Scale full A4 page into half of a landscape sheet; negative margins
-       collapse the unused layout box so we don't get blank 2nd sheets. */
+    /* Scale full A4 page into half of a landscape sheet.
+       Use zoom (not transform) so Chrome pagination matches visual size. */
     body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler {
-        --dual-scale: 0.67;
+        --dual-scale: 0.685;
         width: 210mm !important;
-        transform: scale(var(--dual-scale)) !important;
-        transform-origin: top left !important;
-        margin-right: calc(210mm * (var(--dual-scale) - 1)) !important;
-        margin-bottom: calc(297mm * (var(--dual-scale) - 1)) !important;
+        zoom: var(--dual-scale) !important;
+        transform: none !important;
+        margin: 0 !important;
     }
 
     body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler > .paper-preview,
     body.print-active > #exam-print-root.exam-print-dual .exam-print-dual-scaler > .paper-preview--tpl1 {
         width: 210mm !important;
         max-width: 210mm !important;
-        min-height: 297mm !important;
+        min-height: 0 !important;
         margin: 0 !important;
         box-sizing: border-box !important;
         transform: none !important;
@@ -169,16 +175,49 @@
         page-break-before: always;
     }
 
+    /* Allow short/MCQ items to pack on A4 — avoid forced empty page gaps */
     .tpl1-question,
     .question-block {
+        page-break-inside: auto;
+        break-inside: auto;
+        orphans: 2;
+        widows: 2;
+    }
+
+    .tpl1-section-heading,
+    .tpl1-mcq-block,
+    .tpl1-parts {
         page-break-inside: avoid;
-        orphans: 3;
-        widows: 3;
+        break-inside: avoid;
+    }
+
+    .tpl1-section {
+        page-break-inside: auto;
+    }
+
+    .tpl1-question {
+        margin-bottom: 3px !important;
+        padding-bottom: 2px !important;
+    }
+
+    .tpl1-section {
+        margin-top: 8px !important;
+        padding-top: 4px !important;
+    }
+
+    .tpl1-question-row:not(:has(.tpl1-question-ur)) .tpl1-question-en {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     .questions-container.dual-col {
         column-count: 2;
-        column-gap: 20px;
+        column-gap: 12px;
+    }
+
+    .tpl1-questions--two-col {
+        column-gap: 10px !important;
+        row-gap: 4px !important;
     }
 
     .paper-preview .watermark-below-header {

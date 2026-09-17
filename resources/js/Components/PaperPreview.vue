@@ -536,7 +536,7 @@ const teacherAnswerFor = (question) => {
                             <span class="tpl1-section-marks">{{ section.marks }}</span>
                         </div>
                         <div
-                            v-if="dualMedium"
+                            v-if="dualMedium && (editable || section.heading_ur)"
                             class="tpl1-section-heading-ur question-ur"
                             :contenteditable="editable"
                             suppresscontenteditablewarning
@@ -587,7 +587,7 @@ const teacherAnswerFor = (question) => {
                                 </p>
                             </div>
                             <div
-                                v-if="dualMedium"
+                                v-if="dualMedium && (editable || q.text_ur)"
                                 class="tpl1-question-ur question-ur"
                             >
                                 <span
@@ -626,7 +626,7 @@ const teacherAnswerFor = (question) => {
                                     >{{ opt.en }}</span>
                                 </span>
                                 <span
-                                    v-if="dualMedium"
+                                    v-if="dualMedium && (editable || opt.ur)"
                                     class="question-ur tpl1-mcq-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -664,7 +664,7 @@ const teacherAnswerFor = (question) => {
                                     >{{ p.text_en }}</span>
                                 </div>
                                 <div
-                                    v-if="dualMedium"
+                                    v-if="dualMedium && (editable || p.text_ur)"
                                     class="tpl1-question-ur question-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -765,9 +765,18 @@ const teacherAnswerFor = (question) => {
         var(--paper-padding-bottom, 12mm) var(--paper-padding-left, 10mm);
     width: 100%;
     max-width: 210mm;
+    min-height: 297mm;
     margin-left: auto;
     margin-right: auto;
     box-sizing: border-box;
+}
+
+@media print {
+    /* Outer frame border prints as a stray bottom line — hide on print only */
+    .paper-preview--tpl1 {
+        border: none !important;
+        min-height: 0 !important;
+    }
 }
 
 .paper-preview--fill.paper-preview--tpl1,
@@ -936,8 +945,8 @@ const teacherAnswerFor = (question) => {
 }
 
 .tpl1-section {
-    margin-top: 14px;
-    padding-top: 8px;
+    margin-top: 10px;
+    padding-top: 4px;
     border-top: 1px solid #000;
 }
 
@@ -990,9 +999,9 @@ const teacherAnswerFor = (question) => {
 }
 
 .tpl1-question {
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    break-inside: avoid;
+    margin-bottom: 5px;
+    padding-bottom: 3px;
+    break-inside: auto;
 }
 
 .tpl1-question-row {
@@ -1000,6 +1009,11 @@ const teacherAnswerFor = (question) => {
     justify-content: space-between;
     align-items: flex-start;
     gap: 16px;
+}
+
+.tpl1-question-row:not(:has(.tpl1-question-ur)) .tpl1-question-en {
+    flex: 1 1 100%;
+    max-width: 100%;
 }
 
 .tpl1-question-en {

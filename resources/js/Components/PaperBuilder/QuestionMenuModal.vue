@@ -16,7 +16,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'add']);
 
-const topicIds = ref([]);
 const questionType = ref('mcq');
 const sources = ref(['exercise', 'additional']);
 const requiredCount = ref(15);
@@ -65,28 +64,6 @@ const sourceOptions = computed(() =>
     })),
 );
 
-const allTopics = computed(() =>
-    props.chapters.flatMap((chapter) =>
-        (chapter.topics ?? []).map((topic) => ({
-            ...topic,
-            chapter_number: chapter.number,
-            chapter_title: chapter.title_en,
-        })),
-    ),
-);
-
-const allTopicIds = computed(() => allTopics.value.map((t) => t.id));
-
-const allTopicsSelected = computed({
-    get() {
-        return allTopicIds.value.length > 0
-            && allTopicIds.value.every((id) => topicIds.value.includes(id));
-    },
-    set(value) {
-        topicIds.value = value ? [...allTopicIds.value] : [];
-    },
-});
-
 const sourcesLabel = computed(() => {
     if (!sources.value.length) return 'None selected';
     if (sources.value.length === sourceOptions.value.length) {
@@ -108,9 +85,6 @@ watch(
     () => props.show,
     (open) => {
         if (!open) return;
-        topicIds.value = props.initialTopicIds?.length
-            ? [...props.initialTopicIds]
-            : [...allTopicIds.value];
         sources.value = props.allowedSources.includes('exercise')
             ? props.allowedSources.filter((s) => s !== 'past_paper').slice(0, 2)
             : [...props.allowedSources];
@@ -171,8 +145,9 @@ const applyTypeDefaults = (type) => {
         requiredCount.value = 10;
         marksPerQuestion.value = 2;
         choiceQuestions.value = 5;
-        blankLines.value = 3;
-        questionsPerLine.value = 1;
+        // Lahore board: compact short answers, two-column when dual medium.
+        blankLines.value = 0;
+        questionsPerLine.value = 2;
         showParts.value = true;
     } else if (type === 'long') {
         requiredCount.value = 4;
@@ -185,7 +160,7 @@ const applyTypeDefaults = (type) => {
         requiredCount.value = 10;
         marksPerQuestion.value = 1;
         choiceQuestions.value = 0;
-        blankLines.value = 2;
+        blankLines.value = 0;
         questionsPerLine.value = 1;
     }
 };
@@ -207,7 +182,8 @@ const searchQuestions = async () => {
         const { data } = await axios.get('/api/builder/questions/all', {
             params: {
                 chapter_ids: props.chapterIds,
-                topic_ids: topicIds.value.length ? topicIds.value : undefined,
+                // Prefer chapter scope only while topics are dummy; still send ids when present.
+                topic_ids: undefined,
                 sources: sources.value,
                 type: questionType.value || undefined,
                 board_name: pastPapersSelected.value && boardName.value ? boardName.value : undefined,
@@ -290,10 +266,7 @@ const selectAllSources = (checked) => {
         <div class="flex max-h-[92vh] flex-col bg-slate-50">
             <!-- Header -->
             <div class="flex items-center justify-between gap-3 bg-gradient-to-r from-teal-700 to-teal-600 px-5 py-3 text-white">
-                <label class="flex items-center gap-2 text-sm font-medium">
-                    <input v-model="allTopicsSelected" type="checkbox" class="rounded border-teal-300 text-teal-700 focus:ring-teal-500" />
-                    Select All Topics
-                </label>
+                <div class="w-9" aria-hidden="true" />
                 <h3 class="text-lg font-bold tracking-tight">
                     {{ gradeLabel }} — {{ subjectName }}
                 </h3>
@@ -305,31 +278,6 @@ const selectAllSources = (checked) => {
             </div>
 
             <div class="min-h-0 flex-1 overflow-y-auto">
-                <!-- Topics -->
-                <div class="border-b border-slate-200 bg-white px-5 py-4">
-                    <div class="grid max-h-40 gap-x-4 gap-y-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3">
-                        <label
-                            v-for="topic in allTopics"
-                            :key="topic.id"
-                            class="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-teal-50"
-                        >
-                            <input
-                                type="checkbox"
-                                class="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                                :checked="topicIds.includes(topic.id)"
-                                @change="topicIds.includes(topic.id)
-                                    ? topicIds = topicIds.filter((id) => id !== topic.id)
-                                    : topicIds = [...topicIds, topic.id]"
-                            />
-                            <span>
-                                <span class="mr-1 font-mono text-xs font-semibold text-teal-700">{{ topic.code }}</span>
-                                <span class="text-slate-800">{{ topic.title_en }}</span>
-                            </span>
-                        </label>
-                    </div>
-                    <p v-if="!allTopics.length" class="text-sm text-slate-500">No topics available for the selected chapters.</p>
-                </div>
-
                 <!-- Filters -->
                 <div class="space-y-3 border-b border-slate-200 bg-slate-100/80 px-5 py-4">
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -458,7 +406,7 @@ const selectAllSources = (checked) => {
                         <button
                             type="button"
                             class="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-700 disabled:opacity-50"
-                            :disabled="searching || !topicIds.length"
+                            :disabled="searching || !chapterIds.length"
                             @click="searchQuestions"
                         >
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -557,7 +505,7 @@ const selectAllSources = (checked) => {
                     </div>
 
                     <p v-if="!results.length" class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-10 text-center text-sm text-slate-500">
-                        Choose topics and filters, then click <strong>Search Questions</strong>.
+                        Choose filters, then click <strong>Search Questions</strong>.
                     </p>
                     <p v-else-if="!visibleResults.length" class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-8 text-center text-sm text-slate-500">
                         No questions in this view.

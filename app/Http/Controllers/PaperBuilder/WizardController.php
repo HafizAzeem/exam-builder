@@ -223,13 +223,7 @@ class WizardController extends Controller
 
         $topicsExist = Topic::query()->whereIn('chapter_id', $validChapterIds)->exists();
 
-        if ($topicsExist && ! $topicIds) {
-            return redirect()->route('builder.chapters', [
-                'grade' => $selectedGradeId,
-                'subject' => $selectedSubjectId,
-            ]);
-        }
-
+        // Topics UI is hidden on the institute side; auto-include all topics for selected chapters.
         $validTopicIds = [];
         if ($topicIds) {
             $validTopicIds = Topic::query()
@@ -237,13 +231,13 @@ class WizardController extends Controller
                 ->whereIn('id', $topicIds)
                 ->pluck('id')
                 ->all();
+        }
 
-            if (! $validTopicIds) {
-                return redirect()->route('builder.chapters', [
-                    'grade' => $selectedGradeId,
-                    'subject' => $selectedSubjectId,
-                ]);
-            }
+        if ($topicsExist && ! $validTopicIds) {
+            $validTopicIds = Topic::query()
+                ->whereIn('chapter_id', $validChapterIds)
+                ->pluck('id')
+                ->all();
         }
 
         $institution = $user->institution_id

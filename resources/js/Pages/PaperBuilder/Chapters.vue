@@ -9,82 +9,53 @@ const props = defineProps({
     chapters: { type: Array, default: () => [] },
 });
 
-const selectedTopicIds = ref([]);
-const expanded = ref({});
+/** Chapter-only selection — topics stay hidden until real topic data exists. */
+const selectedChapterIds = ref([]);
 
-props.chapters.forEach((chapter) => {
-    expanded.value[chapter.id] = true;
-});
+const selectedCount = computed(() => selectedChapterIds.value.length);
 
-const allTopicIds = computed(() =>
-    props.chapters.flatMap((chapter) => (chapter.topics ?? []).map((topic) => topic.id)),
-);
-
-const selectedCount = computed(() => selectedTopicIds.value.length);
+const allChapterIds = computed(() => props.chapters.map((c) => c.id));
 
 const allSelected = computed({
     get() {
-        return allTopicIds.value.length > 0
-            && allTopicIds.value.every((id) => selectedTopicIds.value.includes(id));
+        return allChapterIds.value.length > 0
+            && allChapterIds.value.every((id) => selectedChapterIds.value.includes(id));
     },
     set(value) {
-        selectedTopicIds.value = value ? [...allTopicIds.value] : [];
+        selectedChapterIds.value = value ? [...allChapterIds.value] : [];
     },
 });
 
-const isChapterFullySelected = (chapter) => {
-    const ids = (chapter.topics ?? []).map((t) => t.id);
-    return ids.length > 0 && ids.every((id) => selectedTopicIds.value.includes(id));
-};
-
-const isChapterPartiallySelected = (chapter) => {
-    const ids = (chapter.topics ?? []).map((t) => t.id);
-    const count = ids.filter((id) => selectedTopicIds.value.includes(id)).length;
-    return count > 0 && count < ids.length;
-};
+const isChapterSelected = (chapter) => selectedChapterIds.value.includes(chapter.id);
 
 const toggleChapter = (chapter, checked) => {
-    const ids = (chapter.topics ?? []).map((t) => t.id);
     if (checked) {
-        selectedTopicIds.value = [...new Set([...selectedTopicIds.value, ...ids])];
-    } else {
-        selectedTopicIds.value = selectedTopicIds.value.filter((id) => !ids.includes(id));
-    }
-};
-
-const toggleTopic = (topicId, checked) => {
-    if (checked) {
-        if (!selectedTopicIds.value.includes(topicId)) {
-            selectedTopicIds.value = [...selectedTopicIds.value, topicId];
+        if (!selectedChapterIds.value.includes(chapter.id)) {
+            selectedChapterIds.value = [...selectedChapterIds.value, chapter.id];
         }
     } else {
-        selectedTopicIds.value = selectedTopicIds.value.filter((id) => id !== topicId);
+        selectedChapterIds.value = selectedChapterIds.value.filter((id) => id !== chapter.id);
     }
 };
 
+const topicIdsForChapters = (chapterIds) => props.chapters
+    .filter((chapter) => chapterIds.includes(chapter.id))
+    .flatMap((chapter) => (chapter.topics ?? []).map((topic) => topic.id));
+
 const continueToWizard = () => {
-    if (!selectedTopicIds.value.length) return;
+    if (!selectedChapterIds.value.length) return;
 
-    const chapters = props.chapters
-        .filter((chapter) => (chapter.topics ?? []).some((t) => selectedTopicIds.value.includes(t.id)))
-        .map((chapter) => chapter.id);
-
-    if (!chapters.length) return;
+    const chapters = selectedChapterIds.value;
+    const topics = topicIdsForChapters(chapters);
 
     router.visit(route('builder.create', {
         grade: props.grade.id,
         subject: props.subject.id,
         chapters: chapters.join(','),
-        topics: selectedTopicIds.value.join(','),
+        // Pass all topic IDs silently so question search still scopes correctly.
+        ...(topics.length ? { topics: topics.join(',') } : {}),
     }));
 };
-
-const classLabel = computed(() => {
-    const n = props.grade?.number;
-    if (n === 11) return '1st Year';
-    if (n === 12) return '2nd Year';
-    return n ? `${n}th` : props.grade?.label_en;
-});
 </script>
 
 <template>
@@ -125,7 +96,7 @@ const classLabel = computed(() => {
                         />
                         <span>
                             <span class="block text-sm font-semibold text-slate-900">Select all chapters</span>
-                            <span class="text-xs text-slate-500">{{ selectedCount }} topic(s) selected</span>
+                            <span class="text-xs text-slate-500">{{ selectedCount }} chapter(s) selected</span>
                         </span>
                     </label>
 
@@ -139,84 +110,37 @@ const classLabel = computed(() => {
                     </button>
                 </div>
 
-                <div class="grid gap-5 lg:grid-cols-2">
-                    <div
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <label
                         v-for="chapter in chapters"
                         :key="chapter.id"
-                        class="overflow-hidden rounded-2xl border bg-white shadow-sm transition"
-                        :class="isChapterFullySelected(chapter) || isChapterPartiallySelected(chapter)
+                        class="flex cursor-pointer items-start gap-3 overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition"
+                        :class="isChapterSelected(chapter)
                             ? 'border-emerald-300 shadow-emerald-900/10 ring-1 ring-emerald-200'
-                            : 'border-slate-200'"
+                            : 'border-slate-200 hover:border-slate-300'"
                     >
-                        <div class="flex items-start gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-900 to-slate-800 px-4 py-3.5 text-white">
-                            <input
-                                type="checkbox"
-                                class="mt-1 h-5 w-5 rounded border-slate-400 text-emerald-500 focus:ring-emerald-400"
-                                :checked="isChapterFullySelected(chapter)"
-                                :indeterminate.prop="isChapterPartiallySelected(chapter)"
-                                @change="toggleChapter(chapter, $event.target.checked)"
-                            />
-                            <button
-                                type="button"
-                                class="min-w-0 flex-1 text-left"
-                                @click="expanded[chapter.id] = !expanded[chapter.id]"
+                        <input
+                            type="checkbox"
+                            class="mt-1 h-5 w-5 rounded border-slate-400 text-emerald-600 focus:ring-emerald-500"
+                            :checked="isChapterSelected(chapter)"
+                            @change="toggleChapter(chapter, $event.target.checked)"
+                        />
+                        <span class="min-w-0">
+                            <span class="block text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                                Chapter {{ chapter.number }}
+                            </span>
+                            <span class="mt-0.5 block text-base font-semibold leading-snug text-slate-900">
+                                {{ chapter.title_en }}
+                            </span>
+                            <span
+                                v-if="chapter.title_ur"
+                                class="mt-0.5 block text-sm text-slate-500"
+                                dir="rtl"
                             >
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
-                                    Chapter {{ chapter.number }}
-                                </p>
-                                <p class="mt-0.5 text-base font-semibold leading-snug">
-                                    {{ chapter.title_en }}
-                                </p>
-                                <p v-if="chapter.title_ur" class="mt-0.5 text-sm text-white/70" dir="rtl">
-                                    {{ chapter.title_ur }}
-                                </p>
-                            </button>
-                            <button
-                                type="button"
-                                class="rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white"
-                                @click="expanded[chapter.id] = !expanded[chapter.id]"
-                            >
-                                <svg
-                                    class="h-5 w-5 transition"
-                                    :class="expanded[chapter.id] ? 'rotate-180' : ''"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div v-show="expanded[chapter.id]" class="space-y-1 p-3">
-                            <label
-                                v-for="topic in chapter.topics"
-                                :key="topic.id"
-                                class="flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 transition hover:bg-emerald-50"
-                                :class="selectedTopicIds.includes(topic.id) ? 'bg-emerald-50/80' : ''"
-                            >
-                                <input
-                                    type="checkbox"
-                                    class="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                    :checked="selectedTopicIds.includes(topic.id)"
-                                    @change="toggleTopic(topic.id, $event.target.checked)"
-                                />
-                                <span class="min-w-0">
-                                    <span class="mr-2 inline-flex rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
-                                        {{ topic.code }}
-                                    </span>
-                                    <span class="text-sm font-medium text-slate-800">{{ topic.title_en }}</span>
-                                    <span v-if="topic.title_ur" class="mt-0.5 block text-xs text-slate-500" dir="rtl">
-                                        {{ topic.title_ur }}
-                                    </span>
-                                </span>
-                            </label>
-
-                            <p v-if="!(chapter.topics ?? []).length" class="px-3 py-4 text-sm text-slate-400">
-                                No topics listed for this chapter.
-                            </p>
-                        </div>
-                    </div>
+                                {{ chapter.title_ur }}
+                            </span>
+                        </span>
+                    </label>
                 </div>
 
                 <div class="mt-6 flex justify-center sm:hidden">
