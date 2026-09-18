@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Question;
+use App\Support\CurriculumLookup;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +19,15 @@ class QuestionBankService
         ?string $boardName = null,
         ?int $year = null,
     ) {
+        $chapterIds = CurriculumLookup::chapters()
+            ->whereIn('id', $chapterIds ?: [0])
+            ->pluck('id')
+            ->all();
+
+        $topicIds = $topicIds
+            ? CurriculumLookup::topics()->whereIn('id', $topicIds)->pluck('id')->all()
+            : [];
+
         $query = Question::query()
             ->with(['mcqOptions', 'pastPaperTag', 'parts', 'chapter.subject.grade', 'topic'])
             ->where('is_active', true)
@@ -77,8 +87,7 @@ class QuestionBankService
         array $topicIds = [],
         ?string $boardName = null,
         ?int $year = null,
-    ): LengthAwarePaginator
-    {
+    ): LengthAwarePaginator {
         return $this->baseQuery($chapterIds, $type, $sources, $search, $topicIds, $boardName, $year)
             ->latest('id')
             ->paginate($perPage);

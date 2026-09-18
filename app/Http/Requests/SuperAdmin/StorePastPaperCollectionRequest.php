@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
+use App\Support\CurriculumLookup;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StorePastPaperCollectionRequest extends FormRequest
 {
@@ -15,13 +15,9 @@ class StorePastPaperCollectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'grade_id' => ['required', 'integer', 'exists:grades,id'],
-            'subject_id' => [
-                'required',
-                'integer',
-                Rule::exists('subjects', 'id')->where(fn ($q) => $q->where('grade_id', $this->integer('grade_id'))),
-            ],
-            'board' => ['required', 'string', 'in:Lahore Board'],
+            'grade_id' => CurriculumLookup::activeGradeId(),
+            'subject_id' => CurriculumLookup::activeSubjectId($this->integer('grade_id')),
+            'board' => CurriculumLookup::activeBoardName(true),
             'year' => ['required', 'integer', 'min:1990', 'max:'.((int) date('Y') + 1)],
             'session' => ['nullable', 'in:morning,evening'],
             'paper_type' => ['nullable', 'in:objective,subjective,complete'],
@@ -35,7 +31,6 @@ class StorePastPaperCollectionRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'board' => $this->input('board', 'Lahore Board'),
             'country' => 'Pakistan',
             'paper_type' => $this->input('paper_type', 'complete'),
             'language' => $this->input('language', 'english'),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
+use App\Support\CurriculumLookup;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BulkReviewRequest extends FormRequest
@@ -17,8 +18,8 @@ class BulkReviewRequest extends FormRequest
             'ids' => ['required', 'array', 'min:1'],
             'ids.*' => ['integer', 'exists:ai_import_questions,id'],
             'action' => ['required', 'in:approve,reject,edit'],
-            'chapter_id' => ['nullable', 'integer', 'exists:chapters,id'],
-            'topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'chapter_id' => CurriculumLookup::optionalActiveChapterId(),
+            'topic_id' => CurriculumLookup::optionalActiveTopicId(),
             'type' => ['nullable', 'in:mcq,short,long,fill,truefalse'],
             'source' => ['nullable', 'in:exercise,additional,past_paper'],
             'status' => ['nullable', 'in:pending,approved,rejected'],

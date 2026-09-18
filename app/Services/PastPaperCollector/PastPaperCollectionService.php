@@ -12,6 +12,7 @@ use App\Models\AIPaperSource;
 use App\Models\AISetting;
 use App\Services\AIImport\DuplicateDetectionService;
 use App\Services\AIImport\QuestionParserService;
+use App\Support\CurriculumLookup;
 use Illuminate\Support\Facades\DB;
 
 class PastPaperCollectionService
@@ -38,7 +39,7 @@ class PastPaperCollectionService
                 'grade_id' => $data['grade_id'],
                 'subject_id' => $data['subject_id'],
                 'book_type' => 'past_paper',
-                'board' => $data['board'] ?? 'Lahore Board',
+                'board' => $data['board'] ?? CurriculumLookup::defaultBoardName(),
                 'year' => $data['year'],
                 'session' => $data['session'] ?? null,
                 'language' => $data['language'] ?? 'english',
@@ -55,7 +56,7 @@ class PastPaperCollectionService
                 'grade_id' => $data['grade_id'],
                 'subject_id' => $data['subject_id'],
                 'ai_import_id' => $import->id,
-                'board' => $data['board'] ?? 'Lahore Board',
+                'board' => $data['board'] ?? CurriculumLookup::defaultBoardName(),
                 'year' => $data['year'],
                 'session' => $data['session'] ?? null,
                 'paper_type' => $data['paper_type'] ?? 'complete',

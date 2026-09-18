@@ -4,6 +4,7 @@ namespace App\Services\AIImport;
 
 use App\Models\Chapter;
 use App\Models\Topic;
+use App\Support\CurriculumLookup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -14,9 +15,7 @@ class CurriculumMatchService
      */
     public function match(int $subjectId, ?int $chapterNumber, ?string $chapterTitle, ?string $topicTitle): array
     {
-        $chapters = Chapter::query()
-            ->where('subject_id', $subjectId)
-            ->orderBy('number')
+        $chapters = CurriculumLookup::chapters($subjectId)
             ->get(['id', 'number', 'title_en', 'title_ur']);
 
         $chapter = $this->findChapter($chapters, $chapterNumber, $chapterTitle);
@@ -81,8 +80,7 @@ class CurriculumMatchService
     {
         $needle = $this->normalize($topicTitle);
 
-        return Topic::query()
-            ->where('chapter_id', $chapterId)
+        return CurriculumLookup::topics($chapterId)
             ->get(['id', 'title_en', 'title_ur', 'code'])
             ->first(function (Topic $topic) use ($needle) {
                 return $this->normalize($topic->title_en) === $needle

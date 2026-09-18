@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
+use App\Support\CurriculumLookup;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAIImportQuestionRequest extends FormRequest
@@ -14,8 +15,8 @@ class UpdateAIImportQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'chapter_id' => ['nullable', 'integer', 'exists:chapters,id'],
-            'topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'chapter_id' => CurriculumLookup::optionalActiveChapterId(),
+            'topic_id' => CurriculumLookup::optionalActiveTopicId(),
             'type' => ['sometimes', 'in:mcq,short,long,fill,truefalse'],
             'source' => ['sometimes', 'in:exercise,additional,past_paper'],
             'text_en' => ['nullable', 'string'],

@@ -4,6 +4,7 @@ namespace App\Services\PastPaperCollector;
 
 use App\Models\AIPaperCollection;
 use App\Models\Grade;
+use App\Support\CurriculumLookup;
 
 class SearchQueryGenerator
 {
@@ -14,7 +15,7 @@ class SearchQueryGenerator
     {
         $collection->loadMissing(['grade', 'subject']);
 
-        $board = trim((string) $collection->board) ?: 'Lahore Board';
+        $board = trim((string) $collection->board) ?: (CurriculumLookup::defaultBoardName() ?: 'Lahore Board');
         $grade = $this->gradeLabel($collection->grade);
         $subject = $collection->subject?->name_en ?? 'Subject';
         $year = (string) $collection->year;

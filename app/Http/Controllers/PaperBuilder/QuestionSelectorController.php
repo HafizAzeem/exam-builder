@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\PaperBuilder;
 
 use App\Http\Controllers\Controller;
-use App\Models\Chapter;
+use App\Models\Grade;
+use App\Models\PastPaperTag;
 use App\Models\Subject;
 use App\Services\QuestionBankService;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\Request;
 
 class QuestionSelectorController extends Controller
@@ -23,14 +25,12 @@ class QuestionSelectorController extends Controller
             if (is_array($allowedGrades) && count($allowedGrades)) {
                 $gradeNumber = Subject::query()->where('grade_id', $gradeId)->value('grade_id');
                 // If teacher limited by grade numbers, ensure requested grade is permitted.
-                $grade = \App\Models\Grade::query()->find($gradeId);
+                $grade = Grade::query()->find($gradeId);
                 abort_if($grade && ! in_array($grade->number, $allowedGrades, true), 403);
             }
         }
 
-        $query = Subject::query()
-            ->where('grade_id', $gradeId)
-            ->orderBy('sort_order');
+        $query = CurriculumLookup::subjects($gradeId);
 
         if ($user->hasRole('teacher')) {
             $allowedSubjects = $user->teacherPermission?->allowed_subjects ?? null;
@@ -53,10 +53,8 @@ class QuestionSelectorController extends Controller
             }
         }
 
-        return Chapter::query()
-            ->where('subject_id', $subjectId)
-            ->with(['topics' => fn ($q) => $q->orderBy('sort_order')->orderBy('code')])
-            ->orderBy('number')
+        return CurriculumLookup::chapters($subjectId)
+            ->with(['topics' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('code')])
             ->get(['id', 'number', 'title_en', 'title_ur', 'subject_id']);
     }
 
@@ -138,13 +136,8 @@ class QuestionSelectorController extends Controller
     public function pastPaperFilters()
     {
         return [
-            'boards' => \App\Models\PastPaperTag::query()
-                ->whereNotNull('board_name')
-                ->distinct()
-                ->orderBy('board_name')
-                ->pluck('board_name')
-                ->values(),
-            'years' => \App\Models\PastPaperTag::query()
+            'boards' => CurriculumLookup::boards()->pluck('name')->values(),
+            'years' => PastPaperTag::query()
                 ->whereNotNull('year')
                 ->distinct()
                 ->orderByDesc('year')

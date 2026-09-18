@@ -23,6 +23,7 @@ const navLinks = computed(() => {
     if (isSuperAdmin.value) {
         return [
             { href: route('super-admin.ai-import.dashboard'), label: 'AI Dashboard', active: route().current('super-admin.ai-import.dashboard') || route().current('super-admin.ai-import.index') },
+            { href: route('super-admin.curriculum.grades.index'), label: 'Curriculum', active: route().current('super-admin.curriculum.*') },
             { href: route('super-admin.question-bank.index'), label: 'Question Bank', active: route().current('super-admin.question-bank.*') },
             { href: route('super-admin.ai-import.create'), label: 'Upload', active: route().current('super-admin.ai-import.create') },
             { href: route('super-admin.ai-import.paste'), label: 'Paste Text', active: route().current('super-admin.ai-import.paste*') },

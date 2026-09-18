@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasActiveStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Chapter extends Model
 {
+    use HasActiveStatus;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -15,6 +18,12 @@ class Chapter extends Model
         'number',
         'title_en',
         'title_ur',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'number' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function subject(): BelongsTo
@@ -32,4 +41,3 @@ class Chapter extends Model
         return $this->hasMany(Question::class);
     }
 }
-

@@ -6,9 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SuperAdmin\StorePastPaperCollectionRequest;
 use App\Models\AIPaperCollection;
 use App\Models\AIPaperSource;
-use App\Models\Grade;
-use App\Models\Subject;
 use App\Services\PastPaperCollector\PastPaperCollectionService;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,14 +41,16 @@ class PastPaperCollectorController extends Controller
     {
         abort_unless(auth()->user()?->hasRole('super_admin'), 403);
 
-        $grades = Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']);
-        $subjects = Subject::query()->orderBy('sort_order')->get(['id', 'grade_id', 'name_en', 'name_ur']);
+        $grades = CurriculumLookup::grades()->get(['id', 'number', 'label_en']);
+        $subjects = CurriculumLookup::subjects()->get(['id', 'grade_id', 'name_en', 'name_ur']);
+        $boards = CurriculumLookup::boards()->get(['id', 'name']);
 
         return Inertia::render('SuperAdmin/PastPaperCollector/Search', [
             'grades' => $grades,
             'subjects' => $subjects,
+            'boards' => $boards,
             'defaults' => [
-                'board' => 'Lahore Board',
+                'board' => $boards->first()?->name ?: '',
                 'country' => 'Pakistan',
                 'paper_type' => 'complete',
                 'language' => 'english',

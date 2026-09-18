@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PastPaperTag;
 use App\Models\Question;
-use App\Models\Grade;
-use App\Models\Subject;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,10 +28,10 @@ class PastPaperController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $boards = PastPaperTag::query()->distinct()->orderBy('board_name')->pluck('board_name');
+        $boards = CurriculumLookup::boards()->pluck('name');
         $years = PastPaperTag::query()->distinct()->orderByDesc('year')->pluck('year');
-        $grades = Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']);
-        $subjects = Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']);
+        $grades = CurriculumLookup::grades()->get(['id', 'number', 'label_en']);
+        $subjects = CurriculumLookup::subjects()->get(['id', 'name_en', 'grade_id']);
 
         return Inertia::render('PastPapers/Index', [
             'tags' => $tags,

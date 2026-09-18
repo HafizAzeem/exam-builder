@@ -13,6 +13,11 @@ use App\Http\Controllers\PaperBuilder\WizardController;
 use App\Http\Controllers\PastPaperController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\AIImportController;
+use App\Http\Controllers\SuperAdmin\Curriculum\BoardController;
+use App\Http\Controllers\SuperAdmin\Curriculum\ChapterController;
+use App\Http\Controllers\SuperAdmin\Curriculum\GradeController;
+use App\Http\Controllers\SuperAdmin\Curriculum\SubjectController;
+use App\Http\Controllers\SuperAdmin\Curriculum\TopicController;
 use App\Http\Controllers\SuperAdmin\ImportHistoryController;
 use App\Http\Controllers\SuperAdmin\PastPaperCollectorController;
 use App\Http\Controllers\SuperAdmin\QuestionBankController;
@@ -92,6 +97,33 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::get('/ai-import-history', [ImportHistoryController::class, 'index'])->name('ai-import.history');
     Route::get('/ai-settings', [SettingsController::class, 'edit'])->name('ai-import.settings');
     Route::put('/ai-settings', [SettingsController::class, 'update'])->name('ai-import.settings.update');
+
+    Route::prefix('curriculum')->name('curriculum.')->group(function () {
+        Route::get('/grades', [GradeController::class, 'index'])->name('grades.index');
+        Route::post('/grades', [GradeController::class, 'store'])->name('grades.store');
+        Route::patch('/grades/{grade}', [GradeController::class, 'update'])->name('grades.update');
+        Route::delete('/grades/{grade}', [GradeController::class, 'destroy'])->name('grades.destroy');
+
+        Route::get('/grades/{grade}/subjects', [SubjectController::class, 'index'])->name('subjects.index');
+        Route::post('/grades/{grade}/subjects', [SubjectController::class, 'store'])->name('subjects.store');
+        Route::patch('/subjects/{subject}', [SubjectController::class, 'update'])->name('subjects.update');
+        Route::delete('/subjects/{subject}', [SubjectController::class, 'destroy'])->name('subjects.destroy');
+
+        Route::get('/subjects/{subject}/chapters', [ChapterController::class, 'index'])->name('chapters.index');
+        Route::post('/subjects/{subject}/chapters', [ChapterController::class, 'store'])->name('chapters.store');
+        Route::patch('/chapters/{chapter}', [ChapterController::class, 'update'])->name('chapters.update');
+        Route::delete('/chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
+
+        Route::get('/chapters/{chapter}/topics', [TopicController::class, 'index'])->name('topics.index');
+        Route::post('/chapters/{chapter}/topics', [TopicController::class, 'store'])->name('topics.store');
+        Route::patch('/topics/{topic}', [TopicController::class, 'update'])->name('topics.update');
+        Route::delete('/topics/{topic}', [TopicController::class, 'destroy'])->name('topics.destroy');
+
+        Route::get('/boards', [BoardController::class, 'index'])->name('boards.index');
+        Route::post('/boards', [BoardController::class, 'store'])->name('boards.store');
+        Route::patch('/boards/{board}', [BoardController::class, 'update'])->name('boards.update');
+        Route::delete('/boards/{board}', [BoardController::class, 'destroy'])->name('boards.destroy');
+    });
 
     Route::get('/question-bank', [QuestionBankController::class, 'index'])->name('question-bank.index');
     Route::post('/question-bank', [QuestionBankController::class, 'store'])->name('question-bank.store');

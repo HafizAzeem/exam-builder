@@ -10,11 +10,10 @@ use App\Jobs\ImportApprovedQuestionsJob;
 use App\Models\AIImport;
 use App\Models\AIImportQuestion;
 use App\Models\AISetting;
-use App\Models\Chapter;
 use App\Models\Question;
-use App\Models\Topic;
 use App\Services\AIImport\DuplicateDetectionService;
 use App\Services\AIImport\QuestionMergeService;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -58,14 +57,11 @@ class ReviewController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        $chapters = Chapter::query()
-            ->where('subject_id', $import->subject_id)
-            ->orderBy('number')
+        $chapters = CurriculumLookup::chapters($import->subject_id)
             ->get(['id', 'number', 'title_en']);
 
-        $topics = Topic::query()
+        $topics = CurriculumLookup::topics()
             ->whereIn('chapter_id', $chapters->pluck('id'))
-            ->orderBy('sort_order')
             ->get(['id', 'chapter_id', 'code', 'title_en']);
 
         return Inertia::render('SuperAdmin/AIImport/Review', [

@@ -14,9 +14,13 @@ const form = ref({
 });
 
 const filteredSubjects = computed(() => {
-    if (!form.value.grade_id) return props.subjects ?? [];
+    if (!form.value.grade_id) return [];
     return (props.subjects ?? []).filter((s) => String(s.grade_id) === String(form.value.grade_id));
 });
+
+const onGradeChange = () => {
+    form.value.subject_id = '';
+};
 
 const apply = () => {
     router.get(route('past-papers.index'), { ...form.value }, { preserveState: true, preserveScroll: true });
@@ -47,11 +51,11 @@ const reset = () => {
                     <option value="morning">Morning</option>
                     <option value="evening">Evening</option>
                 </select>
-                <select v-model="form.grade_id" class="rounded border-gray-300">
+                <select v-model="form.grade_id" class="rounded border-gray-300" @change="onGradeChange">
                     <option value="">All grades</option>
                     <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                 </select>
-                <select v-model="form.subject_id" class="rounded border-gray-300" :disabled="!filteredSubjects.length">
+                <select v-model="form.subject_id" class="rounded border-gray-300" :disabled="!form.grade_id">
                     <option value="">All subjects</option>
                     <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                 </select>

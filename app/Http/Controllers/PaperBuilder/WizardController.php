@@ -3,22 +3,18 @@
 namespace App\Http\Controllers\PaperBuilder;
 
 use App\Http\Controllers\Controller;
-use App\Models\Chapter;
 use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\SavedPaper;
 use App\Models\Subject;
-use App\Models\Topic;
 use App\Support\ActivityLogger;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class WizardController extends Controller
 {
-    /** Grade numbers currently available for paper generation. */
-    private const ACTIVE_GRADE_NUMBERS = [9];
-
     public function classes(Request $request): Response
     {
         $user = $request->user();
@@ -34,9 +30,9 @@ class WizardController extends Controller
         $grades = Grade::query()
             ->whereBetween('number', [5, 12])
             ->orderByDesc('number')
-            ->get(['id', 'number', 'label_en', 'label_ur'])
+            ->get(['id', 'number', 'label_en', 'label_ur', 'is_active'])
             ->map(function (Grade $grade) use ($allowedNumbers) {
-                $contentReady = in_array($grade->number, self::ACTIVE_GRADE_NUMBERS, true);
+                $contentReady = $grade->is_active;
                 $permissionOk = $allowedNumbers === null || in_array($grade->number, $allowedNumbers, true);
 
                 return [
@@ -61,7 +57,7 @@ class WizardController extends Controller
 
         $grade = Grade::query()->find($gradeId);
 
-        if (! $grade || ! in_array($grade->number, self::ACTIVE_GRADE_NUMBERS, true)) {
+        if (! $grade || ! $grade->is_active) {
             return redirect()->route('builder');
         }
 
@@ -72,9 +68,7 @@ class WizardController extends Controller
             }
         }
 
-        $subjectsQuery = Subject::query()
-            ->where('grade_id', $grade->id)
-            ->orderBy('sort_order');
+        $subjectsQuery = CurriculumLookup::subjects($grade->id);
 
         if ($user->hasRole('teacher')) {
             $allowedSubjects = $user->teacherPermission?->allowed_subjects;
@@ -105,7 +99,7 @@ class WizardController extends Controller
         $grade = Grade::query()->find($gradeId);
         $subject = Subject::query()->where('id', $subjectId)->where('grade_id', $gradeId)->first();
 
-        if (! $grade || ! $subject || ! in_array($grade->number, self::ACTIVE_GRADE_NUMBERS, true)) {
+        if (! $grade || ! $subject || ! $grade->is_active || ! $subject->is_active) {
             return redirect()->route('builder');
         }
 
@@ -121,10 +115,8 @@ class WizardController extends Controller
             }
         }
 
-        $chapters = Chapter::query()
-            ->where('subject_id', $subject->id)
-            ->with(['topics' => fn ($q) => $q->orderBy('sort_order')->orderBy('code')])
-            ->orderBy('number')
+        $chapters = CurriculumLookup::chapters($subject->id)
+            ->with(['topics' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('code')])
             ->get(['id', 'number', 'title_en', 'title_ur', 'subject_id']);
 
         return Inertia::render('PaperBuilder/Chapters', [
@@ -145,7 +137,7 @@ class WizardController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $gradesQuery = Grade::query()->orderBy('number');
+        $gradesQuery = CurriculumLookup::grades();
 
         if ($user->hasRole('teacher')) {
             $perms = $user->teacherPermission;
@@ -154,8 +146,6 @@ class WizardController extends Controller
                 $gradesQuery->whereIn('number', $allowed);
             }
         }
-
-        $gradesQuery->whereIn('number', self::ACTIVE_GRADE_NUMBERS);
 
         $grades = $gradesQuery->get(['id', 'number', 'label_en', 'label_ur']);
 
@@ -172,9 +162,7 @@ class WizardController extends Controller
             return redirect()->route('builder');
         }
 
-        $subjectsQuery = Subject::query()
-            ->where('grade_id', $selectedGradeId)
-            ->orderBy('sort_order');
+        $subjectsQuery = CurriculumLookup::subjects($selectedGradeId);
 
         if ($user->hasRole('teacher')) {
             $allowedSubjects = $user->teacherPermission?->allowed_subjects;
@@ -208,8 +196,7 @@ class WizardController extends Controller
             ->values()
             ->all();
 
-        $validChapterIds = Chapter::query()
-            ->where('subject_id', $selectedSubjectId)
+        $validChapterIds = CurriculumLookup::chapters($selectedSubjectId)
             ->whereIn('id', $chapterIds ?: [0])
             ->pluck('id')
             ->all();
@@ -221,12 +208,12 @@ class WizardController extends Controller
             ]);
         }
 
-        $topicsExist = Topic::query()->whereIn('chapter_id', $validChapterIds)->exists();
+        $topicsExist = CurriculumLookup::topics()->whereIn('chapter_id', $validChapterIds)->exists();
 
         // Topics UI is hidden on the institute side; auto-include all topics for selected chapters.
         $validTopicIds = [];
         if ($topicIds) {
-            $validTopicIds = Topic::query()
+            $validTopicIds = CurriculumLookup::topics()
                 ->whereIn('chapter_id', $validChapterIds)
                 ->whereIn('id', $topicIds)
                 ->pluck('id')
@@ -234,7 +221,7 @@ class WizardController extends Controller
         }
 
         if ($topicsExist && ! $validTopicIds) {
-            $validTopicIds = Topic::query()
+            $validTopicIds = CurriculumLookup::topics()
                 ->whereIn('chapter_id', $validChapterIds)
                 ->pluck('id')
                 ->all();
@@ -244,11 +231,9 @@ class WizardController extends Controller
             ? Institution::find($user->institution_id)
             : null;
 
-        $chapters = Chapter::query()
-            ->where('subject_id', $selectedSubjectId)
+        $chapters = CurriculumLookup::chapters($selectedSubjectId)
             ->whereIn('id', $validChapterIds)
-            ->with(['topics' => fn ($q) => $q->orderBy('sort_order')->orderBy('code')])
-            ->orderBy('number')
+            ->with(['topics' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('code')])
             ->get(['id', 'number', 'title_en', 'title_ur', 'subject_id']);
 
         return Inertia::render('PaperBuilder/Compose', [

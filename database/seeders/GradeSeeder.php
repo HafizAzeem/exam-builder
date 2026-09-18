@@ -9,16 +9,15 @@ class GradeSeeder extends Seeder
 {
     public function run(): void
     {
-        if (Grade::exists()) {
-            return;
-        }
-
         for ($n = 1; $n <= 12; $n++) {
-            Grade::create([
-                'number' => $n,
-                'label_en' => "Class {$n}",
-                'label_ur' => "جماعت {$n}",
-            ]);
+            Grade::query()->firstOrCreate(
+                ['number' => $n],
+                [
+                    'label_en' => "Class {$n}",
+                    'label_ur' => "جماعت {$n}",
+                    'is_active' => $n === 9,
+                ]
+            );
         }
     }
 }

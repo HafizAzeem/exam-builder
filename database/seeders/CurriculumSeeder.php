@@ -37,16 +37,34 @@ class CurriculumSeeder extends Seeder
                 ['en' => 'Tarjuma-tul-Quran', 'ur' => 'ترجمۃ القرآن'],
             ],
             10 => [
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Urdu', 'ur' => 'اردو'],
-                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
-                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
                 ['en' => 'Mathematics', 'ur' => 'ریاضی'],
                 ['en' => 'Physics', 'ur' => 'طبیعیات'],
                 ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
-                ['en' => 'Biology', 'ur' => 'حیاتیات'],
                 ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
+                ['en' => 'English', 'ur' => 'انگریزی'],
+                ['en' => 'Urdu', 'ur' => 'اردو'],
+                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
+                ['en' => 'Biology', 'ur' => 'حیاتیات'],
+                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
+            ],
+            11 => [
+                ['en' => 'Physics', 'ur' => 'طبیعیات'],
+                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
+                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
+                ['en' => 'Biology', 'ur' => 'حیاتیات'],
+                ['en' => 'English', 'ur' => 'انگریزی'],
+                ['en' => 'Urdu', 'ur' => 'اردو'],
+                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
                 ['en' => 'Tarjuma-tul-Quran', 'ur' => 'ترجمۃ القرآن'],
+            ],
+            12 => [
+                ['en' => 'Physics', 'ur' => 'طبیعیات'],
+                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
+                ['en' => 'Biology', 'ur' => 'حیاتیات'],
+                ['en' => 'Mathematics', 'ur' => 'ریاضی'],
+                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
+                ['en' => 'English', 'ur' => 'انگریزی'],
+                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
             ],
         ];
 
@@ -80,7 +98,7 @@ class CurriculumSeeder extends Seeder
         $chapterCount = match ($subject->name_en) {
             'Mathematics' => 8,
             'Physics', 'Chemistry', 'Biology', 'Computer Science' => 6,
-            'English' => ($gradeNumber === 9 ? 12 : ($gradeNumber <= 5 ? 10 : 7)),
+            'English' => ($gradeNumber === 9 ? 11 : ($gradeNumber <= 5 ? 10 : 7)),
             default => ($gradeNumber <= 5 ? 10 : 7),
         };
 

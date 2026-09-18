@@ -4,14 +4,12 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Imports\QuestionBankImport;
-use App\Models\Chapter;
-use App\Services\QuestionImageImportService;
-use App\Services\QuestionJsonImportService;
-use App\Models\Grade;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
 use App\Models\Question;
-use App\Models\Subject;
+use App\Services\QuestionImageImportService;
+use App\Services\QuestionJsonImportService;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -22,18 +20,16 @@ class QuestionBankController extends Controller
 {
     public function index(Request $request): Response
     {
-        $grades = Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']);
-        $subjects = Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']);
+        $grades = CurriculumLookup::grades()->get(['id', 'number', 'label_en']);
+        $subjects = CurriculumLookup::subjects()->get(['id', 'name_en', 'grade_id']);
 
-        $chaptersQuery = Chapter::query()->orderBy('number');
+        $chaptersQuery = CurriculumLookup::chapters();
         if ($request->filled('subject_id')) {
             $chaptersQuery->where('subject_id', $request->integer('subject_id'));
         }
         $chapters = $chaptersQuery->get(['id', 'number', 'title_en', 'subject_id']);
-        $allChapters = Chapter::query()
+        $allChapters = CurriculumLookup::chapters()
             ->with('subject:id,name_en,grade_id')
-            ->orderBy('subject_id')
-            ->orderBy('number')
             ->get(['id', 'number', 'title_en', 'subject_id']);
 
         $q = Question::query()
@@ -61,6 +57,7 @@ class QuestionBankController extends Controller
             'subjects' => $subjects,
             'chapters' => $chapters,
             'allChapters' => $allChapters,
+            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
             'questions' => $q,
             'filters' => $request->only(['grade_id', 'subject_id', 'chapter_id', 'type', 'source', 'search']),
         ]);
@@ -73,7 +70,7 @@ class QuestionBankController extends Controller
         }
 
         $validated = $request->validate([
-            'chapter_id' => ['required', 'integer', 'exists:chapters,id'],
+            'chapter_id' => CurriculumLookup::activeChapterId(),
             'type' => ['required', 'in:mcq,short,long,fill,truefalse'],
             'source' => ['required', 'in:exercise,additional,past_paper'],
             'text_en' => ['nullable', 'string'],
@@ -90,7 +87,7 @@ class QuestionBankController extends Controller
             'correct_answer' => ['nullable', 'in:true,false'],
 
             'past' => ['array'],
-            'past.board_name' => ['nullable', 'string', 'max:100'],
+            'past.board_name' => CurriculumLookup::activeBoardName(false),
             'past.year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'past.session' => ['nullable', 'in:morning,evening'],
 
@@ -168,7 +165,7 @@ class QuestionBankController extends Controller
         }
 
         $validated = $request->validate([
-            'chapter_id' => ['required', 'integer', 'exists:chapters,id'],
+            'chapter_id' => CurriculumLookup::activeChapterId(),
             'type' => ['required', 'in:mcq,short,long,fill,truefalse'],
             'source' => ['required', 'in:exercise,additional,past_paper'],
             'text_en' => ['nullable', 'string'],
@@ -186,7 +183,7 @@ class QuestionBankController extends Controller
             'correct_answer' => ['nullable', 'in:true,false'],
 
             'past' => ['array'],
-            'past.board_name' => ['nullable', 'string', 'max:100'],
+            'past.board_name' => CurriculumLookup::activeBoardName(false),
             'past.year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
             'past.session' => ['nullable', 'in:morning,evening'],
         ]);
@@ -332,8 +329,8 @@ class QuestionBankController extends Controller
     public function jsonImportForm(): Response
     {
         return Inertia::render('SuperAdmin/QuestionBank/JsonImport', [
-            'grades' => Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']),
-            'subjects' => Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']),
+            'grades' => CurriculumLookup::grades()->get(['id', 'number', 'label_en']),
+            'subjects' => CurriculumLookup::subjects()->get(['id', 'name_en', 'grade_id']),
             'sampleJson' => $this->sampleJson(),
         ]);
     }
@@ -342,8 +339,8 @@ class QuestionBankController extends Controller
     {
         $validated = $request->validate([
             'json' => ['required', 'string', 'max:500000'],
-            'grade_id' => ['nullable', 'integer', 'exists:grades,id'],
-            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
+            'grade_id' => CurriculumLookup::optionalActiveGradeId(),
+            'subject_id' => CurriculumLookup::optionalActiveSubjectId(),
         ]);
 
         $result = $importer->preview(
@@ -370,8 +367,8 @@ class QuestionBankController extends Controller
             'rows.*.valid' => ['required', 'boolean'],
             'rows.*.type' => ['required', 'in:mcq,short,long,fill,truefalse'],
             'rows.*.source' => ['required', 'in:exercise,additional,past_paper'],
-            'rows.*.chapter_id' => ['nullable', 'integer', 'exists:chapters,id'],
-            'rows.*.topic_id' => ['nullable', 'integer', 'exists:topics,id'],
+            'rows.*.chapter_id' => CurriculumLookup::optionalActiveChapterId(),
+            'rows.*.topic_id' => CurriculumLookup::optionalActiveTopicId(),
             'rows.*.text_en' => ['nullable', 'string'],
             'rows.*.text_ur' => ['nullable', 'string'],
             'rows.*.correct_answer' => ['nullable', 'in:true,false'],
@@ -430,4 +427,3 @@ class QuestionBankController extends Controller
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
 }
-

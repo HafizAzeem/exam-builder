@@ -8,9 +8,8 @@ use App\Http\Requests\SuperAdmin\StoreAIImportRequest;
 use App\Jobs\ProcessUploadedDocumentJob;
 use App\Models\AIImport;
 use App\Models\AISetting;
-use App\Models\Grade;
-use App\Models\Subject;
 use App\Services\AIImport\AIImportService;
+use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -42,8 +41,9 @@ class AIImportController extends Controller
         $this->authorize('create', AIImport::class);
 
         return Inertia::render('SuperAdmin/AIImport/Upload', [
-            'grades' => Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']),
-            'subjects' => Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']),
+            'grades' => CurriculumLookup::grades()->get(['id', 'number', 'label_en']),
+            'subjects' => CurriculumLookup::subjects()->get(['id', 'name_en', 'grade_id']),
+            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
         ]);
     }
 
@@ -75,8 +75,9 @@ class AIImportController extends Controller
         $this->authorize('create', AIImport::class);
 
         return Inertia::render('SuperAdmin/AIImport/Paste', [
-            'grades' => Grade::query()->orderBy('number')->get(['id', 'number', 'label_en']),
-            'subjects' => Subject::query()->orderBy('name_en')->get(['id', 'name_en', 'grade_id']),
+            'grades' => CurriculumLookup::grades()->get(['id', 'number', 'label_en']),
+            'subjects' => CurriculumLookup::subjects()->get(['id', 'name_en', 'grade_id']),
+            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
         ]);
     }
 

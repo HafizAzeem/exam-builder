@@ -10,13 +10,14 @@ import { computed } from 'vue';
 const props = defineProps({
     grades: { type: Array, required: true },
     subjects: { type: Array, required: true },
+    boards: { type: Array, default: () => [] },
     defaults: { type: Object, required: true },
 });
 
 const form = useForm({
     grade_id: '',
     subject_id: '',
-    board: props.defaults.board || 'Lahore Board',
+    board: props.defaults.board || props.boards?.[0]?.name || '',
     year: props.defaults.year || '',
     session: '',
     paper_type: props.defaults.paper_type || 'complete',
@@ -58,7 +59,8 @@ const submit = () => {
                         <div>
                             <InputLabel value="Education Board *" />
                             <select v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
-                                <option value="Lahore Board">Lahore Board</option>
+                                <option value="">Select board</option>
+                                <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                             </select>
                             <InputError :message="form.errors.board" class="mt-1" />
                         </div>

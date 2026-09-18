@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\SuperAdmin;
 
+use App\Support\CurriculumLookup;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,14 +18,10 @@ class StoreAIImportPasteRequest extends FormRequest
         $isPastPaper = $this->input('book_type') === 'past_paper';
 
         return [
-            'grade_id' => ['required', 'integer', 'exists:grades,id'],
-            'subject_id' => [
-                'required',
-                'integer',
-                Rule::exists('subjects', 'id')->where(fn ($q) => $q->where('grade_id', $this->integer('grade_id'))),
-            ],
+            'grade_id' => CurriculumLookup::activeGradeId(),
+            'subject_id' => CurriculumLookup::activeSubjectId($this->integer('grade_id')),
             'book_type' => ['required', 'in:text_book,past_paper,additional_questions'],
-            'board' => [$isPastPaper ? 'required' : 'nullable', 'string', 'max:100'],
+            'board' => CurriculumLookup::activeBoardName($isPastPaper),
             'year' => ['nullable', 'integer', 'min:1990', 'max:2100', Rule::prohibitedIf(! $isPastPaper)],
             'session' => ['nullable', 'in:morning,evening', Rule::prohibitedIf(! $isPastPaper)],
             'language' => ['required', 'string', 'max:50'],

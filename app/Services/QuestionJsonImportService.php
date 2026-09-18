@@ -2,13 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Chapter;
-use App\Models\Grade;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
 use App\Models\Question;
-use App\Models\Subject;
-use App\Models\Topic;
+use App\Support\CurriculumLookup;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -37,16 +35,15 @@ class QuestionJsonImportService
         $subject = null;
 
         if (! empty($meta['grade_id'])) {
-            $grade = Grade::query()->find($meta['grade_id']);
+            $grade = CurriculumLookup::grades()->find($meta['grade_id']);
         } elseif (isset($meta['grade'])) {
-            $grade = Grade::query()->where('number', (int) $meta['grade'])->first();
+            $grade = CurriculumLookup::grades()->where('number', (int) $meta['grade'])->first();
         }
 
         if (! empty($meta['subject_id'])) {
-            $subject = Subject::query()->find($meta['subject_id']);
+            $subject = CurriculumLookup::subjects($grade?->id)->find($meta['subject_id']);
         } elseif ($grade && ! empty($meta['subject_en'])) {
-            $subject = Subject::query()
-                ->where('grade_id', $grade->id)
+            $subject = CurriculumLookup::subjects($grade->id)
                 ->whereRaw('LOWER(name_en) = ?', [Str::lower(trim($meta['subject_en']))])
                 ->first();
         }
@@ -59,12 +56,10 @@ class QuestionJsonImportService
             return ['ok' => false, 'error' => 'Could not resolve subject for the selected grade. Set subject_en / subject_id or select Subject.'];
         }
 
-        $chapters = Chapter::query()
-            ->where('subject_id', $subject->id)
-            ->orderBy('number')
+        $chapters = CurriculumLookup::chapters($subject->id)
             ->get(['id', 'number', 'title_en', 'title_ur']);
 
-        $topicsByChapter = Topic::query()
+        $topicsByChapter = CurriculumLookup::topics()
             ->whereIn('chapter_id', $chapters->pluck('id'))
             ->get(['id', 'chapter_id', 'code', 'title_en', 'title_ur'])
             ->groupBy('chapter_id');
@@ -112,6 +107,7 @@ class QuestionJsonImportService
             foreach ($rows as $row) {
                 if (empty($row['include']) || empty($row['valid']) || empty($row['chapter_id'])) {
                     $skipped++;
+
                     continue;
                 }
 
@@ -149,7 +145,7 @@ class QuestionJsonImportService
                 if (($row['source'] ?? null) === 'past_paper' && is_array($row['past'] ?? null)) {
                     PastPaperTag::create([
                         'question_id' => $question->id,
-                        'board_name' => $row['past']['board_name'] ?: 'Lahore Board',
+                        'board_name' => $row['past']['board_name'] ?: CurriculumLookup::defaultBoardName(),
                         'year' => (int) ($row['past']['year'] ?: date('Y')),
                         'session' => $row['past']['session'] ?? null,
                     ]);
@@ -233,8 +229,8 @@ class QuestionJsonImportService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Chapter>  $chapters
-     * @param  \Illuminate\Support\Collection<int, \Illuminate\Support\Collection<int, Topic>>  $topicsByChapter
+     * @param  Collection<int, Chapter>  $chapters
+     * @param  Collection<int, Collection<int, Topic>>  $topicsByChapter
      * @return array<string, mixed>
      */
     protected function normalizeQuestionRow(
@@ -318,7 +314,7 @@ class QuestionJsonImportService
         if ($source === 'past_paper') {
             $pastRaw = is_array($raw['past_paper'] ?? null) ? $raw['past_paper'] : $raw;
             $past = [
-                'board_name' => $this->nullableString($pastRaw['board_name'] ?? $pastRaw['board'] ?? null) ?: 'Lahore Board',
+                'board_name' => $this->nullableString($pastRaw['board_name'] ?? $pastRaw['board'] ?? null) ?: CurriculumLookup::defaultBoardName(),
                 'year' => isset($pastRaw['year']) ? (int) $pastRaw['year'] : null,
                 'session' => in_array(($pastRaw['session'] ?? null), ['morning', 'evening'], true)
                     ? $pastRaw['session']

@@ -14,11 +14,22 @@ const props = defineProps({
     subjects: Array,
     chapters: Array,
     allChapters: Array,
+    boards: { type: Array, default: () => [] },
     questions: Object,
     filters: Object,
 });
 
-const chapterOptions = computed(() => props.allChapters ?? props.chapters ?? []);
+const allChapters = computed(() => props.allChapters ?? props.chapters ?? []);
+
+const subjectsForGrade = (gradeId) => {
+    if (!gradeId) return [];
+    return (props.subjects ?? []).filter((s) => String(s.grade_id) === String(gradeId));
+};
+
+const chaptersForSubject = (subjectId) => {
+    if (!subjectId) return [];
+    return allChapters.value.filter((c) => String(c.subject_id) === String(subjectId));
+};
 
 const filters = ref({
     grade_id: props.filters?.grade_id ?? '',
@@ -29,15 +40,17 @@ const filters = ref({
     search: props.filters?.search ?? '',
 });
 
-const filteredSubjects = computed(() => {
-    if (!filters.value.grade_id) return props.subjects ?? [];
-    return (props.subjects ?? []).filter((s) => String(s.grade_id) === String(filters.value.grade_id));
-});
+const filteredSubjects = computed(() => subjectsForGrade(filters.value.grade_id));
+const filteredChapters = computed(() => chaptersForSubject(filters.value.subject_id));
 
-const filteredChapters = computed(() => {
-    if (!filters.value.subject_id) return [];
-    return (props.chapters ?? []).filter((c) => String(c.subject_id) === String(filters.value.subject_id));
-});
+const onFilterGradeChange = () => {
+    filters.value.subject_id = '';
+    filters.value.chapter_id = '';
+};
+
+const onFilterSubjectChange = () => {
+    filters.value.chapter_id = '';
+};
 
 const apply = () => {
     router.get(route('super-admin.question-bank.index'), { ...filters.value }, { preserveState: true, preserveScroll: true });
@@ -93,6 +106,8 @@ const bulkDelete = () => {
     );
 };
 
+const createGradeId = ref('');
+const createSubjectId = ref('');
 const createForm = useForm({
     chapter_id: '',
     type: 'mcq',
@@ -106,6 +121,25 @@ const createForm = useForm({
     past: { board_name: '', year: '', session: '' },
 });
 
+const createSubjects = computed(() => subjectsForGrade(createGradeId.value));
+const createChapters = computed(() => chaptersForSubject(createSubjectId.value));
+
+const onCreateGradeChange = () => {
+    createSubjectId.value = '';
+    createForm.chapter_id = '';
+};
+
+const onCreateSubjectChange = () => {
+    createForm.chapter_id = '';
+};
+
+const resetCreateCurriculum = () => {
+    createGradeId.value = '';
+    createSubjectId.value = '';
+};
+
+const editGradeId = ref('');
+const editSubjectId = ref('');
 const editForm = useForm({
     chapter_id: '',
     type: 'mcq',
@@ -120,8 +154,22 @@ const editForm = useForm({
     past: { board_name: '', year: '', session: '' },
 });
 
+const editSubjects = computed(() => subjectsForGrade(editGradeId.value));
+const editChapters = computed(() => chaptersForSubject(editSubjectId.value));
+
+const onEditGradeChange = () => {
+    editSubjectId.value = '';
+    editForm.chapter_id = '';
+};
+
+const onEditSubjectChange = () => {
+    editForm.chapter_id = '';
+};
+
 const openEdit = (q) => {
     editingQuestion.value = q;
+    editGradeId.value = q.chapter?.subject?.grade_id ?? q.chapter?.subject?.grade?.id ?? '';
+    editSubjectId.value = q.chapter?.subject_id ?? q.chapter?.subject?.id ?? '';
     editForm.defaults({
         chapter_id: q.chapter_id,
         type: q.type,
@@ -156,6 +204,8 @@ const openEdit = (q) => {
 const closeEdit = () => {
     showEditModal.value = false;
     editingQuestion.value = null;
+    editGradeId.value = '';
+    editSubjectId.value = '';
     editForm.clearErrors();
 };
 
@@ -202,17 +252,22 @@ const currentImageUrl = computed(() => {
 
         <div class="mx-auto max-w-7xl px-4 py-6">
             <div class="mb-6 grid gap-3 rounded-lg bg-white p-4 shadow md:grid-cols-7">
-                <select v-model="filters.grade_id" class="rounded border-gray-300">
+                <select v-model="filters.grade_id" class="rounded border-gray-300" @change="onFilterGradeChange">
                     <option value="">All grades</option>
                     <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                 </select>
-                <select v-model="filters.subject_id" class="rounded border-gray-300" :disabled="!filteredSubjects.length">
+                <select
+                    v-model="filters.subject_id"
+                    class="rounded border-gray-300"
+                    :disabled="!filters.grade_id"
+                    @change="onFilterSubjectChange"
+                >
                     <option value="">All subjects</option>
                     <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                 </select>
-                <select v-model="filters.chapter_id" class="rounded border-gray-300" :disabled="!filteredChapters.length">
+                <select v-model="filters.chapter_id" class="rounded border-gray-300" :disabled="!filters.subject_id">
                     <option value="">All chapters</option>
-                    <option v-for="c in filteredChapters" :key="c.id" :value="c.id">Ch {{ c.number }}</option>
+                    <option v-for="c in filteredChapters" :key="c.id" :value="c.id">Ch {{ c.number }}: {{ c.title_en }}</option>
                 </select>
                 <select v-model="filters.type" class="rounded border-gray-300">
                     <option value="">All types</option>
@@ -240,27 +295,40 @@ const currentImageUrl = computed(() => {
 
             <div class="mb-8 rounded-lg bg-white p-4 shadow">
                 <h3 class="font-semibold">Create Question</h3>
-                <div class="mt-3 grid gap-3 md:grid-cols-2">
-                    <select v-model="createForm.chapter_id" class="rounded border-gray-300" required>
+                <div class="mt-3 grid gap-3 md:grid-cols-3">
+                    <select v-model="createGradeId" class="rounded border-gray-300" @change="onCreateGradeChange">
+                        <option value="">Select class</option>
+                        <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
+                    </select>
+                    <select
+                        v-model="createSubjectId"
+                        class="rounded border-gray-300"
+                        :disabled="!createGradeId"
+                        @change="onCreateSubjectChange"
+                    >
+                        <option value="">Select subject</option>
+                        <option v-for="s in createSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
+                    </select>
+                    <select v-model="createForm.chapter_id" class="rounded border-gray-300" required :disabled="!createSubjectId">
                         <option value="">Select chapter</option>
-                        <option v-for="c in chapterOptions" :key="c.id" :value="c.id">
+                        <option v-for="c in createChapters" :key="c.id" :value="c.id">
                             Ch {{ c.number }}: {{ c.title_en }}
                         </option>
                     </select>
-                    <div class="grid grid-cols-2 gap-3">
-                        <select v-model="createForm.type" class="rounded border-gray-300">
-                            <option value="mcq">MCQ</option>
-                            <option value="short">Short</option>
-                            <option value="long">Long</option>
-                            <option value="fill">Fill</option>
-                            <option value="truefalse">True/False</option>
-                        </select>
-                        <select v-model="createForm.source" class="rounded border-gray-300">
-                            <option value="exercise">Exercise</option>
-                            <option value="additional">Additional</option>
-                            <option value="past_paper">Past Paper</option>
-                        </select>
-                    </div>
+                </div>
+                <div class="mt-3 grid gap-3 md:grid-cols-2">
+                    <select v-model="createForm.type" class="rounded border-gray-300">
+                        <option value="mcq">MCQ</option>
+                        <option value="short">Short</option>
+                        <option value="long">Long</option>
+                        <option value="fill">Fill</option>
+                        <option value="truefalse">True/False</option>
+                    </select>
+                    <select v-model="createForm.source" class="rounded border-gray-300">
+                        <option value="exercise">Exercise</option>
+                        <option value="additional">Additional</option>
+                        <option value="past_paper">Past Paper</option>
+                    </select>
                     <textarea v-model="createForm.text_en" class="rounded border-gray-300" rows="3" placeholder="Question (EN)" />
                     <textarea v-model="createForm.text_ur" class="rounded border-gray-300" rows="3" placeholder="Question (UR)" />
                     <div class="md:col-span-2">
@@ -287,7 +355,10 @@ const currentImageUrl = computed(() => {
                         </select>
                     </div>
                     <div v-if="createForm.source === 'past_paper'" class="md:col-span-2 grid gap-2 md:grid-cols-3">
-                        <input v-model="createForm.past.board_name" class="rounded border-gray-300" placeholder="Board name" />
+                        <select v-model="createForm.past.board_name" class="rounded border-gray-300">
+                            <option value="">Board</option>
+                            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+                        </select>
                         <input v-model="createForm.past.year" type="number" class="rounded border-gray-300" placeholder="Year" />
                         <select v-model="createForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
@@ -299,7 +370,7 @@ const currentImageUrl = computed(() => {
                 <PrimaryButton
                     class="mt-4"
                     :disabled="createForm.processing"
-                    @click="createForm.post(route('super-admin.question-bank.store'), { forceFormData: true, onSuccess: () => createForm.reset() })"
+                    @click="createForm.post(route('super-admin.question-bank.store'), { forceFormData: true, onSuccess: () => { createForm.reset(); resetCreateCurriculum(); } })"
                 >
                     Create
                 </PrimaryButton>
@@ -374,13 +445,35 @@ const currentImageUrl = computed(() => {
                 <h3 class="text-lg font-semibold text-gray-900">Edit Question #{{ editingQuestion?.id }}</h3>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
-                    <div>
-                        <InputLabel value="Chapter" />
-                        <select v-model="editForm.chapter_id" class="mt-1 w-full rounded-md border-gray-300">
-                            <option v-for="c in chapterOptions" :key="c.id" :value="c.id">
-                                Ch {{ c.number }}: {{ c.title_en }}
-                            </option>
-                        </select>
+                    <div class="md:col-span-2 grid gap-3 md:grid-cols-3">
+                        <div>
+                            <InputLabel value="Class" />
+                            <select v-model="editGradeId" class="mt-1 w-full rounded-md border-gray-300" @change="onEditGradeChange">
+                                <option value="">Select class</option>
+                                <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Subject" />
+                            <select
+                                v-model="editSubjectId"
+                                class="mt-1 w-full rounded-md border-gray-300"
+                                :disabled="!editGradeId"
+                                @change="onEditSubjectChange"
+                            >
+                                <option value="">Select subject</option>
+                                <option v-for="s in editSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <InputLabel value="Chapter" />
+                            <select v-model="editForm.chapter_id" class="mt-1 w-full rounded-md border-gray-300" :disabled="!editSubjectId">
+                                <option value="">Select chapter</option>
+                                <option v-for="c in editChapters" :key="c.id" :value="c.id">
+                                    Ch {{ c.number }}: {{ c.title_en }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -445,7 +538,10 @@ const currentImageUrl = computed(() => {
                     </div>
 
                     <div v-if="editForm.source === 'past_paper'" class="md:col-span-2 grid gap-2 md:grid-cols-3">
-                        <input v-model="editForm.past.board_name" class="rounded border-gray-300" placeholder="Board" />
+                        <select v-model="editForm.past.board_name" class="rounded border-gray-300">
+                            <option value="">Board</option>
+                            <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
+                        </select>
                         <input v-model="editForm.past.year" type="number" class="rounded border-gray-300" placeholder="Year" />
                         <select v-model="editForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
