@@ -8,6 +8,7 @@ import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hy
 import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { usePrivateChannel } from '@/composables/usePrivateChannel';
 
 const props = defineProps({
     savedPaper: Object,
@@ -15,6 +16,10 @@ const props = defineProps({
     headerTemplates: Array,
     pdfUrl: String,
 });
+
+const livePdfUrl = ref(props.pdfUrl || null);
+const pdfGenerating = ref(false);
+const pdfError = ref(null);
 
 const buildWatermarkText = (inst) => {
     if (!inst) return '';
@@ -435,7 +440,22 @@ onUnmounted(() => {
     window.removeEventListener('afterprint', onAfterPrint);
 });
 
-const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
+usePrivateChannel(`paper.${props.savedPaper.id}`, '.pdf.status', (data) => {
+    pdfGenerating.value = false;
+    if (data.status === 'ready' && data.pdf_url) {
+        livePdfUrl.value = data.pdf_url;
+        pdfError.value = null;
+        return;
+    }
+
+    pdfError.value = data.message || 'PDF generation failed.';
+});
+
+const requestPdf = () => {
+    pdfGenerating.value = true;
+    pdfError.value = null;
+    layoutForm.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -486,14 +506,15 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
                     </button>
                     <button
                         type="button"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+                        :disabled="pdfGenerating"
                         @click="requestPdf"
                     >
-                        PDF
+                        {{ pdfGenerating ? 'Generating PDF…' : 'PDF' }}
                     </button>
                     <a
-                        v-if="pdfUrl"
-                        :href="pdfUrl"
+                        v-if="livePdfUrl"
+                        :href="livePdfUrl"
                         class="rounded-md bg-gray-800 px-4 py-2 text-sm text-white"
                         target="_blank"
                         rel="noopener"
@@ -509,6 +530,9 @@ const requestPdf = () => layoutForm.post(route('editor.pdf', props.savedPaper.id
 
         <p v-if="editingPaper" class="mx-auto max-w-7xl px-4 pt-4 text-sm text-green-700">
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
+        </p>
+        <p v-if="pdfError" class="mx-auto max-w-7xl px-4 pt-4 text-sm text-rose-700">
+            {{ pdfError }}
         </p>
 
         <div class="no-print grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">

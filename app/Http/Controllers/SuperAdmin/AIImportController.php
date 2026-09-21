@@ -120,20 +120,7 @@ class AIImportController extends Controller
 
         $import->refresh();
 
-        return response()->json([
-            'id' => $import->id,
-            'status' => $import->status,
-            'progress_percent' => $import->progress_percent,
-            'total_chunks' => $import->total_chunks,
-            'processed_chunks' => $import->processed_chunks,
-            'questions_found' => $import->questions_found,
-            'approved_count' => $import->approved_count,
-            'rejected_count' => $import->rejected_count,
-            'imported_count' => $import->imported_count,
-            'failed_count' => $import->failed_count,
-            'duplicate_count' => $import->duplicate_count,
-            'error_message' => $import->error_message,
-        ]);
+        return response()->json($import->statusPayload());
     }
 
     public function destroy(AIImport $import): RedirectResponse

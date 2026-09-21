@@ -9,3 +9,4 @@ if (csrfToken) {
     window.axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.content;
 }
 
+

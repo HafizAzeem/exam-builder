@@ -42,6 +42,12 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'watermark_upload' => fn () => $request->session()->get('watermark_upload'),
             ],
+            'pusher' => [
+                'key' => config('broadcasting.default') === 'pusher'
+                    ? config('broadcasting.connections.pusher.key')
+                    : null,
+                'cluster' => config('broadcasting.connections.pusher.options.cluster'),
+            ],
         ];
     }
 }

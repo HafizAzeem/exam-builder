@@ -80,6 +80,8 @@ class AIImportService
             'processed_chunks' => $processedChunks,
             'progress_percent' => $percent,
         ]);
+
+        $import->broadcastProgress();
     }
 
     public function markStatus(AIImport $import, string $status, ?string $error = null): void
@@ -99,6 +101,7 @@ class AIImportService
         }
 
         $import->update($payload);
+        $import->broadcastProgress();
     }
 
     public function dashboardStats(): array

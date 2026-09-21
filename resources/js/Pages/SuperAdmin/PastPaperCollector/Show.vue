@@ -5,6 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { hasRealtime, usePrivateChannel } from '@/composables/usePrivateChannel';
 
 const props = defineProps({
     collection: { type: Object, required: true },
@@ -40,13 +41,17 @@ const stageLabel = (stage) => ({
 
 const isTerminal = computed(() => ['review', 'completed', 'failed'].includes(live.value.status));
 
+const applyStatus = (data) => {
+    live.value = data;
+};
+
 const poll = async () => {
     try {
         const res = await fetch(route('super-admin.past-paper-collector.status', props.collection.id), {
             headers: { Accept: 'application/json' },
         });
         if (res.ok) {
-            live.value = await res.json();
+            applyStatus(await res.json());
         }
     } catch {
         // ignore transient poll errors
@@ -54,15 +59,20 @@ const poll = async () => {
 };
 
 watch(isTerminal, (done) => {
-    if (done && timer) {
+    if (!done) {
+        return;
+    }
+    if (timer) {
         clearInterval(timer);
         timer = null;
-        router.reload({ only: ['collection', 'status'] });
     }
+    router.reload({ only: ['collection', 'status'] });
 });
 
+usePrivateChannel(`paper-collection.${props.collection.id}`, '.progress.updated', applyStatus);
+
 onMounted(() => {
-    if (!isTerminal.value) {
+    if (!isTerminal.value && !hasRealtime()) {
         timer = setInterval(poll, 2500);
     }
 });

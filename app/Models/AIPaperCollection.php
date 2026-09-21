@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Events\PaperCollectionProgressUpdated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Throwable;
 
 class AIPaperCollection extends Model
 {
@@ -121,6 +123,8 @@ class AIPaperCollection extends Model
             'progress_stage' => $stage,
             'progress_percent' => $percent ?? (self::STAGE_WEIGHTS[$stage] ?? $this->progress_percent),
         ]);
+
+        $this->broadcastProgress();
     }
 
     public function refreshCounters(): void
@@ -142,5 +146,16 @@ class AIPaperCollection extends Model
                 ? $this->import->questions()->where('status', 'imported')->count()
                 : $this->imported_count,
         ]);
+
+        $this->broadcastProgress();
+    }
+
+    public function broadcastProgress(): void
+    {
+        try {
+            event(new PaperCollectionProgressUpdated($this->fresh() ?? $this));
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 }

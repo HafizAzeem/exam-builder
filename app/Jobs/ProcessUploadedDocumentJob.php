@@ -48,6 +48,7 @@ class ProcessUploadedDocumentJob implements ShouldQueue
                 'processed_chunks' => 0,
                 'progress_percent' => 0,
             ]);
+            $this->import->broadcastProgress();
 
             $jobs = [];
             foreach ($chunks as $chunk) {

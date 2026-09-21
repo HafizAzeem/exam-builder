@@ -99,6 +99,7 @@ class PastPaperCollectionService
             $collection->markStage('searching');
             $queries = $this->queryGenerator->generate($collection);
             $collection->update(['generated_queries' => $queries]);
+            $collection->broadcastProgress();
 
             $collection->markStage('collecting_sources');
             $candidates = $this->discoverSources($collection, $queries, $settings);
@@ -112,11 +113,13 @@ class PastPaperCollectionService
                     'completed_at' => now(),
                     'processing_time_ms' => (int) round((microtime(true) - $started) * 1000),
                 ]);
+                $collection->broadcastProgress();
                 $collection->import?->update([
                     'status' => 'failed',
                     'error_message' => 'No relevant search results found.',
                     'progress_percent' => 100,
                 ]);
+                $collection->import?->broadcastProgress();
 
                 return;
             }
@@ -153,6 +156,8 @@ class PastPaperCollectionService
                     'progress_percent' => 100,
                     'error_message' => $hasQuestions ? null : 'No questions extracted from collected sources.',
                 ]);
+                $collection->broadcastProgress();
+                $collection->import->broadcastProgress();
             }
         } catch (\Throwable $e) {
             $collection->update([
@@ -163,11 +168,13 @@ class PastPaperCollectionService
                 'completed_at' => now(),
                 'processing_time_ms' => (int) round((microtime(true) - $started) * 1000),
             ]);
+            $collection->broadcastProgress();
             $collection->import?->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'progress_percent' => 100,
             ]);
+            $collection->import?->broadcastProgress();
 
             throw $e;
         }
@@ -422,6 +429,7 @@ class PastPaperCollectionService
                 'error_message' => null,
                 'completed_at' => null,
             ]);
+            $collection->broadcastProgress();
         }
     }
 

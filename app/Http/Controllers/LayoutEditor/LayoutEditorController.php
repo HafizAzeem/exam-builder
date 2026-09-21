@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\LayoutEditor;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GeneratePdfJob;
 use App\Models\Institution;
 use App\Models\SavedPaper;
-use App\Jobs\GeneratePdfJob;
 use App\Services\PaperExportService;
 use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
@@ -130,6 +130,6 @@ class LayoutEditorController extends Controller
 
         ActivityLogger::log($request, 'paper.pdf_requested', ['paper_id' => $paper->id]);
 
-        return back()->with('success', 'PDF generation started. Refresh in a minute to download.');
+        return back()->with('success', 'PDF generation started. The download link will appear when it is ready.');
     }
 }

@@ -6,6 +6,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import axios from 'axios';
+import { hasRealtime, usePrivateChannel } from '@/composables/usePrivateChannel';
 
 const props = defineProps({
     aiImport: { type: Object, required: true },
@@ -14,26 +15,33 @@ const props = defineProps({
 const status = ref({ ...props.aiImport });
 let timer = null;
 
-const processing = () => ['uploaded', 'extracting', 'processing', 'importing'].includes(status.value.status);
+const processing = (current = status.value.status) =>
+    ['uploaded', 'extracting', 'processing', 'importing'].includes(current);
+
+const applyStatus = (data) => {
+    status.value = data;
+    if (!processing(data.status) && timer) {
+        clearInterval(timer);
+        timer = null;
+    }
+    if (data.status === 'review') {
+        router.visit(route('super-admin.ai-import.review', props.aiImport.id));
+    }
+};
 
 const poll = async () => {
     try {
         const { data } = await axios.get(route('super-admin.ai-import.status', props.aiImport.id));
-        status.value = data;
-        if (!processing() && timer) {
-            clearInterval(timer);
-            timer = null;
-            if (data.status === 'review') {
-                router.visit(route('super-admin.ai-import.review', props.aiImport.id));
-            }
-        }
+        applyStatus(data);
     } catch (e) {
         // keep polling quietly
     }
 };
 
+usePrivateChannel(`ai-import.${props.aiImport.id}`, '.progress.updated', applyStatus);
+
 onMounted(() => {
-    if (processing()) {
+    if (processing() && !hasRealtime()) {
         timer = setInterval(poll, 2500);
         poll();
     }

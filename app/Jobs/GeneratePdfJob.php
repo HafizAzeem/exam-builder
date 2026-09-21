@@ -2,11 +2,13 @@
 
 namespace App\Jobs;
 
+use App\Events\PaperPdfStatusUpdated;
 use App\Models\SavedPaper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class GeneratePdfJob implements ShouldQueue
 {
@@ -32,6 +34,8 @@ class GeneratePdfJob implements ShouldQueue
                 'paper_id' => $this->paper->id,
             ]);
 
+            $this->broadcastStatus('failed', null, 'PDF generator is not available.');
+
             return;
         }
 
@@ -44,8 +48,22 @@ class GeneratePdfJob implements ShouldQueue
 
         exec($cmd, $output, $exitCode);
 
-        if ($exitCode !== 0) {
+        if ($exitCode !== 0 || ! Storage::disk('public')->exists($outputPath)) {
             Log::error('PDF generation failed', ['output' => $output, 'paper_id' => $this->paper->id]);
+            $this->broadcastStatus('failed', null, 'PDF generation failed. Please try again.');
+
+            return;
+        }
+
+        $this->broadcastStatus('ready', Storage::disk('public')->url($outputPath));
+    }
+
+    protected function broadcastStatus(string $status, ?string $pdfUrl, ?string $message = null): void
+    {
+        try {
+            event(new PaperPdfStatusUpdated($this->paper->id, $status, $pdfUrl, $message));
+        } catch (Throwable $e) {
+            report($e);
         }
     }
 }

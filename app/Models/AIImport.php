@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Events\AIImportProgressUpdated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Throwable;
 
 class AIImport extends Model
 {
@@ -102,5 +104,39 @@ class AIImport extends Model
             'failed_count' => $this->questions()->where('status', 'failed')->count(),
             'duplicate_count' => $this->questions()->where('is_duplicate', true)->count(),
         ]);
+
+        $this->broadcastProgress();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function statusPayload(): array
+    {
+        $import = $this->exists ? $this->fresh() ?? $this : $this;
+
+        return [
+            'id' => $import->id,
+            'status' => $import->status,
+            'progress_percent' => $import->progress_percent,
+            'total_chunks' => $import->total_chunks,
+            'processed_chunks' => $import->processed_chunks,
+            'questions_found' => $import->questions_found,
+            'approved_count' => $import->approved_count,
+            'rejected_count' => $import->rejected_count,
+            'imported_count' => $import->imported_count,
+            'failed_count' => $import->failed_count,
+            'duplicate_count' => $import->duplicate_count,
+            'error_message' => $import->error_message,
+        ];
+    }
+
+    public function broadcastProgress(): void
+    {
+        try {
+            event(new AIImportProgressUpdated($this->fresh() ?? $this));
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 }

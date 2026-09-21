@@ -1,28 +1,36 @@
 <?php
 
+use App\Http\Middleware\CheckLicenceExpiry;
+use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LogActivity;
+use App\Http\Middleware\ScopeTeacherPermissions;
+use App\Http\Middleware\TenantResolver;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-            \App\Http\Middleware\LogActivity::class,
+            HandleInertiaRequests::class,
+            AddLinkHeadersForPreloadedAssets::class,
+            LogActivity::class,
         ]);
 
         $middleware->alias([
-            'tenant' => \App\Http\Middleware\TenantResolver::class,
-            'check.licence' => \App\Http\Middleware\CheckLicenceExpiry::class,
-            'teacher.scope' => \App\Http\Middleware\ScopeTeacherPermissions::class,
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'tenant' => TenantResolver::class,
+            'check.licence' => CheckLicenceExpiry::class,
+            'teacher.scope' => ScopeTeacherPermissions::class,
+            'role' => RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
