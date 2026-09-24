@@ -28,6 +28,7 @@ const navLinks = computed(() => {
             { href: route('super-admin.ai-import.create'), label: 'Upload', active: route().current('super-admin.ai-import.create') },
             { href: route('super-admin.ai-import.paste'), label: 'Paste Text', active: route().current('super-admin.ai-import.paste*') },
             { href: route('super-admin.past-paper-collector.create'), label: 'AI Past Paper Collector', active: route().current('super-admin.past-paper-collector.*') },
+            { href: route('super-admin.preferred-sites.index'), label: 'Preferred Sites', active: route().current('super-admin.preferred-sites.*') },
             { href: route('super-admin.ai-import.history'), label: 'History', active: route().current('super-admin.ai-import.history') },
             { href: route('super-admin.ai-import.settings'), label: 'AI Settings', active: route().current('super-admin.ai-import.settings') },
         ];

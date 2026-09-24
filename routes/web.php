@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\PaperController;
 use App\Http\Controllers\Dashboard\PaperHistoryController;
 use App\Http\Controllers\LayoutEditor\LayoutEditorController;
 use App\Http\Controllers\PaperBuilder\QuestionSelectorController;
+use App\Http\Controllers\PaperBuilder\TeacherAIController;
 use App\Http\Controllers\PaperBuilder\WizardController;
 use App\Http\Controllers\PastPaperController;
 use App\Http\Controllers\ProfileController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\SuperAdmin\Curriculum\SubjectController;
 use App\Http\Controllers\SuperAdmin\Curriculum\TopicController;
 use App\Http\Controllers\SuperAdmin\ImportHistoryController;
 use App\Http\Controllers\SuperAdmin\PastPaperCollectorController;
+use App\Http\Controllers\SuperAdmin\PreferredQuestionSiteController;
 use App\Http\Controllers\SuperAdmin\QuestionBankController;
 use App\Http\Controllers\SuperAdmin\ReviewController;
 use App\Http\Controllers\SuperAdmin\SettingsController;
@@ -37,6 +39,18 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::get('/builder/chapters', [WizardController::class, 'chapters'])->name('builder.chapters');
     Route::get('/builder/create', [WizardController::class, 'index'])->name('builder.create');
     Route::post('/builder', [WizardController::class, 'store'])->name('builder.store');
+
+    Route::get('/builder/ai/paste', [TeacherAIController::class, 'pasteForm'])->name('builder.ai.paste');
+    Route::post('/builder/ai/paste', [TeacherAIController::class, 'storePaste'])->name('builder.ai.paste.store');
+    Route::get('/builder/ai/generate', [TeacherAIController::class, 'generateForm'])->name('builder.ai.generate');
+    Route::post('/builder/ai/generate', [TeacherAIController::class, 'storeGenerate'])->name('builder.ai.generate.store');
+    Route::get('/builder/ai/{import}/status', [TeacherAIController::class, 'status'])->name('builder.ai.status');
+    Route::get('/builder/ai/{import}/status.json', [TeacherAIController::class, 'statusJson'])->name('builder.ai.status.json');
+    Route::get('/builder/ai/{import}/review', [TeacherAIController::class, 'review'])->name('builder.ai.review');
+    Route::get('/builder/ai/{import}/search-bank', [TeacherAIController::class, 'searchBank'])->name('builder.ai.search-bank');
+    Route::post('/builder/ai/{import}/manual-question', [TeacherAIController::class, 'storeManualQuestion'])->name('builder.ai.manual-question');
+    Route::post('/builder/ai/{import}/bank-questions', [TeacherAIController::class, 'addBankQuestionsToSelection'])->name('builder.ai.bank-questions');
+    Route::post('/builder/ai/{import}/add-to-paper', [TeacherAIController::class, 'addToPaper'])->name('builder.ai.add-to-paper');
 
     Route::prefix('api/builder')->group(function () {
         Route::get('/grades/{grade}/subjects', [QuestionSelectorController::class, 'subjects']);
@@ -97,6 +111,11 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::get('/ai-import-history', [ImportHistoryController::class, 'index'])->name('ai-import.history');
     Route::get('/ai-settings', [SettingsController::class, 'edit'])->name('ai-import.settings');
     Route::put('/ai-settings', [SettingsController::class, 'update'])->name('ai-import.settings.update');
+
+    Route::get('/preferred-sites', [PreferredQuestionSiteController::class, 'index'])->name('preferred-sites.index');
+    Route::post('/preferred-sites', [PreferredQuestionSiteController::class, 'store'])->name('preferred-sites.store');
+    Route::patch('/preferred-sites/{preferredQuestionSite}', [PreferredQuestionSiteController::class, 'update'])->name('preferred-sites.update');
+    Route::delete('/preferred-sites/{preferredQuestionSite}', [PreferredQuestionSiteController::class, 'destroy'])->name('preferred-sites.destroy');
 
     Route::prefix('curriculum')->name('curriculum.')->group(function () {
         Route::get('/grades', [GradeController::class, 'index'])->name('grades.index');

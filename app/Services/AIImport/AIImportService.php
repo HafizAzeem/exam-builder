@@ -18,6 +18,7 @@ class AIImportService
     {
         $import = AIImport::create([
             'user_id' => $userId,
+            'mode' => 'upload',
             'grade_id' => $data['grade_id'],
             'subject_id' => $data['subject_id'],
             'book_type' => $data['book_type'],
@@ -30,6 +31,9 @@ class AIImportService
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize() ?: 0,
             'status' => 'uploaded',
+            'meta' => [
+                'chapter_ids' => array_values(array_map('intval', $data['chapter_ids'] ?? [])),
+            ],
         ]);
 
         $extension = strtolower($file->getClientOriginalExtension() ?: 'bin');
@@ -49,6 +53,7 @@ class AIImportService
 
         $import = AIImport::create([
             'user_id' => $userId,
+            'mode' => 'paste',
             'grade_id' => $data['grade_id'],
             'subject_id' => $data['subject_id'],
             'book_type' => $data['book_type'],
@@ -61,6 +66,9 @@ class AIImportService
             'mime_type' => 'text/plain',
             'file_size' => strlen($text),
             'status' => 'uploaded',
+            'meta' => [
+                'chapter_ids' => array_values(array_map('intval', $data['chapter_ids'] ?? [])),
+            ],
         ]);
 
         $path = "ai-imports/{$import->id}/".Str::uuid()->toString().'.txt';
@@ -69,6 +77,83 @@ class AIImportService
         $import->update(['stored_path' => $path]);
 
         return $import->fresh(['grade', 'subject', 'user']);
+    }
+
+    /**
+     * @param  array{
+     *   grade_id:int,
+     *   subject_id:int,
+     *   chapter_ids:list<int>,
+     *   book_type?:string,
+     *   board?:?string,
+     *   language?:string,
+     *   counts:array<string,int>
+     * }  $data
+     */
+    public function createFromGenerate(array $data, int $userId): AIImport
+    {
+        $counts = $data['counts'] ?? [];
+        $contentSource = $data['content_source'] ?? 'exercise';
+
+        $bookType = $data['book_type'] ?? match ($contentSource) {
+            'past_paper' => 'past_paper',
+            'online_practice' => 'additional_questions',
+            'exercise' => 'text_book',
+            default => 'additional_questions',
+        };
+
+        return AIImport::create([
+            'user_id' => $userId,
+            'mode' => 'generate',
+            'grade_id' => $data['grade_id'],
+            'subject_id' => $data['subject_id'],
+            'book_type' => $bookType,
+            'board' => $data['board'] ?? null,
+            'year' => null,
+            'session' => null,
+            'language' => $data['language'] ?? 'english',
+            'original_filename' => 'ai-generate-'.now()->format('Ymd-His').'.json',
+            'stored_path' => '',
+            'mime_type' => 'application/json',
+            'file_size' => 0,
+            'status' => 'uploaded',
+            'meta' => [
+                'chapter_ids' => array_values(array_map('intval', $data['chapter_ids'] ?? [])),
+                'content_source' => $contentSource,
+                // Hidden default: always prefer education websites first.
+                'prefer_websites' => true,
+                'counts' => [
+                    'mcq' => (int) ($counts['mcq'] ?? 0),
+                    'short' => (int) ($counts['short'] ?? 0),
+                    'long' => (int) ($counts['long'] ?? 0),
+                    'fill' => (int) ($counts['fill'] ?? 0),
+                    'truefalse' => (int) ($counts['truefalse'] ?? 0),
+                ],
+            ],
+        ])->fresh(['grade', 'subject', 'user']);
+    }
+
+    /**
+     * Ensure staging questions map to one of the teacher-selected chapters.
+     */
+    public function constrainChapters(AIImport $import): void
+    {
+        $allowed = $import->chapterIds();
+        if (! $allowed) {
+            return;
+        }
+
+        $fallback = $allowed[0];
+
+        $import->questions()
+            ->where(function ($q) use ($allowed) {
+                $q->whereNull('chapter_id')
+                    ->orWhereNotIn('chapter_id', $allowed);
+            })
+            ->update([
+                'chapter_id' => $fallback,
+                'match_status' => 'manual',
+            ]);
     }
 
     public function updateProgress(AIImport $import, int $processedChunks): void

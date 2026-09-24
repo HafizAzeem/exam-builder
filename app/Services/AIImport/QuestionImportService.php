@@ -20,8 +20,6 @@ class QuestionImportService
      */
     public function importApproved(AIImport $import): array
     {
-        $stats = ['imported' => 0, 'duplicates' => 0, 'failed' => 0];
-
         $questions = $import->questions()
             ->where('status', 'approved')
             ->where('is_duplicate', false)
@@ -29,19 +27,101 @@ class QuestionImportService
             ->orderBy('id')
             ->get();
 
+        $result = $this->importStagingCollection($import, $questions);
+
+        return [
+            'imported' => $result['imported'],
+            'duplicates' => $result['duplicates'],
+            'failed' => $result['failed'],
+        ];
+    }
+
+    /**
+     * @param  list<int>  $stagingIds
+     * @return array{imported:int, duplicates:int, failed:int, question_ids: list<int>}
+     */
+    public function importSelected(AIImport $import, array $stagingIds): array
+    {
+        $ids = collect($stagingIds)->map(fn ($id) => (int) $id)->filter()->unique()->values()->all();
+
+        $questions = $import->questions()
+            ->whereIn('id', $ids ?: [0])
+            ->whereIn('status', ['approved', 'pending', 'duplicate'])
+            ->where(function ($q) {
+                $q->where('is_duplicate', false)
+                    ->orWhereNotNull('duplicate_of_question_id');
+            })
+            ->whereNotNull('chapter_id')
+            ->orderBy('id')
+            ->get();
+
+        // Teacher checklist: treat selected pending rows as approved before insert.
+        foreach ($questions as $staging) {
+            if ($staging->status === 'pending') {
+                $staging->update(['status' => 'approved']);
+                $staging->status = 'approved';
+            }
+        }
+
+        return $this->importStagingCollection($import, $questions);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, AIImportQuestion>  $questions
+     * @return array{imported:int, duplicates:int, failed:int, question_ids: list<int>}
+     */
+    protected function importStagingCollection(AIImport $import, $questions): array
+    {
+        $stats = [
+            'imported' => 0,
+            'duplicates' => 0,
+            'failed' => 0,
+            'question_ids' => [],
+        ];
+
         foreach ($questions as $staging) {
             try {
-                if ($this->duplicates->markIfDuplicate($staging->fresh())) {
-                    $stats['duplicates']++;
+                if ($staging->imported_question_id) {
+                    $stats['question_ids'][] = (int) $staging->imported_question_id;
+                    $stats['imported']++;
 
                     continue;
                 }
 
-                DB::transaction(function () use ($staging, $import) {
-                    $this->importOne($staging, $import);
+                // Already in bank: attach existing question to the paper only (no re-insert).
+                if ($staging->is_duplicate && $staging->duplicate_of_question_id) {
+                    $stats['question_ids'][] = (int) $staging->duplicate_of_question_id;
+                    $stats['duplicates']++;
+                    $staging->update([
+                        'status' => 'imported',
+                        'imported_question_id' => (int) $staging->duplicate_of_question_id,
+                    ]);
+
+                    continue;
+                }
+
+                if ($this->duplicates->markIfDuplicate($staging->fresh())) {
+                    $fresh = $staging->fresh();
+                    if ($fresh?->duplicate_of_question_id) {
+                        $stats['question_ids'][] = (int) $fresh->duplicate_of_question_id;
+                        $stats['duplicates']++;
+                        $fresh->update([
+                            'status' => 'imported',
+                            'imported_question_id' => (int) $fresh->duplicate_of_question_id,
+                        ]);
+                    } else {
+                        $stats['duplicates']++;
+                    }
+
+                    continue;
+                }
+
+                $question = DB::transaction(function () use ($staging, $import) {
+                    return $this->importOne($staging, $import);
                 });
 
                 $stats['imported']++;
+                $stats['question_ids'][] = $question->id;
             } catch (\Throwable $e) {
                 $staging->update([
                     'status' => 'failed',
@@ -115,7 +195,10 @@ class QuestionImportService
             ]);
         }
 
-        $staging->update(['status' => 'imported']);
+        $staging->update([
+            'status' => 'imported',
+            'imported_question_id' => $question->id,
+        ]);
 
         return $question;
     }

@@ -236,6 +236,8 @@ class WizardController extends Controller
             ->with(['topics' => fn ($q) => $q->active()->orderBy('sort_order')->orderBy('code')])
             ->get(['id', 'number', 'title_en', 'title_ur', 'subject_id']);
 
+        $selectedGrade = $grades->firstWhere('id', $selectedGradeId);
+
         return Inertia::render('PaperBuilder/Compose', [
             'grades' => $grades,
             'subjects' => $subjects,
@@ -246,6 +248,13 @@ class WizardController extends Controller
             'selectedTopicIds' => $validTopicIds,
             'teacherPermissions' => $user->hasRole('teacher') ? ($user->teacherPermission?->toArray() ?? null) : null,
             'institution' => $institution,
+            'useSystemQuestionBank' => (bool) config('exam.use_system_question_bank'),
+            'pendingQuestionIds' => session()->pull('builder_pending_question_ids', []),
+            'aiToolsAllowed' => in_array(
+                (int) ($selectedGrade->number ?? 0),
+                config('exam.teacher_ai_grade_numbers', [9, 10, 11, 12]),
+                true
+            ),
         ]);
     }
 

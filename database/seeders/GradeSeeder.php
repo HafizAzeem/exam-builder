@@ -15,7 +15,7 @@ class GradeSeeder extends Seeder
                 [
                     'label_en' => "Class {$n}",
                     'label_ur' => "جماعت {$n}",
-                    'is_active' => $n === 9,
+                    'is_active' => in_array($n, [9, 10, 11, 12], true),
                 ]
             );
         }

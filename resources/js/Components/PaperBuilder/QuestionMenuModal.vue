@@ -38,12 +38,21 @@ const selectedIds = ref([]);
 const listFilter = ref('all'); // all | selected
 const sourceMenuOpen = ref(false);
 const lastAddedCount = ref(0);
+const chapterFilterId = ref('');
 
 const pastPapersSelected = computed(() => sources.value.includes('past_paper'));
 const isMcq = computed(() => questionType.value === 'mcq');
 const isShort = computed(() => questionType.value === 'short');
 const isLong = computed(() => questionType.value === 'long');
 const isShortOrLong = computed(() => isShort.value || isLong.value);
+
+const effectiveChapterIds = computed(() => {
+    if (chapterFilterId.value) {
+        const id = Number(chapterFilterId.value);
+        return props.chapterIds.includes(id) ? [id] : props.chapterIds;
+    }
+    return props.chapterIds;
+});
 
 const questionTypes = [
     { value: 'mcq', label: 'Multiple Option' },
@@ -94,12 +103,14 @@ watch(
         listFilter.value = 'all';
         sourceMenuOpen.value = false;
         lastAddedCount.value = 0;
+        chapterFilterId.value = '';
         boardName.value = '';
         boardYear.value = '';
         applyTypeDefaults(questionType.value);
         if (sources.value.includes('past_paper')) {
             loadPastPaperFilters();
         }
+        searchQuestions();
     },
 );
 
@@ -145,9 +156,9 @@ const applyTypeDefaults = (type) => {
         requiredCount.value = 10;
         marksPerQuestion.value = 2;
         choiceQuestions.value = 5;
-        // Lahore board: compact short answers, two-column when dual medium.
+        // Default single-line short questions; teacher can raise to 2 if needed.
         blankLines.value = 0;
-        questionsPerLine.value = 2;
+        questionsPerLine.value = 1;
         showParts.value = true;
     } else if (type === 'long') {
         requiredCount.value = 4;
@@ -176,12 +187,12 @@ const getMcqOptions = (q) => q?.mcq_options ?? q?.mcqOptions ?? null;
 const getPastPaperTag = (q) => q?.past_paper_tag ?? q?.pastPaperTag ?? null;
 
 const searchQuestions = async () => {
-    if (!props.chapterIds.length) return;
+    if (!effectiveChapterIds.value.length) return;
     searching.value = true;
     try {
         const { data } = await axios.get('/api/builder/questions/all', {
             params: {
-                chapter_ids: props.chapterIds,
+                chapter_ids: effectiveChapterIds.value,
                 // Prefer chapter scope only while topics are dummy; still send ids when present.
                 topic_ids: undefined,
                 sources: sources.value,
@@ -280,7 +291,7 @@ const selectAllSources = (checked) => {
             <div class="min-h-0 flex-1 overflow-y-auto">
                 <!-- Filters -->
                 <div class="space-y-3 border-b border-slate-200 bg-slate-100/80 px-5 py-4">
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                         <label class="block">
                             <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Question Type</span>
                             <select v-model="questionType" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
@@ -328,6 +339,18 @@ const selectAllSources = (checked) => {
                                 </label>
                             </div>
                         </div>
+
+                        <label class="block">
+                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Chapter</span>
+                            <select
+                                v-model="chapterFilterId"
+                                class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                @change="searchQuestions"
+                            >
+                                <option value="">All selected chapters</option>
+                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
+                            </select>
+                        </label>
 
                         <label class="block">
                             <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Required Questions</span>

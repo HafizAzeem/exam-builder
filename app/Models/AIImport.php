@@ -21,6 +21,7 @@ class AIImport extends Model
 
     protected $fillable = [
         'user_id',
+        'mode',
         'grade_id',
         'subject_id',
         'book_type',
@@ -43,6 +44,7 @@ class AIImport extends Model
         'failed_count',
         'duplicate_count',
         'error_message',
+        'meta',
     ];
 
     protected $casts = [
@@ -57,7 +59,19 @@ class AIImport extends Model
         'imported_count' => 'integer',
         'failed_count' => 'integer',
         'duplicate_count' => 'integer',
+        'meta' => 'array',
     ];
+
+    public function chapterIds(): array
+    {
+        $ids = $this->meta['chapter_ids'] ?? [];
+
+        return collect(is_array($ids) ? $ids : [])
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values()
+            ->all();
+    }
 
     public function user(): BelongsTo
     {

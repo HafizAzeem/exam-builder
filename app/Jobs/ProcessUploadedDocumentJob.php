@@ -87,8 +87,10 @@ class ProcessUploadedDocumentJob implements ShouldQueue
                         return;
                     }
 
+                    $service = app(AIImportService::class);
+                    $service->constrainChapters($import);
                     $import->refreshCounters();
-                    app(AIImportService::class)->markStatus($import, 'review');
+                    $service->markStatus($import, 'review');
                 })
                 ->catch(function (Batch $batch, Throwable $e) use ($importId) {
                     $import = AIImport::find($importId);
@@ -105,7 +107,9 @@ class ProcessUploadedDocumentJob implements ShouldQueue
 
     protected function finalize(): void
     {
+        $imports = app(AIImportService::class);
+        $imports->constrainChapters($this->import);
         $this->import->refreshCounters();
-        app(AIImportService::class)->markStatus($this->import->fresh(), 'review');
+        $imports->markStatus($this->import->fresh(), 'review');
     }
 }

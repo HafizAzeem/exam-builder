@@ -27,6 +27,7 @@ class AIImportQuestion extends Model
         'status',
         'is_duplicate',
         'duplicate_of_question_id',
+        'imported_question_id',
         'review_notes',
         'raw_payload',
         'confidence_score',
@@ -73,6 +74,11 @@ class AIImportQuestion extends Model
     public function duplicateOf(): BelongsTo
     {
         return $this->belongsTo(Question::class, 'duplicate_of_question_id');
+    }
+
+    public function importedQuestion(): BelongsTo
+    {
+        return $this->belongsTo(Question::class, 'imported_question_id');
     }
 
     public function isReadyToApprove(): bool

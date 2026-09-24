@@ -19,7 +19,8 @@ class AIImportPolicy
 
     public function view(User $user, AIImport $import): bool
     {
-        return $user->hasRole('super_admin');
+        // Import owner may subscribe to private-ai-import.{id} (teacher paste/generate status).
+        return (int) $user->id === (int) $import->user_id;
     }
 
     public function create(User $user): bool

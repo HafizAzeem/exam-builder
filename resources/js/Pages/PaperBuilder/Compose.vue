@@ -7,7 +7,7 @@ import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE } from '@/utils/paperContent';
 import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     grades: Array,
@@ -19,6 +19,9 @@ const props = defineProps({
     selectedTopicIds: { type: Array, default: () => [] },
     teacherPermissions: Object,
     institution: Object,
+    useSystemQuestionBank: { type: Boolean, default: false },
+    pendingQuestionIds: { type: Array, default: () => [] },
+    aiToolsAllowed: { type: Boolean, default: true },
 });
 
 const showQuestionMenu = ref(false);
@@ -95,7 +98,7 @@ const resolvedSubject = computed(() =>
 
 const settings = ref({
     blank_lines: 0,
-    questions_per_line: 2,
+    questions_per_line: 1,
     tabular_mcqs: true,
     enable_omr: true,
     enable_answer_key: true,
@@ -105,13 +108,13 @@ const settings = ref({
 
 const sectionSettings = ref({
     mcq: { marks: 1, tabular_mcqs: true },
-    short: { marks: 2, blank_lines: 0, questions_per_line: 2, choice_questions: 0 },
+    short: { marks: 2, blank_lines: 0, questions_per_line: 1, choice_questions: 0 },
     long: { marks: 5, blank_lines: 0, choice_questions: 0, show_parts: true },
     fill: { marks: 1 },
     truefalse: { marks: 1 },
 });
 
-const dualMedium = ref(true);
+const dualMedium = ref(false);
 const selectedQuestions = ref([]);
 const addFeedback = ref('');
 
@@ -349,17 +352,21 @@ const onContentUpdate = (content) => {
 
 const questionIds = computed(() => selectedQuestions.value.map((q) => q.id));
 
-const onAddQuestions = ({ questions, options }) => {
+const onAddQuestions = ({ questions, options, silent = false }) => {
     const existing = new Set(questionIds.value);
     const toAdd = questions.filter((q) => !existing.has(q.id));
     if (!toAdd.length) {
-        addFeedback.value = 'Those questions are already on the paper.';
+        if (!silent) {
+            addFeedback.value = 'Those questions are already on the paper.';
+        }
         showQuestionMenu.value = false;
         return;
     }
 
     selectedQuestions.value = [...selectedQuestions.value, ...toAdd];
-    addFeedback.value = `Added ${toAdd.length} question(s) to the paper.`;
+    if (!silent) {
+        addFeedback.value = `Added ${toAdd.length} question(s) to the paper.`;
+    }
 
     if (options?.dualMedium !== undefined) {
         dualMedium.value = options.dualMedium;
@@ -381,7 +388,7 @@ const onAddQuestions = ({ questions, options }) => {
     if (type === 'short' || type === 'long') {
         nextType.blank_lines = Number(options?.blankLines) || 0;
         nextType.choice_questions = Number(options?.choiceQuestions) || 0;
-        nextType.questions_per_line = Number(options?.questionsPerLine) || (type === 'short' ? 2 : 1);
+        nextType.questions_per_line = Number(options?.questionsPerLine) || 1;
         if (type === 'long') {
             nextType.show_parts = options?.showParts !== false;
         }
@@ -422,6 +429,44 @@ const onAddQuestions = ({ questions, options }) => {
         document.getElementById('compose-paper-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 };
+
+const composeQuery = computed(() => ({
+    grade: props.selectedGradeId,
+    subject: props.selectedSubjectId,
+    chapters: (props.selectedChapterIds || []).join(','),
+}));
+
+const aiPasteUrl = computed(() => route('builder.ai.paste', composeQuery.value));
+const aiGenerateUrl = computed(() => route('builder.ai.generate', composeQuery.value));
+
+const loadPendingQuestions = async () => {
+    const ids = (props.pendingQuestionIds || []).map((id) => Number(id)).filter(Boolean);
+    if (!ids.length) return;
+
+    try {
+        const res = await fetch('/api/builder/questions/by-ids', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ ids }),
+        });
+        if (!res.ok) return;
+        const questions = await res.json();
+        // FlashBanner already shows server success — avoid a second banner.
+        onAddQuestions({ questions: Array.isArray(questions) ? questions : [], silent: true });
+    } catch {
+        // ignore
+    }
+};
+
+onMounted(() => {
+    loadPendingQuestions();
+});
 
 const openSaveModal = () => {
     if (!questionIds.value.length) return;
@@ -582,103 +627,126 @@ const cancelPaper = () => {
                         {{ selectedQuestions.length }} question(s) on paper
                     </p>
                 </div>
-                <Link
-                    :href="route('builder.chapters', { grade: selectedGradeId, subject: selectedSubjectId })"
-                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                    ← Chapters
-                </Link>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-40"
+                        :disabled="!selectedQuestions.length || saving"
+                        @click="openSaveModal"
+                    >
+                        {{ saving ? 'Saving…' : 'Save' }}
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        :disabled="!selectedQuestions.length"
+                        @click="printPaper"
+                    >
+                        Print
+                    </button>
+                    <Link
+                        :href="route('builder.chapters', { grade: selectedGradeId, subject: selectedSubjectId })"
+                        class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        ← Chapters
+                    </Link>
+                </div>
             </div>
         </template>
 
-        <!-- Action bar -->
-        <div class="no-print border-b border-slate-800 bg-slate-900">
-            <div class="mx-auto flex max-w-7xl flex-wrap">
-                <button
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 bg-emerald-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-500 sm:flex-none sm:px-8"
-                    @click="showQuestionMenu = true"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    Question's Menu
-                </button>
-                <button
-                    v-if="!editingPaper"
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                    @click="startEditPaper"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Paper
-                </button>
-                <template v-else>
+        <!-- Light sticky toolbar: Add | Adjust | Discard -->
+        <div class="no-print sticky top-0 z-20 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+            <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-6">
+                <!-- Add -->
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:inline">Add</span>
+                    <button
+                        v-if="useSystemQuestionBank"
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
+                        @click="showQuestionMenu = true"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        Question menu
+                    </button>
+                    <Link
+                        v-if="aiToolsAllowed"
+                        :href="aiGenerateUrl"
+                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white shadow-sm"
+                        :class="useSystemQuestionBank ? 'bg-teal-700 hover:bg-teal-600' : 'bg-emerald-600 hover:bg-emerald-500'"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        AI Generate
+                    </Link>
+                    <Link
+                        v-if="aiToolsAllowed"
+                        :href="aiPasteUrl"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                        Paste text
+                    </Link>
+                </div>
+
+                <div class="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden="true" />
+
+                <!-- Adjust -->
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:inline">Paper</span>
+                    <template v-if="!editingPaper">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                            :disabled="!selectedQuestions.length"
+                            @click="startEditPaper"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit
+                        </button>
+                    </template>
+                    <template v-else>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-400"
+                            @click="applyTextEdits"
+                        >
+                            Apply edits
+                        </button>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            @click="cancelEditPaper"
+                        >
+                            Cancel edit
+                        </button>
+                    </template>
                     <button
                         type="button"
-                        class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 bg-amber-600 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-amber-500 sm:flex-none sm:px-6"
-                        @click="applyTextEdits"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        @click="showEditMeta = true"
                     >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        Apply Text
+                        Details
                     </button>
+                </div>
+
+                <div class="ml-auto flex items-center gap-1.5">
                     <button
                         type="button"
-                        class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                        @click="cancelEditPaper"
+                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
+                        @click="cancelPaper"
                     >
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel Edit
+                        Discard
                     </button>
-                </template>
-                <button
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                    @click="showEditMeta = true"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Paper Details
-                </button>
-                <button
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                    @click="printPaper"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z" />
-                    </svg>
-                    Print Paper
-                </button>
-                <button
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-40 sm:flex-none sm:px-6"
-                    :disabled="!selectedQuestions.length || saving"
-                    @click="openSaveModal"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                    </svg>
-                    {{ saving ? 'Saving…' : 'Save Paper' }}
-                </button>
-                <button
-                    type="button"
-                    class="flex flex-1 items-center justify-center gap-2 border-l border-slate-700 px-4 py-3.5 text-sm font-semibold text-rose-400 transition hover:bg-slate-800 sm:flex-none sm:px-6"
-                    @click="cancelPaper"
-                >
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Cancel Paper
-                </button>
+                </div>
             </div>
         </div>
 
@@ -696,15 +764,40 @@ const cancelPaper = () => {
                 >
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
-                        Click <strong>Question's Menu</strong> to search and add questions. You can open it again anytime to add more.
+                        <template v-if="aiToolsAllowed">
+                            Use <strong>AI Generate</strong> or <strong>Paste text</strong> to create questions, review them, then add to this paper.
+                        </template>
+                        <template v-else-if="useSystemQuestionBank">
+                            Click <strong>Question menu</strong> to search and add questions.
+                        </template>
+                        <template v-else>
+                            Select class 9–12 to use AI paper tools.
+                        </template>
                     </p>
-                    <button
-                        type="button"
-                        class="mt-5 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
-                        @click="showQuestionMenu = true"
-                    >
-                        Open Question's Menu
-                    </button>
+                    <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+                        <Link
+                            v-if="aiToolsAllowed"
+                            :href="aiGenerateUrl"
+                            class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                        >
+                            AI Generate
+                        </Link>
+                        <Link
+                            v-if="aiToolsAllowed"
+                            :href="aiPasteUrl"
+                            class="rounded-xl border border-emerald-600 px-5 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                        >
+                            Paste text
+                        </Link>
+                        <button
+                            v-if="useSystemQuestionBank"
+                            type="button"
+                            class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                            @click="showQuestionMenu = true"
+                        >
+                            Open Question menu
+                        </button>
+                    </div>
                 </div>
 
                 <p v-if="editingPaper" class="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700">
@@ -767,6 +860,7 @@ const cancelPaper = () => {
         </Teleport>
 
         <QuestionMenuModal
+            v-if="useSystemQuestionBank"
             :show="showQuestionMenu"
             :grade-label="gradeLabel"
             :subject-name="selectedSubject?.name_en ?? ''"
@@ -840,6 +934,33 @@ const cancelPaper = () => {
                                 <span class="block text-sm font-medium text-slate-800">Protect print (watermark)</span>
                                 <span class="mt-0.5 block text-xs text-slate-500">
                                     Overlays institute name on the paper to discourage unauthorized copies.
+                                </span>
+                            </span>
+                        </label>
+                        <label class="block text-sm sm:col-span-2">
+                            <span class="font-medium text-slate-700">Language on paper</span>
+                            <select
+                                class="mt-1 w-full rounded-lg border-slate-300"
+                                :value="dualMedium ? 'both' : 'english'"
+                                @change="dualMedium = $event.target.value === 'both'"
+                            >
+                                <option value="english">English only (default)</option>
+                                <option value="both">English + Urdu (dual medium)</option>
+                            </select>
+                            <span class="mt-1 block text-xs text-slate-500">Urdu-only display uses Urdu text when present on each question.</span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                            <input
+                                v-model="settings.questions_per_line"
+                                type="checkbox"
+                                class="mt-0.5 rounded text-teal-600"
+                                :true-value="2"
+                                :false-value="1"
+                            />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-800">Two short questions per line</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">
+                                    Off = one question per line. On = two short questions side by side when layout allows.
                                 </span>
                             </span>
                         </label>

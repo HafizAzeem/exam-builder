@@ -166,6 +166,20 @@ class BroadcastingTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_teacher_can_authorize_own_import_channel(): void
+    {
+        $teacher = $this->makeTeacher();
+        $import = $this->makeImport($teacher);
+
+        $this->actingAs($teacher)
+            ->post('/broadcasting/auth', [
+                'socket_id' => '1234.5678',
+                'channel_name' => 'private-ai-import.'.$import->id,
+            ])
+            ->assertOk()
+            ->assertJsonStructure(['auth']);
+    }
+
     public function test_paper_owner_institution_can_authorize_pdf_channel(): void
     {
         $institution = Institution::query()->create([
