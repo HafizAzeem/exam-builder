@@ -21,6 +21,20 @@ class GeneratePdfJob implements ShouldQueue
 
     public function handle(): void
     {
+        if ($this->writePdf() === null) {
+            $this->broadcastStatus('failed', null, 'PDF generation failed. Please try again.');
+
+            return;
+        }
+
+        $this->broadcastStatus('ready', '/editor/'.$this->paper->id.'/pdf/download');
+    }
+
+    /**
+     * Write the paper PDF and return its public-disk path.
+     */
+    public function writePdf(): ?string
+    {
         $outputDir = "papers/{$this->paper->institution_id}";
         $outputPath = "{$outputDir}/{$this->paper->id}.pdf";
 
@@ -34,9 +48,7 @@ class GeneratePdfJob implements ShouldQueue
                 'paper_id' => $this->paper->id,
             ]);
 
-            $this->broadcastStatus('failed', null, 'PDF generator is not available.');
-
-            return;
+            return null;
         }
 
         $cmd = sprintf(
@@ -50,12 +62,11 @@ class GeneratePdfJob implements ShouldQueue
 
         if ($exitCode !== 0 || ! Storage::disk('public')->exists($outputPath)) {
             Log::error('PDF generation failed', ['output' => $output, 'paper_id' => $this->paper->id]);
-            $this->broadcastStatus('failed', null, 'PDF generation failed. Please try again.');
 
-            return;
+            return null;
         }
 
-        $this->broadcastStatus('ready', Storage::disk('public')->url($outputPath));
+        return $outputPath;
     }
 
     protected function broadcastStatus(string $status, ?string $pdfUrl, ?string $message = null): void

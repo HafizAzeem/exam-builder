@@ -27,7 +27,9 @@ class StoreTeacherAIGenerateRequest extends FormRequest
             'subject_id' => CurriculumLookup::activeSubjectId($this->integer('grade_id')),
             'chapter_ids' => ['required', 'array', 'min:1'],
             'chapter_ids.*' => ['integer'],
-            'content_source' => ['required', 'in:exercise,past_paper,online_practice'],
+            'content_sources' => ['required', 'array', 'min:1'],
+            'content_sources.*' => ['required', 'in:exercise,past_paper,online_practice'],
+            'content_source' => ['nullable', 'in:exercise,past_paper,online_practice'],
             'book_type' => ['nullable', 'in:text_book,past_paper,additional_questions'],
             'board' => ['nullable', 'string', 'max:100'],
             'language' => ['required', 'string', 'in:english,urdu,both'],
@@ -38,6 +40,21 @@ class StoreTeacherAIGenerateRequest extends FormRequest
             'counts.fill' => ['nullable', 'integer', 'min:0', 'max:30'],
             'counts.truefalse' => ['nullable', 'integer', 'min:0', 'max:30'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $sources = $this->input('content_sources');
+        if (! is_array($sources) && $this->filled('content_source')) {
+            $sources = [$this->input('content_source')];
+        }
+        if (is_array($sources)) {
+            $sources = array_values(array_unique(array_filter($sources)));
+            $this->merge([
+                'content_sources' => $sources,
+                'content_source' => $sources[0] ?? 'exercise',
+            ]);
+        }
     }
 
     public function withValidator(Validator $validator): void
@@ -56,6 +73,18 @@ class StoreTeacherAIGenerateRequest extends FormRequest
 
             if ($total > 60) {
                 $validator->errors()->add('counts', 'Request at most 60 questions at a time.');
+            }
+
+            $sources = collect($this->input('content_sources', []))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            if ($sources === [] && $this->filled('content_source')) {
+                $sources = [$this->input('content_source')];
+            }
+            if ($sources === []) {
+                $validator->errors()->add('content_sources', 'Select at least one question style.');
             }
 
             $subjectId = $this->integer('subject_id');

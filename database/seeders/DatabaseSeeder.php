@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             Class10PunjabChaptersSeeder::class,
             Class11PunjabChaptersSeeder::class,
             Class12PunjabChaptersSeeder::class,
+            PunjabArtsCommerceChaptersSeeder::class,
             // Class9TopicsSeeder::class,
             // QuestionBankSeeder::class,
             DemoDataSeeder::class,

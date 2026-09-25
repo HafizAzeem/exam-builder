@@ -37,14 +37,30 @@ class TeacherPreferredWebHarvestService
             return [];
         }
 
-        $contentSource = $import->meta['content_source']
-            ?? match ($import->book_type) {
-                'past_paper' => 'past_paper',
-                'additional_questions' => 'online_practice',
-                default => 'exercise',
-            };
+        $contentSources = $import->meta['content_sources'] ?? null;
+        if (! is_array($contentSources) || $contentSources === []) {
+            $contentSources = [
+                $import->meta['content_source']
+                    ?? match ($import->book_type) {
+                        'past_paper' => 'past_paper',
+                        'additional_questions' => 'online_practice',
+                        default => 'exercise',
+                    },
+            ];
+        }
 
-        $sites = PreferredQuestionSite::orderedActiveFor($contentSource);
+        $sites = [];
+        $seenDomains = [];
+        foreach ($contentSources as $contentSource) {
+            foreach (PreferredQuestionSite::orderedActiveFor((string) $contentSource) as $site) {
+                $domain = PreferredQuestionSite::normalizeDomain((string) $site->domain);
+                if ($domain === '' || isset($seenDomains[$domain])) {
+                    continue;
+                }
+                $seenDomains[$domain] = true;
+                $sites[] = $site;
+            }
+        }
 
         // Fallback to env/config list if DB empty (fresh install before seeder).
         if ($sites === []) {

@@ -9,13 +9,27 @@ class BoardSeeder extends Seeder
 {
     public function run(): void
     {
-        Board::query()->firstOrCreate(
-            ['name' => 'Lahore Board'],
-            [
-                'region' => 'Punjab',
-                'sort_order' => 1,
-                'is_active' => true,
-            ]
-        );
+        $boards = [
+            ['name' => 'Lahore Board', 'sort_order' => 1],
+            ['name' => 'Gujranwala Board', 'sort_order' => 2],
+            ['name' => 'Rawalpindi Board', 'sort_order' => 3],
+            ['name' => 'Faisalabad Board', 'sort_order' => 4],
+            ['name' => 'Multan Board', 'sort_order' => 5],
+            ['name' => 'Sargodha Board', 'sort_order' => 6],
+            ['name' => 'Sahiwal Board', 'sort_order' => 7],
+            ['name' => 'Bahawalpur Board', 'sort_order' => 8],
+            ['name' => 'DG Khan Board', 'sort_order' => 9],
+        ];
+
+        foreach ($boards as $board) {
+            Board::query()->firstOrCreate(
+                ['name' => $board['name']],
+                [
+                    'region' => 'Punjab',
+                    'sort_order' => $board['sort_order'],
+                    'is_active' => true,
+                ]
+            );
+        }
     }
 }

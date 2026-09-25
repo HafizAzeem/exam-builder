@@ -3,15 +3,17 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, watch } from 'vue';
+import { examYearOptions } from '@/utils/years';
 
 const props = defineProps({
     grades: { type: Array, required: true },
     subjects: { type: Array, required: true },
     boards: { type: Array, default: () => [] },
 });
+
+const yearOptions = examYearOptions();
 
 const form = useForm({
     grade_id: '',
@@ -109,7 +111,10 @@ const submit = () => {
                         </div>
                         <div v-if="isPastPaper">
                             <InputLabel value="Year (optional)" />
-                            <TextInput v-model="form.year" type="number" class="mt-1 block w-full" />
+                            <select v-model.number="form.year" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">—</option>
+                                <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                            </select>
                             <InputError :message="form.errors.year" class="mt-1" />
                         </div>
                         <div v-if="isPastPaper">

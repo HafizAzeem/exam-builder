@@ -22,7 +22,7 @@ const form = useForm({
     grade_id: props.grade.id,
     subject_id: props.subject.id,
     chapter_ids: [...props.selectedChapterIds],
-    content_source: 'exercise',
+    content_sources: ['exercise'],
     board: props.boards?.[0]?.name ?? 'Lahore Board',
     language: props.defaultLanguage || (isUrduSubject.value ? 'urdu' : 'english'),
     counts: {
@@ -33,6 +33,24 @@ const form = useForm({
         truefalse: 0,
     },
 });
+
+const styleOptions = [
+    { value: 'exercise', label: 'Exercise questions' },
+    { value: 'past_paper', label: 'Past papers' },
+    { value: 'online_practice', label: 'Additional Questions' },
+];
+
+const toggleSource = (value) => {
+    const current = [...(form.content_sources || [])];
+    const idx = current.indexOf(value);
+    if (idx >= 0) {
+        if (current.length === 1) return;
+        current.splice(idx, 1);
+    } else {
+        current.push(value);
+    }
+    form.content_sources = current;
+};
 
 const chapterSummary = computed(() =>
     props.chapters.map((c) => `${c.number}. ${c.title_en}`).join(', ')
@@ -69,12 +87,20 @@ const submit = () => {
                         {{ grade.label_en }} · {{ subject.name_en }} — AI prepares exam-ready questions for your paper.
                     </p>
                 </div>
-                <Link
-                    :href="route('builder.create', composeQuery)"
-                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                    ← Back to paper
-                </Link>
+                <div class="flex flex-wrap gap-2">
+                    <Link
+                        :href="route('builder.ai.extract-past-paper', composeQuery)"
+                        class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
+                    >
+                        Extract past paper
+                    </Link>
+                    <Link
+                        :href="route('builder.create', composeQuery)"
+                        class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        ← Back to paper
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -84,7 +110,7 @@ const submit = () => {
                     <div class="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
                         <p><span class="font-medium text-slate-800">Chapters:</span> {{ chapterSummary }}</p>
                         <p class="mt-1 text-xs text-slate-500">
-                            Choose a question style and counts — AI builds a smart draft for this paper.
+                            Select one or more question styles — AI builds a draft from all selected sources.
                         </p>
                     </div>
 
@@ -100,16 +126,27 @@ const submit = () => {
                         </button>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-3">
-                        <div>
-                            <InputLabel value="Question style" />
-                            <select v-model="form.content_source" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
-                                <option value="exercise">Exercise questions</option>
-                                <option value="past_paper">Past papers</option>
-                                <option value="online_practice">Additional Questions</option>
-                            </select>
-                            <InputError :message="form.errors.content_source" class="mt-1" />
+                    <div>
+                        <InputLabel value="Question styles (select one or more)" />
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button
+                                v-for="opt in styleOptions"
+                                :key="opt.value"
+                                type="button"
+                                class="rounded-lg border px-3 py-2 text-sm font-medium transition"
+                                :class="form.content_sources.includes(opt.value)
+                                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                                @click="toggleSource(opt.value)"
+                            >
+                                {{ opt.label }}
+                            </button>
                         </div>
+                        <InputError :message="form.errors.content_sources" class="mt-1" />
+                        <InputError :message="form.errors.content_source" class="mt-1" />
+                    </div>
+
+                    <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel value="Board" />
                             <select v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
@@ -165,7 +202,7 @@ const submit = () => {
                         >
                             Cancel
                         </Link>
-                        <PrimaryButton :disabled="form.processing || totalRequested < 1">
+                        <PrimaryButton :disabled="form.processing || totalRequested < 1 || form.content_sources.length < 1">
                             {{ form.processing ? 'Starting…' : 'Generate questions' }}
                         </PrimaryButton>
                     </div>

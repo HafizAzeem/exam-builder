@@ -30,7 +30,12 @@ const institutionAddressLine = (inst) => {
 const pastPaperRef = (q, layout) => {
     const tag = q?.past_paper_tag ?? q?.pastPaperTag ?? null;
     if (!layout?.show_past_paper_tags || q?.source !== 'past_paper' || !tag) return '';
-    return `[${tag.board_name} ${tag.year}]`;
+    const year = tag.year ? String(tag.year) : '';
+    const board = tag.board_name || tag.boardName || '';
+    if (year && board) return `Appeared in ${year} · ${board}`;
+    if (year) return `Appeared in ${year}`;
+    if (board) return board;
+    return '';
 };
 
 const typeSettings = (layout, type) => layout?.section_settings?.[type] ?? {};

@@ -101,7 +101,12 @@ class ProcessGenerateQuestionsJob implements ShouldQueue
 
             $imports->markStatus($this->import->fresh(), 'review');
         } catch (Throwable $e) {
-            $imports->markStatus($this->import, 'failed', $e->getMessage());
+            report($e);
+            $imports->markStatus(
+                $this->import,
+                'failed',
+                'No questions were produced. Try different chapters or counts.'
+            );
             throw $e;
         }
     }

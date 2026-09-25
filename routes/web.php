@@ -44,6 +44,8 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::post('/builder/ai/paste', [TeacherAIController::class, 'storePaste'])->name('builder.ai.paste.store');
     Route::get('/builder/ai/generate', [TeacherAIController::class, 'generateForm'])->name('builder.ai.generate');
     Route::post('/builder/ai/generate', [TeacherAIController::class, 'storeGenerate'])->name('builder.ai.generate.store');
+    Route::get('/builder/ai/extract-past-paper', [TeacherAIController::class, 'extractPastPaperForm'])->name('builder.ai.extract-past-paper');
+    Route::post('/builder/ai/extract-past-paper', [TeacherAIController::class, 'storeExtractPastPaper'])->name('builder.ai.extract-past-paper.store');
     Route::get('/builder/ai/{import}/status', [TeacherAIController::class, 'status'])->name('builder.ai.status');
     Route::get('/builder/ai/{import}/status.json', [TeacherAIController::class, 'statusJson'])->name('builder.ai.status.json');
     Route::get('/builder/ai/{import}/review', [TeacherAIController::class, 'review'])->name('builder.ai.review');
@@ -66,8 +68,6 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::patch('/editor/{paper}', [LayoutEditorController::class, 'update'])->name('editor.update');
     Route::post('/editor/{paper}/watermark-image', [LayoutEditorController::class, 'uploadWatermarkImage'])->name('editor.watermark-image');
     Route::get('/editor/{paper}/print', [LayoutEditorController::class, 'print'])->name('editor.print');
-    Route::post('/editor/{paper}/pdf', [LayoutEditorController::class, 'pdf'])->name('editor.pdf');
-
     Route::get('/print/{paper}', [LayoutEditorController::class, 'signedPrint'])
         ->name('paper.print.signed')
         ->middleware('signed');

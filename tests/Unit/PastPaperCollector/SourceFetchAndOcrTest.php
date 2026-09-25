@@ -3,7 +3,7 @@
 namespace Tests\Unit\PastPaperCollector;
 
 use App\Contracts\PastPaperCollector\OcrProvider;
-use App\Services\PastPaperCollector\Providers\UnavailableOcrProvider;
+use App\Services\PastPaperCollector\Providers\GeminiOcrProvider;
 use App\Services\PastPaperCollector\SourceFetchService;
 use App\Services\PastPaperCollector\UrlSafetyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,15 +15,12 @@ class SourceFetchAndOcrTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_ocr_provider_is_unavailable_by_default(): void
+    public function test_ocr_provider_defaults_to_gemini(): void
     {
         $ocr = app(OcrProvider::class);
 
-        $this->assertInstanceOf(UnavailableOcrProvider::class, $ocr);
+        $this->assertInstanceOf(GeminiOcrProvider::class, $ocr);
         $this->assertFalse($ocr->isAvailable());
-
-        $this->expectException(\RuntimeException::class);
-        $ocr->extractText('/tmp/scan.pdf', 'application/pdf');
     }
 
     public function test_scanned_pdf_is_marked_ocr_required(): void

@@ -59,7 +59,7 @@ class QuestionParserService
                 'topic_id' => $match['topic_id'],
                 'match_status' => $match['match_status'],
                 'type' => $type,
-                'source' => $source,
+                'source' => $defaults['source'] ?? $source,
                 'text_en' => $textEn,
                 'text_ur' => $textUr,
                 'mcq_options' => $type === 'mcq' ? $this->normalizeMcq($raw['mcq_options'] ?? null) : null,

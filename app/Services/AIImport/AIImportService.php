@@ -93,13 +93,24 @@ class AIImportService
     public function createFromGenerate(array $data, int $userId): AIImport
     {
         $counts = $data['counts'] ?? [];
-        $contentSource = $data['content_source'] ?? 'exercise';
+        $contentSources = array_values(array_unique(array_filter(
+            $data['content_sources'] ?? [(string) ($data['content_source'] ?? 'exercise')]
+        )));
+        if ($contentSources === []) {
+            $contentSources = ['exercise'];
+        }
 
-        $bookType = $data['book_type'] ?? match ($contentSource) {
+        $primary = $contentSources[0];
+        if (in_array('past_paper', $contentSources, true)) {
+            $primary = 'past_paper';
+        } elseif (in_array('online_practice', $contentSources, true)) {
+            $primary = 'online_practice';
+        }
+
+        $bookType = $data['book_type'] ?? match ($primary) {
             'past_paper' => 'past_paper',
             'online_practice' => 'additional_questions',
-            'exercise' => 'text_book',
-            default => 'additional_questions',
+            default => 'text_book',
         };
 
         return AIImport::create([
@@ -119,7 +130,8 @@ class AIImportService
             'status' => 'uploaded',
             'meta' => [
                 'chapter_ids' => array_values(array_map('intval', $data['chapter_ids'] ?? [])),
-                'content_source' => $contentSource,
+                'content_source' => $primary,
+                'content_sources' => $contentSources,
                 // Hidden default: always prefer education websites first.
                 'prefer_websites' => true,
                 'counts' => [

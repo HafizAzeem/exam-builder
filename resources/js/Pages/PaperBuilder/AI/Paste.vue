@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { examYearOptions } from '@/utils/years';
 
 const props = defineProps({
     grade: { type: Object, required: true },
@@ -14,6 +15,8 @@ const props = defineProps({
     composeQuery: { type: Object, required: true },
     boards: { type: Array, default: () => [] },
 });
+
+const yearOptions = examYearOptions();
 
 const form = useForm({
     grade_id: props.grade.id,
@@ -96,7 +99,10 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Year" />
-                            <input v-model="form.year" type="number" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" placeholder="2024" />
+                            <select v-model.number="form.year" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">—</option>
+                                <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                            </select>
                             <InputError :message="form.errors.year" class="mt-1" />
                         </div>
                         <div>

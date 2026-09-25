@@ -8,18 +8,11 @@ import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hy
 import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { usePrivateChannel } from '@/composables/usePrivateChannel';
-
 const props = defineProps({
     savedPaper: Object,
     preview: Object,
     headerTemplates: Array,
-    pdfUrl: String,
 });
-
-const livePdfUrl = ref(props.pdfUrl || null);
-const pdfGenerating = ref(false);
-const pdfError = ref(null);
 
 const buildWatermarkText = (inst) => {
     if (!inst) return '';
@@ -46,7 +39,7 @@ const editorSettings = ref({
     enable_omr: props.preview.settings?.enable_omr ?? props.preview.layout?.enable_omr ?? false,
     enable_answer_key: props.preview.settings?.enable_answer_key ?? props.preview.layout?.enable_answer_key ?? false,
     enable_watermark: props.preview.settings?.enable_watermark ?? props.preview.layout?.enable_watermark ?? false,
-    show_past_paper_tags: props.preview.settings?.show_past_paper_tags ?? props.preview.layout?.show_past_paper_tags ?? false,
+    show_past_paper_tags: props.preview.settings?.show_past_paper_tags ?? props.preview.layout?.show_past_paper_tags ?? true,
 });
 
 const layout = ref({
@@ -440,22 +433,6 @@ onUnmounted(() => {
     window.removeEventListener('afterprint', onAfterPrint);
 });
 
-usePrivateChannel(`paper.${props.savedPaper.id}`, '.pdf.status', (data) => {
-    pdfGenerating.value = false;
-    if (data.status === 'ready' && data.pdf_url) {
-        livePdfUrl.value = data.pdf_url;
-        pdfError.value = null;
-        return;
-    }
-
-    pdfError.value = data.message || 'PDF generation failed.';
-});
-
-const requestPdf = () => {
-    pdfGenerating.value = true;
-    pdfError.value = null;
-    layoutForm.post(route('editor.pdf', props.savedPaper.id), { preserveScroll: true });
-};
 </script>
 
 <template>
@@ -504,23 +481,6 @@ const requestPdf = () => {
                     >
                         Print
                     </button>
-                    <button
-                        type="button"
-                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
-                        :disabled="pdfGenerating"
-                        @click="requestPdf"
-                    >
-                        {{ pdfGenerating ? 'Generating PDF…' : 'PDF' }}
-                    </button>
-                    <a
-                        v-if="livePdfUrl"
-                        :href="livePdfUrl"
-                        class="rounded-md bg-gray-800 px-4 py-2 text-sm text-white"
-                        target="_blank"
-                        rel="noopener"
-                    >
-                        Download PDF
-                    </a>
                     <Link :href="route('saved-papers.index')" class="rounded-md bg-gray-200 px-4 py-2 text-sm text-gray-800">
                         Back
                     </Link>
@@ -531,10 +491,6 @@ const requestPdf = () => {
         <p v-if="editingPaper" class="mx-auto max-w-7xl px-4 pt-4 text-sm text-green-700">
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
         </p>
-        <p v-if="pdfError" class="mx-auto max-w-7xl px-4 pt-4 text-sm text-rose-700">
-            {{ pdfError }}
-        </p>
-
         <div class="no-print grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">
             <div class="editor-sidebar-scroll no-print lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                 <PaperSettingsSidebar

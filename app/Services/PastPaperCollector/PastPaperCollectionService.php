@@ -27,7 +27,57 @@ class PastPaperCollectionService
         protected QuestionProcessingProvider $questionProcessor,
         protected QuestionParserService $parser,
         protected DuplicateDetectionService $duplicates,
+        protected PastPaperContentValidator $contentValidator,
     ) {}
+
+    /**
+     * Database-first: reuse an existing matching paper when available.
+     *
+     * @return array{collection: AIPaperCollection, reused: bool}
+     */
+    public function createOrReuse(array $data, int $userId): array
+    {
+        $existing = $this->findReusable($data);
+        if ($existing) {
+            return ['collection' => $existing, 'reused' => true];
+        }
+
+        return ['collection' => $this->create($data, $userId), 'reused' => false];
+    }
+
+    /**
+     * Find a stored paper for the same Board + Class + Subject + Year + Session.
+     */
+    public function findReusable(array $data): ?AIPaperCollection
+    {
+        $board = $data['board'] ?? CurriculumLookup::defaultBoardName();
+        $session = $data['session'] ?? null;
+        $paperType = $data['paper_type'] ?? 'complete';
+
+        $query = AIPaperCollection::query()
+            ->with(['grade', 'subject', 'import'])
+            ->where('grade_id', $data['grade_id'])
+            ->where('subject_id', $data['subject_id'])
+            ->where('board', $board)
+            ->where('year', $data['year'])
+            ->where('paper_type', $paperType)
+            ->whereIn('status', ['review', 'completed', 'importing'])
+            ->where(function ($q) {
+                $q->where('questions_found', '>', 0)
+                    ->orWhereHas('import.questions');
+            })
+            ->latest('id');
+
+        if ($session === null || $session === '') {
+            $query->where(function ($q) {
+                $q->whereNull('session')->orWhere('session', '');
+            });
+        } else {
+            $query->where('session', $session);
+        }
+
+        return $query->first();
+    }
 
     public function create(array $data, int $userId): AIPaperCollection
     {
@@ -49,6 +99,7 @@ class PastPaperCollectionService
                 'file_size' => 0,
                 'status' => 'uploaded',
                 'progress_percent' => 0,
+                'mode' => $data['mode'] ?? 'upload',
             ]);
 
             $collection = AIPaperCollection::create([
@@ -137,6 +188,14 @@ class PastPaperCollectionService
                     ->first();
 
                 $hasQuestions = $collection->import->questions()->exists();
+                $ocrNeeded = $collection->sources()->where('status', 'ocr_required')->exists();
+
+                $failureMessage = null;
+                if (! $hasQuestions) {
+                    $failureMessage = $ocrNeeded
+                        ? 'Scanned/image sources still need OCR. Open a source and retry OCR-required items — this is not a zero-result PDF case.'
+                        : 'Sources were visited but no questions could be extracted.';
+                }
 
                 $collection->update([
                     'input_tokens' => (int) ($tokenStats->input_tokens ?? 0),
@@ -146,7 +205,7 @@ class PastPaperCollectionService
                     'status' => $hasQuestions ? 'review' : 'failed',
                     'progress_stage' => $hasQuestions ? 'review' : 'failed',
                     'progress_percent' => 100,
-                    'error_message' => $hasQuestions ? null : 'Sources were visited but no questions could be extracted.',
+                    'error_message' => $failureMessage,
                     'completed_at' => now(),
                     'processing_time_ms' => (int) round((microtime(true) - $started) * 1000),
                 ]);
@@ -154,7 +213,11 @@ class PastPaperCollectionService
                 $collection->import->update([
                     'status' => $hasQuestions ? 'review' : 'failed',
                     'progress_percent' => 100,
-                    'error_message' => $hasQuestions ? null : 'No questions extracted from collected sources.',
+                    'error_message' => $hasQuestions
+                        ? null
+                        : ($ocrNeeded
+                            ? 'Scanned/image past paper needs OCR before questions can be extracted.'
+                            : 'No questions extracted from collected sources.'),
                 ]);
                 $collection->broadcastProgress();
                 $collection->import->broadcastProgress();
@@ -334,10 +397,22 @@ class PastPaperCollectionService
                 return;
             }
 
+            $extractedText = (string) $payload['extracted_text'];
+            if (! $this->contentValidator->matches($extractedText, $collection)) {
+                $source->update([
+                    'status' => 'ignored',
+                    'error_message' => $this->contentValidator->rejectionReason($extractedText, $collection),
+                    'processing_time_ms' => (int) round((microtime(true) - $started) * 1000),
+                ]);
+                $collection->refreshCounters();
+
+                return;
+            }
+
             $collection->markStage('extracting');
             $source->update(['status' => 'extracting']);
 
-            $chunks = $this->chunker->chunk((string) $payload['extracted_text']);
+            $chunks = $this->chunker->chunk($extractedText);
             $collection->markStage('processing');
             $source->update(['status' => 'processing']);
 
@@ -364,7 +439,7 @@ class PastPaperCollectionService
                     [
                         'ai_paper_source_id' => $source->id,
                         'source_url' => $source->url,
-                        'source_excerpt' => mb_substr((string) $payload['extracted_text'], 0, 2000),
+                        'source_excerpt' => mb_substr($extractedText, 0, 2000),
                     ],
                 );
 

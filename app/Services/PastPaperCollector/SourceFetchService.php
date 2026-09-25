@@ -40,7 +40,7 @@ class SourceFetchService
         $response = Http::timeout($timeout)
             ->withHeaders([
                 'User-Agent' => 'ExamBuilderPastPaperCollector/1.0',
-                'Accept' => 'application/pdf,text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
+                'Accept' => 'application/pdf,image/jpeg,image/png,image/webp,text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
             ])
             ->withOptions([
                 'allow_redirects' => [
@@ -134,18 +134,16 @@ class SourceFetchService
             if (mb_strlen($cleaned) < 40) {
                 $meta['scanned_candidate'] = true;
 
-                if ($this->ocr->isAvailable() && $this->ocr->supports('application/pdf')) {
-                    try {
-                        $ocrText = $this->cleanText($this->ocr->extractText($tempPath, 'application/pdf'));
-                        if (mb_strlen($ocrText) >= 40) {
-                            return $this->result('application/pdf', $contentHash, $storedPath, $fileSize, $httpStatus, $ocrText, 'extracted', null, $meta);
-                        }
-                    } catch (\Throwable $e) {
-                        $meta['ocr_error'] = $e->getMessage();
-                    }
-                }
-
-                return $this->result('application/pdf', $contentHash, $storedPath, $fileSize, $httpStatus, $cleaned, 'ocr_required', 'Scanned/image PDF requires OCR.', $meta);
+                return $this->ocrOrRequire(
+                    tempPath: $tempPath,
+                    mimeType: 'application/pdf',
+                    contentHash: $contentHash,
+                    storedPath: $storedPath,
+                    fileSize: $fileSize,
+                    httpStatus: $httpStatus,
+                    fallbackText: $cleaned,
+                    meta: $meta,
+                );
             }
 
             // Soft page limit: truncate extremely long extracted text for processing safety.
@@ -159,6 +157,30 @@ class SourceFetchService
             return $this->result('application/pdf', $contentHash, $storedPath, $fileSize, $httpStatus, $cleaned, 'extracted', null, $meta);
         }
 
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) || str_starts_with($contentType, 'image/')) {
+            $mime = $contentType !== '' && str_starts_with($contentType, 'image/')
+                ? $contentType
+                : match ($extension) {
+                    'png' => 'image/png',
+                    'webp' => 'image/webp',
+                    'gif' => 'image/gif',
+                    default => 'image/jpeg',
+                };
+
+            $meta['image_source'] = true;
+
+            return $this->ocrOrRequire(
+                tempPath: $tempPath,
+                mimeType: $mime,
+                contentHash: $contentHash,
+                storedPath: $storedPath,
+                fileSize: $fileSize,
+                httpStatus: $httpStatus,
+                fallbackText: '',
+                meta: $meta,
+            );
+        }
+
         if ($extension === 'txt' || str_starts_with($contentType, 'text/')) {
             $cleaned = $this->cleanText((string) file_get_contents($tempPath));
 
@@ -166,6 +188,49 @@ class SourceFetchService
         }
 
         return $this->result($contentType, $contentHash, $storedPath, $fileSize, $httpStatus, null, 'ignored', 'Unsupported content type.', $meta);
+    }
+
+    /**
+     * Attempt OCR/vision; never treat a scanned PDF/image as a quiet empty success.
+     *
+     * @param  array<string,mixed>  $meta
+     * @return array<string,mixed>
+     */
+    protected function ocrOrRequire(
+        string $tempPath,
+        string $mimeType,
+        string $contentHash,
+        string $storedPath,
+        int $fileSize,
+        int $httpStatus,
+        string $fallbackText,
+        array $meta,
+    ): array {
+        if ($this->ocr->isAvailable() && $this->ocr->supports($mimeType)) {
+            try {
+                $ocrText = $this->cleanText($this->ocr->extractText($tempPath, $mimeType));
+                if (mb_strlen($ocrText) >= 40) {
+                    $meta['ocr_provider'] = $this->ocr->name();
+
+                    return $this->result($mimeType, $contentHash, $storedPath, $fileSize, $httpStatus, $ocrText, 'extracted', null, $meta);
+                }
+                $meta['ocr_empty'] = true;
+            } catch (\Throwable $e) {
+                $meta['ocr_error'] = $e->getMessage();
+            }
+        }
+
+        return $this->result(
+            $mimeType,
+            $contentHash,
+            $storedPath,
+            $fileSize,
+            $httpStatus,
+            $fallbackText !== '' ? $fallbackText : null,
+            'ocr_required',
+            'Scanned/image document requires OCR/vision. Do not treat this as an empty paper.',
+            $meta,
+        );
     }
 
     protected function extractHtml(string $html): string
@@ -227,6 +292,23 @@ class SourceFetchService
         $path = strtolower((string) (parse_url($url, PHP_URL_PATH) ?: ''));
         if (str_ends_with($path, '.pdf') || str_contains($contentType, 'pdf') || str_starts_with($body, '%PDF')) {
             return 'pdf';
+        }
+        if (str_ends_with($path, '.png') || str_contains($contentType, 'image/png')) {
+            return 'png';
+        }
+        if (str_ends_with($path, '.webp') || str_contains($contentType, 'image/webp')) {
+            return 'webp';
+        }
+        if (str_ends_with($path, '.gif') || str_contains($contentType, 'image/gif')) {
+            return 'gif';
+        }
+        if (
+            str_ends_with($path, '.jpg')
+            || str_ends_with($path, '.jpeg')
+            || str_contains($contentType, 'image/jpeg')
+            || str_contains($contentType, 'image/jpg')
+        ) {
+            return 'jpg';
         }
         if (str_ends_with($path, '.txt') || str_starts_with($contentType, 'text/plain')) {
             return 'txt';

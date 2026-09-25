@@ -141,8 +141,21 @@ class AIImport extends Model
             'imported_count' => $import->imported_count,
             'failed_count' => $import->failed_count,
             'duplicate_count' => $import->duplicate_count,
-            'error_message' => $import->error_message,
+            'error_message' => self::teacherFacingError($import->error_message),
         ];
+    }
+
+    public static function teacherFacingError(?string $error): ?string
+    {
+        if ($error === null || $error === '') {
+            return $error;
+        }
+
+        if (preg_match('/website|web site|gemini|preferred site|api key|rate limit/i', $error)) {
+            return 'No questions were produced. Try different chapters or counts.';
+        }
+
+        return $error;
     }
 
     public function broadcastProgress(): void

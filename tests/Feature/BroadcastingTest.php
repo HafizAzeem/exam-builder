@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Events\AIImportProgressUpdated;
 use App\Events\PaperCollectionProgressUpdated;
 use App\Events\PaperPdfStatusUpdated;
-use App\Jobs\GeneratePdfJob;
 use App\Models\AIImport;
 use App\Models\AIPaperCollection;
 use App\Models\Grade;
@@ -17,7 +16,6 @@ use App\Services\AIImport\AIImportService;
 use Illuminate\Broadcasting\BroadcastManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Queue;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -232,31 +230,6 @@ class BroadcastingTest extends TestCase
                 'channel_name' => 'private-paper.'.$paper->id,
             ])
             ->assertForbidden();
-    }
-
-    public function test_pdf_request_dispatches_job(): void
-    {
-        Queue::fake();
-
-        $institution = Institution::query()->create([
-            'name' => 'Test School',
-            'expiry_date' => now()->addYear()->toDateString(),
-        ]);
-        $user = $this->makeTeacher($institution->id);
-        $paper = SavedPaper::query()->create([
-            'institution_id' => $institution->id,
-            'user_id' => $user->id,
-            'title' => 'Midterm',
-            'config_snapshot' => [],
-            'layout_snapshot' => [],
-            'status' => 'saved',
-        ]);
-
-        $this->actingAs($user)
-            ->post(route('editor.pdf', $paper))
-            ->assertRedirect();
-
-        Queue::assertPushed(GeneratePdfJob::class);
     }
 
     public function test_pdf_status_event_uses_paper_channel(): void

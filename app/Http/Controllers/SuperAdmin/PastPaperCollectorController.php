@@ -62,11 +62,16 @@ class PastPaperCollectorController extends Controller
 
     public function store(StorePastPaperCollectionRequest $request): RedirectResponse
     {
-        $collection = $this->collections->create($request->validated(), (int) $request->user()->id);
+        $result = $this->collections->createOrReuse($request->validated(), (int) $request->user()->id);
+        $collection = $result['collection'];
+
+        $message = $result['reused']
+            ? 'Matching past paper found in the database. Showing stored questions — no web search was run.'
+            : 'Past paper collection started.';
 
         return redirect()
             ->route('super-admin.past-paper-collector.show', $collection)
-            ->with('success', 'Past paper collection started.');
+            ->with('success', $message);
     }
 
     public function show(AIPaperCollection $collection): Response

@@ -8,6 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { examYearOptions } from '@/utils/years';
 
 const props = defineProps({
     grades: Array,
@@ -18,6 +19,8 @@ const props = defineProps({
     questions: Object,
     filters: Object,
 });
+
+const yearOptions = examYearOptions();
 
 const allChapters = computed(() => props.allChapters ?? props.chapters ?? []);
 
@@ -359,7 +362,10 @@ const currentImageUrl = computed(() => {
                             <option value="">Board</option>
                             <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                         </select>
-                        <input v-model="createForm.past.year" type="number" class="rounded border-gray-300" placeholder="Year" />
+                        <select v-model.number="createForm.past.year" class="rounded border-gray-300">
+                            <option value="">Year</option>
+                            <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                        </select>
                         <select v-model="createForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
                             <option value="morning">Morning</option>
@@ -542,7 +548,10 @@ const currentImageUrl = computed(() => {
                             <option value="">Board</option>
                             <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                         </select>
-                        <input v-model="editForm.past.year" type="number" class="rounded border-gray-300" placeholder="Year" />
+                        <select v-model.number="editForm.past.year" class="rounded border-gray-300">
+                            <option value="">Year</option>
+                            <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                        </select>
                         <select v-model="editForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
                             <option value="morning">Morning</option>

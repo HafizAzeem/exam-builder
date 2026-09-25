@@ -190,7 +190,12 @@ const mcqOptionCells = (q) => {
 const pastPaperRefLegacy = (q) => {
     const tag = getPastPaperTag(q);
     if (!props.layout?.show_past_paper_tags || q.source !== 'past_paper' || !tag) return '';
-    return `[${tag.board_name} ${tag.year}]`;
+    const year = tag.year ? String(tag.year) : '';
+    const board = tag.board_name || tag.boardName || '';
+    if (year && board) return `Appeared in ${year} · ${board}`;
+    if (year) return `Appeared in ${year}`;
+    if (board) return board;
+    return '';
 };
 
 const tabularMcqs = computed(() =>

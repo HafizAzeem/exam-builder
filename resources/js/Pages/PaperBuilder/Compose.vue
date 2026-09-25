@@ -103,7 +103,7 @@ const settings = ref({
     enable_omr: true,
     enable_answer_key: true,
     enable_watermark: true,
-    show_past_paper_tags: false,
+    show_past_paper_tags: true,
 });
 
 const sectionSettings = ref({
@@ -438,6 +438,7 @@ const composeQuery = computed(() => ({
 
 const aiPasteUrl = computed(() => route('builder.ai.paste', composeQuery.value));
 const aiGenerateUrl = computed(() => route('builder.ai.generate', composeQuery.value));
+const aiExtractPastPaperUrl = computed(() => route('builder.ai.extract-past-paper', composeQuery.value));
 
 const loadPendingQuestions = async () => {
     const ids = (props.pendingQuestionIds || []).map((id) => Number(id)).filter(Boolean);
@@ -684,6 +685,13 @@ const cancelPaper = () => {
                     </Link>
                     <Link
                         v-if="aiToolsAllowed"
+                        :href="aiExtractPastPaperUrl"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
+                    >
+                        Extract past paper
+                    </Link>
+                    <Link
+                        v-if="aiToolsAllowed"
                         :href="aiPasteUrl"
                         class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
@@ -765,7 +773,7 @@ const cancelPaper = () => {
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
                         <template v-if="aiToolsAllowed">
-                            Use <strong>AI Generate</strong> or <strong>Paste text</strong> to create questions, review them, then add to this paper.
+                            Use <strong>AI Generate</strong>, <strong>Extract past paper</strong>, or <strong>Paste text</strong> to create questions, review them, then add to this paper.
                         </template>
                         <template v-else-if="useSystemQuestionBank">
                             Click <strong>Question menu</strong> to search and add questions.
@@ -781,6 +789,13 @@ const cancelPaper = () => {
                             class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
                         >
                             AI Generate
+                        </Link>
+                        <Link
+                            v-if="aiToolsAllowed"
+                            :href="aiExtractPastPaperUrl"
+                            class="rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
+                        >
+                            Extract past paper
                         </Link>
                         <Link
                             v-if="aiToolsAllowed"

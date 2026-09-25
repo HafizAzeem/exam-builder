@@ -9,9 +9,9 @@ use App\Models\AIImport;
 use App\Models\AIPaperCollection;
 use App\Policies\AIImportPolicy;
 use App\Policies\AIPaperCollectionPolicy;
+use App\Services\PastPaperCollector\Providers\GeminiOcrProvider;
 use App\Services\PastPaperCollector\Providers\GeminiQuestionProcessingProvider;
 use App\Services\PastPaperCollector\Providers\GeminiWebSearchProvider;
-use App\Services\PastPaperCollector\Providers\UnavailableOcrProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(WebSearchProvider::class, GeminiWebSearchProvider::class);
         $this->app->bind(QuestionProcessingProvider::class, GeminiQuestionProcessingProvider::class);
-        $this->app->bind(OcrProvider::class, UnavailableOcrProvider::class);
+        $this->app->bind(OcrProvider::class, GeminiOcrProvider::class);
     }
 
     public function boot(): void

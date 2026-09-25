@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { examYearOptions } from '@/utils/years';
 
 const props = defineProps({
     grades: { type: Array, required: true },
@@ -14,11 +15,13 @@ const props = defineProps({
     defaults: { type: Object, required: true },
 });
 
+const yearOptions = examYearOptions();
+
 const form = useForm({
     grade_id: '',
     subject_id: '',
     board: props.defaults.board || props.boards?.[0]?.name || '',
-    year: props.defaults.year || '',
+    year: props.defaults.year || yearOptions[1] || yearOptions[0] || '',
     session: '',
     paper_type: props.defaults.paper_type || 'complete',
     language: props.defaults.language || 'english',
@@ -44,7 +47,9 @@ const submit = () => {
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-xl font-semibold leading-tight text-gray-800">AI Past Paper Collector</h2>
-                    <p class="mt-1 text-sm text-gray-500">Best-effort web collection via Google Search + Gemini. Manual review is always required.</p>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Database first: if this Board + Class + Subject + Year + Session already exists, it is reused. Otherwise Gemini searches the web and OCR/vision reads scanned PDFs and images. Manual review is always required.
+                    </p>
                 </div>
                 <Link :href="route('super-admin.past-paper-collector.index')" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
                     Collection History
@@ -92,7 +97,9 @@ const submit = () => {
                     <div class="grid gap-4 sm:grid-cols-3">
                         <div>
                             <InputLabel value="Year *" />
-                            <TextInput v-model="form.year" type="number" class="mt-1 block w-full" />
+                            <select v-model.number="form.year" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                                <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                            </select>
                             <InputError :message="form.errors.year" class="mt-1" />
                         </div>
                         <div>

@@ -74,7 +74,7 @@ const settings = ref({
     enable_omr: true,
     enable_answer_key: true,
     enable_watermark: false,
-    show_past_paper_tags: false,
+    show_past_paper_tags: true,
 });
 
 const allowedCategories = computed(() => props.teacherPermissions?.allowed_categories ?? null);
@@ -608,7 +608,7 @@ const savePaper = () => {
                 <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_omr" type="checkbox" /> OMR Bubble Sheet</label>
                 <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_answer_key" type="checkbox" /> Teacher Answer Key</label>
                 <label class="flex items-center gap-2 text-sm"><input v-model="settings.enable_watermark" type="checkbox" /> Watermark</label>
-                <label class="flex items-center gap-2 text-sm"><input v-model="settings.show_past_paper_tags" type="checkbox" /> Show past paper board &amp; year</label>
+                <label class="flex items-center gap-2 text-sm"><input v-model="settings.show_past_paper_tags" type="checkbox" /> Show “Appeared in year · board” on past-paper questions</label>
                 <div class="flex gap-2">
                     <button class="rounded bg-gray-300 px-4 py-2" @click="step = 2">Back</button>
                     <button class="rounded bg-indigo-600 px-4 py-2 text-white" @click="step = 4">Preview</button>

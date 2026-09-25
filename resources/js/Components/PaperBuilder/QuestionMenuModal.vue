@@ -24,7 +24,7 @@ const dualMedium = ref(true);
 const choiceQuestions = ref(0);
 const blankLines = ref(0);
 const tabularMcqs = ref(true);
-const showBoardYears = ref(false);
+const showBoardYears = ref(true);
 const showParts = ref(true);
 const questionsPerLine = ref(1);
 const boardName = ref('');
@@ -485,7 +485,7 @@ const selectAllSources = (checked) => {
                                     v-if="showBoardYears && getPastPaperTag(q)"
                                     class="mt-1 text-xs text-slate-500"
                                 >
-                                    [{{ getPastPaperTag(q).board_name }}, {{ getPastPaperTag(q).year }}]
+                                    Appeared in {{ getPastPaperTag(q).year }} · {{ getPastPaperTag(q).board_name }}
                                 </p>
 
                                 <div

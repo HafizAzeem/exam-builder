@@ -175,6 +175,7 @@ class GeminiService
 
         $counts = $import->meta['counts'] ?? [];
         $contentSource = $import->meta['content_source'] ?? null;
+        $contentSources = $import->meta['content_sources'] ?? ($contentSource ? [$contentSource] : []);
 
         $meta = [
             'grade' => $import->grade?->label_en ?? $import->grade_id,
@@ -183,6 +184,7 @@ class GeminiService
             'language' => $import->language,
             'source' => $import->sourceForBookType(),
             'content_source' => $contentSource,
+            'content_sources' => $contentSources,
             'book_type' => $import->book_type,
             'requested_counts' => $counts,
             'chapters' => $chapters->map(fn (Chapter $c) => [
@@ -201,6 +203,7 @@ class GeminiService
         return "Context metadata (JSON):\n".json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
             ."\n\nGenerate exam questions that match the requested_counts exactly when possible."
             ." Use only the chapters listed above. Return structured questions."
+            ." Match the selected content_sources styles (exercise / past_paper / online_practice) when more than one is listed."
             .(strtolower((string) $import->language) === 'urdu' || strcasecmp((string) $import->subject?->name_en, 'Urdu') === 0
                 ? "\nIMPORTANT: This is an Urdu paper — write questions in Urdu (text_ur). Do not require English translations."
                 : '');

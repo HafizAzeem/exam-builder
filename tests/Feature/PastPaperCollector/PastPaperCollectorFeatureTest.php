@@ -55,6 +55,68 @@ class PastPaperCollectorFeatureTest extends TestCase
             ->assertOk();
     }
 
+    public function test_store_reuses_existing_matching_paper(): void
+    {
+        Queue::fake();
+        $user = $this->makeSuperAdmin();
+        [$grade, $subject] = $this->seedGradeSubject();
+
+        $import = \App\Models\AIImport::query()->create([
+            'user_id' => $user->id,
+            'grade_id' => $grade->id,
+            'subject_id' => $subject->id,
+            'book_type' => 'past_paper',
+            'board' => 'Lahore Board',
+            'year' => 2020,
+            'session' => 'morning',
+            'language' => 'english',
+            'original_filename' => 'web-collection',
+            'stored_path' => 'pending',
+            'status' => 'review',
+        ]);
+
+        \App\Models\AIImportQuestion::query()->create([
+            'ai_import_id' => $import->id,
+            'type' => 'short',
+            'text_en' => 'Define force.',
+            'status' => 'pending',
+        ]);
+
+        $existing = AIPaperCollection::query()->create([
+            'user_id' => $user->id,
+            'grade_id' => $grade->id,
+            'subject_id' => $subject->id,
+            'ai_import_id' => $import->id,
+            'board' => 'Lahore Board',
+            'year' => 2020,
+            'session' => 'morning',
+            'paper_type' => 'complete',
+            'language' => 'english',
+            'country' => 'Pakistan',
+            'max_results' => 10,
+            'status' => 'review',
+            'progress_stage' => 'review',
+            'progress_percent' => 100,
+            'questions_found' => 1,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('super-admin.past-paper-collector.store'), [
+            'grade_id' => $grade->id,
+            'subject_id' => $subject->id,
+            'board' => 'Lahore Board',
+            'year' => 2020,
+            'session' => 'morning',
+            'paper_type' => 'complete',
+            'language' => 'english',
+            'max_results' => 5,
+            'country' => 'Pakistan',
+        ]);
+
+        $response->assertRedirect(route('super-admin.past-paper-collector.show', $existing));
+        $this->assertSame(1, AIPaperCollection::query()->count());
+        Queue::assertNothingPushed();
+    }
+
     public function test_store_creates_collection_and_dispatches_job(): void
     {
         Queue::fake();

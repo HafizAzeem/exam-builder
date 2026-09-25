@@ -7,6 +7,7 @@ use App\Http\Requests\PaperBuilder\AddTeacherAIQuestionsToPaperRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIGenerateRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIManualQuestionRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIPasteRequest;
+use App\Http\Requests\PaperBuilder\StoreTeacherPastPaperExtractRequest;
 use App\Jobs\ProcessGenerateQuestionsJob;
 use App\Jobs\ProcessUploadedDocumentJob;
 use App\Models\AIImport;
@@ -16,6 +17,7 @@ use App\Models\Grade;
 use App\Models\Subject;
 use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\QuestionImportService;
+use App\Services\PastPaperCollector\PastPaperCollectionService;
 use App\Services\QuestionBankService;
 use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +32,7 @@ class TeacherAIController extends Controller
         protected AIImportService $imports,
         protected QuestionImportService $questionImport,
         protected QuestionBankService $questionBank,
+        protected PastPaperCollectionService $pastPapers,
     ) {}
 
     public function pasteForm(Request $request): Response|RedirectResponse
@@ -94,7 +97,16 @@ class TeacherAIController extends Controller
             $data['language'] = 'urdu';
         }
 
-        $data['content_source'] = $data['content_source'] ?? 'exercise';
+        $data['content_sources'] = array_values(array_unique(array_filter(
+            $data['content_sources'] ?? [$data['content_source'] ?? 'exercise']
+        )));
+        $data['content_source'] = $data['content_sources'][0] ?? 'exercise';
+        if (in_array('past_paper', $data['content_sources'], true)) {
+            $data['content_source'] = 'past_paper';
+        } elseif (in_array('online_practice', $data['content_sources'], true)) {
+            $data['content_source'] = 'online_practice';
+        }
+
         $data['book_type'] = match ($data['content_source']) {
             'past_paper' => 'past_paper',
             'online_practice' => 'additional_questions',
@@ -107,6 +119,79 @@ class TeacherAIController extends Controller
         return redirect()
             ->route('builder.ai.status', $import)
             ->with('success', 'AI is preparing your questions.');
+    }
+
+    public function extractPastPaperForm(Request $request): Response|RedirectResponse
+    {
+        $context = $this->resolveBuilderContext($request);
+        if ($context instanceof RedirectResponse) {
+            return $context;
+        }
+
+        $subjectsQuery = CurriculumLookup::subjects((int) $context['grade']['id'])
+            ->get(['id', 'name_en', 'name_ur']);
+
+        $user = $request->user();
+        if ($user?->hasRole('teacher')) {
+            $allowedSubjects = $user->teacherPermission?->allowed_subjects;
+            if (is_array($allowedSubjects) && count($allowedSubjects)) {
+                $subjectsQuery = $subjectsQuery->whereIn('id', $allowedSubjects)->values();
+            }
+        }
+
+        return Inertia::render('PaperBuilder/AI/ExtractPastPaper', [
+            ...$context,
+            'subjects' => $subjectsQuery,
+            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
+            'defaults' => [
+                'board' => CurriculumLookup::boards()->value('name') ?: '',
+                'year' => (int) date('Y') - 1,
+                'paper_type' => 'complete',
+                'language' => strcasecmp((string) ($context['subject']['name_en'] ?? ''), 'Urdu') === 0
+                    ? 'urdu'
+                    : 'english',
+                'session' => '',
+            ],
+        ]);
+    }
+
+    public function storeExtractPastPaper(StoreTeacherPastPaperExtractRequest $request): RedirectResponse
+    {
+        $this->assertTeacherScope($request, $request->integer('grade_id'), $request->integer('subject_id'));
+
+        $data = $request->validated();
+        $data['country'] = 'Pakistan';
+        $data['paper_type'] = $data['paper_type'] ?? 'complete';
+        $data['max_results'] = min(15, (int) ($data['max_results'] ?? 8));
+        $data['mode'] = 'past_paper_extract';
+
+        $result = $this->pastPapers->createOrReuse($data, (int) $request->user()->id);
+        $collection = $result['collection']->loadMissing('import');
+        $import = $collection->import;
+
+        abort_unless($import, 500);
+
+        if ($import->mode !== 'past_paper_extract') {
+            $import->update(['mode' => 'past_paper_extract']);
+        }
+
+        if (! empty($data['chapter_ids'])) {
+            $meta = $import->meta ?? [];
+            $meta['chapter_ids'] = array_values(array_map('intval', $data['chapter_ids']));
+            $import->update(['meta' => $meta]);
+        }
+
+        if ($result['reused'] && in_array($import->status, ['review', 'completed'], true)) {
+            return redirect()
+                ->route('builder.ai.review', $import)
+                ->with('success', 'Matching past paper found in the database. Review and add questions to your paper / bank.');
+        }
+
+        return redirect()
+            ->route('builder.ai.status', $import)
+            ->with('success', $result['reused']
+                ? 'Matching past paper found — opening stored result.'
+                : 'Past paper extraction started.');
     }
 
     public function status(Request $request, AIImport $import): Response
@@ -419,12 +504,10 @@ class TeacherAIController extends Controller
         $user = $request->user();
 
         abort_unless(
-            $user && (int) $import->user_id === (int) $user->id,
-            403
-        );
-
-        abort_unless(
-            in_array($import->mode, ['paste', 'generate'], true),
+            $user && (
+                (int) $import->user_id === (int) $user->id
+                || ($import->book_type === 'past_paper' && in_array($import->status, ['review', 'completed', 'importing', 'processing', 'uploaded'], true))
+            ),
             403
         );
     }
