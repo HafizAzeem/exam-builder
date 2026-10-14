@@ -165,6 +165,9 @@ class PastPaperCollectorFeatureTest extends TestCase
         $user = $this->makeSuperAdmin();
         AISetting::current()->update([
             'gemini_api_key' => 'secret-gemini-key-value',
+            'preferred_text_provider' => 'gemini',
+            'fallback_text_provider' => 'groq',
+            'gemini_enabled' => true,
         ]);
 
         $response = $this->actingAs($user)->get(route('super-admin.ai-import.settings'));
@@ -174,6 +177,7 @@ class PastPaperCollectorFeatureTest extends TestCase
             ->where('settings.has_gemini_api_key', true)
             ->where('gemini_configured', true)
             ->missing('settings.gemini_api_key')
+            ->missing('settings.groq_api_key')
             ->missing('settings.google_search_api_key')
             ->missing('settings.openrouter_api_key')
         );

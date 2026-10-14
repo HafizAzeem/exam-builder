@@ -35,8 +35,8 @@ return [
         explode(',', (string) env('PREFERRED_QUESTION_SITES', ''))
     ))),
 
-    'preferred_sites_max_sites' => (int) env('PREFERRED_SITES_MAX_SITES', 4),
+    'preferred_sites_max_sites' => (int) env('PREFERRED_SITES_MAX_SITES', 2),
 
-    'preferred_sites_max_urls_per_site' => (int) env('PREFERRED_SITES_MAX_URLS_PER_SITE', 2),
+    'preferred_sites_max_urls_per_site' => (int) env('PREFERRED_SITES_MAX_URLS_PER_SITE', 1),
 
 ];

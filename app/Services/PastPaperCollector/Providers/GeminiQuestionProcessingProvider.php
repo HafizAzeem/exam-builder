@@ -18,7 +18,7 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
 
     public function isConfigured(): bool
     {
-        return AISetting::current()->isTextProviderConfigured();
+        return AISetting::current()->isGeminiUsable();
     }
 
     public function extractQuestions(
@@ -31,7 +31,7 @@ class GeminiQuestionProcessingProvider implements QuestionProcessingProvider
         $settings = AISetting::current();
         $settings->applyProviderConfig();
 
-        if (! $settings->isTextProviderConfigured()) {
+        if (! $settings->isGeminiUsable()) {
             throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
         }
 

@@ -3,11 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Ai\Enums\Lab;
+use Throwable;
 
 class AISetting extends Model
 {
     protected $table = 'ai_settings';
+
+    public const PROVIDER_GEMINI = 'gemini';
+
+    public const PROVIDER_GROQ = 'groq';
+
+    public const FALLBACK_NONE = 'none';
 
     protected $fillable = [
         'model_name',
@@ -18,7 +26,15 @@ class AISetting extends Model
         'retry_count',
         'enable_queue',
         'gemini_api_key',
+        'gemini_enabled',
+        'groq_enabled',
+        'groq_api_key',
+        'groq_model',
+        'groq_vision_model',
+        'langsearch_api_key',
+        'searxng_url',
         'preferred_text_provider',
+        'fallback_text_provider',
         'max_urls_per_search',
         'max_pages_per_source',
         'search_timeout',
@@ -30,6 +46,8 @@ class AISetting extends Model
 
     protected $hidden = [
         'gemini_api_key',
+        'groq_api_key',
+        'langsearch_api_key',
     ];
 
     protected $casts = [
@@ -39,6 +57,10 @@ class AISetting extends Model
         'retry_count' => 'integer',
         'enable_queue' => 'boolean',
         'gemini_api_key' => 'encrypted',
+        'gemini_enabled' => 'boolean',
+        'groq_enabled' => 'boolean',
+        'groq_api_key' => 'encrypted',
+        'langsearch_api_key' => 'encrypted',
         'max_urls_per_search' => 'integer',
         'max_pages_per_source' => 'integer',
         'search_timeout' => 'integer',
@@ -50,7 +72,7 @@ class AISetting extends Model
 
     public static function current(): self
     {
-        return static::query()->firstOrCreate([], [
+        $defaults = [
             'model_name' => 'gemini-3.5-flash-lite',
             'temperature' => 0.2,
             'max_tokens' => 8192,
@@ -58,7 +80,7 @@ class AISetting extends Model
             'chunk_size' => 8000,
             'retry_count' => 3,
             'enable_queue' => true,
-            'preferred_text_provider' => 'gemini',
+            'preferred_text_provider' => self::PROVIDER_GROQ,
             'max_urls_per_search' => 10,
             'max_pages_per_source' => 20,
             'search_timeout' => 30,
@@ -66,7 +88,21 @@ class AISetting extends Model
             'duplicate_similarity_threshold' => 0.85,
             'queue_size' => 5,
             'max_source_bytes' => 15_000_000,
-        ]);
+        ];
+
+        if (Schema::hasColumn('ai_settings', 'gemini_enabled')) {
+            $defaults['gemini_enabled'] = true;
+        }
+        if (Schema::hasColumn('ai_settings', 'groq_enabled')) {
+            $defaults['groq_enabled'] = true;
+            $defaults['groq_model'] = 'openai/gpt-oss-20b';
+            $defaults['groq_vision_model'] = 'qwen/qwen3.8-27b';
+        }
+        if (Schema::hasColumn('ai_settings', 'fallback_text_provider')) {
+            $defaults['fallback_text_provider'] = self::PROVIDER_GEMINI;
+        }
+
+        return static::query()->firstOrCreate([], $defaults);
     }
 
     /**
@@ -77,11 +113,168 @@ class AISetting extends Model
     {
         config([
             'ai.providers.gemini.key' => $this->gemini_api_key,
+            'ai.providers.groq.key' => $this->groq_api_key,
+            'ai.providers.groq.url' => rtrim((string) config('ai.providers.groq.url', 'https://api.groq.com/openai/v1'), '/'),
+            'ai.web_search.langsearch_key' => $this->langsearch_api_key,
+            'ai.web_search.searxng_url' => $this->resolvedSearxngUrl(),
             'ai.providers.openrouter.key' => null,
             'ai.providers.openai.key' => null,
             'services.google_cse.key' => null,
             'services.google_cse.cx' => null,
         ]);
+    }
+
+    public function resolvedGeminiApiKey(): ?string
+    {
+        return filled($this->gemini_api_key) ? $this->gemini_api_key : null;
+    }
+
+    public function resolvedGroqApiKey(): ?string
+    {
+        return filled($this->groq_api_key) ? $this->groq_api_key : null;
+    }
+
+    public function resolvedLangsearchApiKey(): ?string
+    {
+        if (! Schema::hasColumn('ai_settings', 'langsearch_api_key')) {
+            return null;
+        }
+
+        return filled($this->langsearch_api_key) ? $this->langsearch_api_key : null;
+    }
+
+    public function resolvedSearxngUrl(): ?string
+    {
+        if (! Schema::hasColumn('ai_settings', 'searxng_url')) {
+            return null;
+        }
+
+        $url = rtrim(trim((string) ($this->searxng_url ?: '')), '/');
+
+        return $url !== '' ? $url : null;
+    }
+
+    public function isFreeWebSearchConfigured(): bool
+    {
+        return filled($this->resolvedLangsearchApiKey()) || filled($this->resolvedSearxngUrl());
+    }
+
+    public function resolvedFreeSearchProvider(): ?string
+    {
+        if (filled($this->resolvedLangsearchApiKey())) {
+            return 'langsearch';
+        }
+        if (filled($this->resolvedSearxngUrl())) {
+            return 'searxng';
+        }
+
+        return null;
+    }
+
+    public function resolvedGroqModel(): string
+    {
+        $model = trim((string) ($this->groq_model ?: 'openai/gpt-oss-20b'));
+
+        return $model !== '' ? $model : 'openai/gpt-oss-20b';
+    }
+
+    public function resolvedGroqVisionModel(): string
+    {
+        $model = trim((string) ($this->groq_vision_model ?: 'qwen/qwen3.8-27b'));
+
+        return $model !== '' ? $model : 'qwen/qwen3.8-27b';
+    }
+
+    public function primaryTextProvider(): string
+    {
+        $primary = strtolower((string) ($this->preferred_text_provider ?: self::PROVIDER_GROQ));
+
+        return in_array($primary, [self::PROVIDER_GEMINI, self::PROVIDER_GROQ], true)
+            ? $primary
+            : self::PROVIDER_GROQ;
+    }
+
+    public function fallbackTextProvider(): string
+    {
+        $raw = Schema::hasColumn('ai_settings', 'fallback_text_provider')
+            ? $this->fallback_text_provider
+            : self::PROVIDER_GEMINI;
+
+        $fallback = strtolower(trim((string) ($raw ?: self::PROVIDER_GEMINI)));
+        if ($fallback === '') {
+            $fallback = self::PROVIDER_GEMINI;
+        }
+
+        if (! in_array($fallback, [self::PROVIDER_GEMINI, self::PROVIDER_GROQ, self::FALLBACK_NONE], true)) {
+            $fallback = self::PROVIDER_GEMINI;
+        }
+
+        if ($fallback !== self::FALLBACK_NONE && $fallback === $this->primaryTextProvider()) {
+            return self::FALLBACK_NONE;
+        }
+
+        return $fallback;
+    }
+
+    public function isProviderEnabled(string $id): bool
+    {
+        return match ($id) {
+            self::PROVIDER_GEMINI => (bool) ($this->gemini_enabled ?? true),
+            self::PROVIDER_GROQ => (bool) ($this->groq_enabled ?? true),
+            default => false,
+        };
+    }
+
+    public function isProviderUsable(string $id): bool
+    {
+        if (! $this->isProviderEnabled($id)) {
+            return false;
+        }
+
+        return match ($id) {
+            self::PROVIDER_GEMINI => filled($this->resolvedGeminiApiKey()),
+            self::PROVIDER_GROQ => filled($this->resolvedGroqApiKey()),
+            default => false,
+        };
+    }
+
+    public function isGeminiUsable(): bool
+    {
+        return $this->isProviderUsable(self::PROVIDER_GEMINI);
+    }
+
+    public function isGroqUsable(): bool
+    {
+        return $this->isProviderUsable(self::PROVIDER_GROQ);
+    }
+
+    /**
+     * @return self::PROVIDER_GEMINI|self::PROVIDER_GROQ
+     */
+    public function resolveActiveTextProvider(): string
+    {
+        $primary = $this->primaryTextProvider();
+        if ($this->isProviderUsable($primary)) {
+            return $primary;
+        }
+
+        $fallback = $this->fallbackTextProvider();
+        if ($fallback !== self::FALLBACK_NONE && $this->isProviderUsable($fallback)) {
+            return $fallback;
+        }
+
+        throw new \RuntimeException(
+            'No AI text provider available. Enable the primary or fallback provider and add its API key in AI Settings.'
+        );
+    }
+
+    public function tryResolveActiveTextProvider(): ?string
+    {
+        try {
+            return $this->resolveActiveTextProvider();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     public function resolvedTextProvider(): Lab
@@ -119,18 +312,15 @@ class AISetting extends Model
         };
     }
 
-    public function resolvedGeminiApiKey(): ?string
-    {
-        return filled($this->gemini_api_key) ? $this->gemini_api_key : null;
-    }
-
     public function isTextProviderConfigured(): bool
     {
-        return filled($this->resolvedGeminiApiKey());
+        return $this->tryResolveActiveTextProvider() !== null;
     }
 
     public function toPublicArray(): array
     {
+        $active = $this->tryResolveActiveTextProvider();
+
         return [
             'id' => $this->id,
             'model_name' => $this->model_name,
@@ -140,7 +330,12 @@ class AISetting extends Model
             'chunk_size' => $this->chunk_size,
             'retry_count' => $this->retry_count,
             'enable_queue' => $this->enable_queue,
-            'preferred_text_provider' => 'gemini',
+            'preferred_text_provider' => $this->primaryTextProvider(),
+            'fallback_text_provider' => $this->fallbackTextProvider(),
+            'gemini_enabled' => $this->isProviderEnabled(self::PROVIDER_GEMINI),
+            'groq_enabled' => $this->isProviderEnabled(self::PROVIDER_GROQ),
+            'groq_model' => $this->resolvedGroqModel(),
+            'groq_vision_model' => $this->resolvedGroqVisionModel(),
             'max_urls_per_search' => $this->max_urls_per_search,
             'max_pages_per_source' => $this->max_pages_per_source,
             'search_timeout' => $this->search_timeout,
@@ -150,7 +345,14 @@ class AISetting extends Model
             'max_source_bytes' => $this->max_source_bytes,
             'has_gemini_api_key' => filled($this->resolvedGeminiApiKey()),
             'gemini_key_masked' => $this->maskSecret($this->resolvedGeminiApiKey()),
+            'has_groq_api_key' => filled($this->resolvedGroqApiKey()),
+            'groq_key_masked' => $this->maskSecret($this->resolvedGroqApiKey()),
+            'has_langsearch_api_key' => filled($this->resolvedLangsearchApiKey()),
+            'langsearch_key_masked' => $this->maskSecret($this->resolvedLangsearchApiKey()),
+            'searxng_url' => $this->resolvedSearxngUrl(),
+            'free_search_provider' => $this->resolvedFreeSearchProvider(),
             'text_provider_configured' => $this->isTextProviderConfigured(),
+            'active_text_provider' => $active,
         ];
     }
 

@@ -100,7 +100,9 @@ return [
 
         'groq' => [
             'driver' => 'groq',
-            'key' => env('GROQ_API_KEY'),
+            // Key is set at runtime from Super Admin AI Settings (ai_settings.groq_api_key).
+            'key' => null,
+            'url' => env('GROQ_URL', 'https://api.groq.com/openai/v1'),
         ],
 
         'jina' => [
@@ -141,6 +143,18 @@ return [
             'driver' => 'xai',
             'key' => env('XAI_API_KEY'),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Free web search (harvest / collector) — never Groq browser_search
+    |--------------------------------------------------------------------------
+    */
+
+    'web_search' => [
+        'langsearch_url' => env('LANGSEARCH_URL', 'https://api.langsearch.com/v1/web-search'),
+        'langsearch_key' => null,
+        'searxng_url' => null,
     ],
 
 ];

@@ -8,7 +8,7 @@ use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\DocumentChunkerService;
 use App\Services\AIImport\DocumentTextExtractionService;
 use App\Services\AIImport\DuplicateDetectionService;
-use App\Services\AIImport\GeminiService;
+use App\Contracts\AIImport\QuestionAiService;
 use App\Services\AIImport\QuestionParserService;
 use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -65,7 +65,7 @@ class ProcessUploadedDocumentJob implements ShouldQueue
             if (! $settings->enable_queue) {
                 foreach ($jobs as $job) {
                     $job->handle(
-                        app(GeminiService::class),
+                        app(QuestionAiService::class),
                         app(QuestionParserService::class),
                         app(AIImportService::class),
                         app(DuplicateDetectionService::class),

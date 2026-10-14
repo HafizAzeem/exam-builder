@@ -24,7 +24,7 @@ class GeminiService
         $settings = AISetting::current();
         $settings->applyProviderConfig();
 
-        if (! $settings->isTextProviderConfigured()) {
+        if (! $settings->isGeminiUsable()) {
             throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
         }
 
@@ -99,7 +99,7 @@ class GeminiService
         $settings = AISetting::current();
         $settings->applyProviderConfig();
 
-        if (! $settings->isTextProviderConfigured()) {
+        if (! $settings->isGeminiUsable()) {
             throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
         }
 

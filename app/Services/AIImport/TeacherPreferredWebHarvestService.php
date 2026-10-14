@@ -2,6 +2,7 @@
 
 namespace App\Services\AIImport;
 
+use App\Contracts\AIImport\QuestionAiService;
 use App\Contracts\PastPaperCollector\WebSearchProvider;
 use App\Models\AIImport;
 use App\Models\Chapter;
@@ -17,14 +18,15 @@ use Throwable;
  * Harvest ready-made practice questions from preferred education websites first.
  *
  * Strategy: waterfall per site (stop early when enough questions) to cut rate limits / tokens.
- * If no active preferred sites exist, returns [] so the job falls back to LLM invent.
+ * Search is LangSearch/SearXNG only (never Groq). If search is not configured or
+ * no preferred sites exist, returns [] so the job falls back to LLM invent.
  */
 class TeacherPreferredWebHarvestService
 {
     public function __construct(
         protected WebSearchProvider $search,
         protected UrlSafetyService $urlSafety,
-        protected GeminiService $gemini,
+        protected QuestionAiService $questionAi,
         protected DocumentChunkerService $chunker,
     ) {}
 
@@ -89,8 +91,8 @@ class TeacherPreferredWebHarvestService
             ->get(['id', 'number', 'title_en']);
 
         $needed = $this->neededCount($import);
-        $maxUrlsPerSite = max(1, min(3, (int) config('exam.preferred_sites_max_urls_per_site', 2)));
-        $maxSites = max(1, min(8, (int) config('exam.preferred_sites_max_sites', 4)));
+        $maxUrlsPerSite = max(1, min(2, (int) config('exam.preferred_sites_max_urls_per_site', 1)));
+        $maxSites = max(1, min(4, (int) config('exam.preferred_sites_max_sites', 2)));
 
         $questions = [];
         $chunkIndex = 100;
@@ -116,8 +118,8 @@ class TeacherPreferredWebHarvestService
                     }
 
                     $chunks = $this->chunker->chunk($text);
-                    foreach (array_slice($chunks, 0, 2) as $chunk) {
-                        $result = $this->gemini->extractQuestions(
+                    foreach (array_slice($chunks, 0, 1) as $chunk) {
+                        $result = $this->questionAi->extractQuestions(
                             $import,
                             $chunk['text'],
                             $chunkIndex++,
@@ -161,10 +163,11 @@ class TeacherPreferredWebHarvestService
         $queries = $this->buildQueriesForSite($import, $chapters, $domain);
         $urls = [];
 
-        foreach ($queries as $query) {
+        foreach (array_slice($queries, 0, 1) as $query) {
             try {
                 $results = $this->search->search($query, min(5, $maxUrls + 2), [
-                    'timeout' => 25,
+                    'timeout' => 20,
+                    'include_domains' => [$domain],
                 ]);
             } catch (Throwable $e) {
                 Log::warning('Preferred site search failed: '.$e->getMessage());

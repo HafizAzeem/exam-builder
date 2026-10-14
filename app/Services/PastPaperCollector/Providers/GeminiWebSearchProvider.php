@@ -16,7 +16,7 @@ class GeminiWebSearchProvider implements WebSearchProvider
 
     public function isConfigured(): bool
     {
-        return filled(AISetting::current()->resolvedGeminiApiKey());
+        return AISetting::current()->isGeminiUsable();
     }
 
     public function search(string $query, int $maxResults = 10, array $options = []): array

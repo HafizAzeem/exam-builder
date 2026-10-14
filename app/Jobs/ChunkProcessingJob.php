@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Models\AIImport;
 use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\DuplicateDetectionService;
-use App\Services\AIImport\GeminiService;
+use App\Contracts\AIImport\QuestionAiService;
 use App\Services\AIImport\QuestionParserService;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -28,7 +28,7 @@ class ChunkProcessingJob implements ShouldQueue
     ) {}
 
     public function handle(
-        GeminiService $gemini,
+        QuestionAiService $questionAi,
         QuestionParserService $parser,
         AIImportService $imports,
         DuplicateDetectionService $duplicates,
@@ -43,7 +43,7 @@ class ChunkProcessingJob implements ShouldQueue
         }
 
         try {
-            $result = $gemini->extractQuestions(
+            $result = $questionAi->extractQuestions(
                 $import,
                 $this->chunkText,
                 $this->chunkIndex,

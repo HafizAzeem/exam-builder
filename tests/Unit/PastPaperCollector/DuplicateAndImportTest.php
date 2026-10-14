@@ -190,6 +190,9 @@ class DuplicateAndImportTest extends TestCase
         AISetting::current()->update([
             'model_name' => 'gemini-3.5-flash-lite',
             'gemini_api_key' => 'test-gemini-key',
+            'preferred_text_provider' => 'gemini',
+            'fallback_text_provider' => 'none',
+            'gemini_enabled' => true,
         ]);
 
         Http::fake([

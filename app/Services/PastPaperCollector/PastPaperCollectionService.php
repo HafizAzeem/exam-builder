@@ -140,11 +140,10 @@ class PastPaperCollectionService
         $settings = AISetting::current();
 
         try {
-            if (! $this->searchProvider->isConfigured()) {
-                throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
-            }
-            if (! $this->questionProcessor->isConfigured()) {
-                throw new \RuntimeException('Gemini is not configured. Set the Gemini API key in AI Settings.');
+            if (! $settings->isTextProviderConfigured()) {
+                throw new \RuntimeException(
+                    'No AI text provider available. Enable the primary or fallback provider and add its API key in AI Settings.'
+                );
             }
 
             $collection->markStage('searching');

@@ -2,11 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Contracts\AIImport\QuestionAiService;
 use App\Models\AIImport;
 use App\Models\AISetting;
 use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\DuplicateDetectionService;
-use App\Services\AIImport\GeminiService;
 use App\Services\AIImport\QuestionParserService;
 use App\Services\AIImport\TeacherPreferredWebHarvestService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,7 +24,7 @@ class ProcessGenerateQuestionsJob implements ShouldQueue
     ) {}
 
     public function handle(
-        GeminiService $gemini,
+        QuestionAiService $questionAi,
         QuestionParserService $parser,
         AIImportService $imports,
         DuplicateDetectionService $duplicates,
@@ -55,7 +55,10 @@ class ProcessGenerateQuestionsJob implements ShouldQueue
 
             $created = [];
             if ($webQuestions !== []) {
-                $created = $parser->storeStagingQuestions($this->import, array_slice($webQuestions, 0, $needed + 10));
+                $created = $parser->storeStagingQuestions(
+                    $this->import,
+                    $parser->takeRequestedCounts($webQuestions, is_array($counts) ? $counts : [])
+                );
                 $duplicates->scanMany($created);
             }
 
@@ -66,17 +69,20 @@ class ProcessGenerateQuestionsJob implements ShouldQueue
             $this->import->broadcastProgress();
             $this->import->refreshCounters();
 
-            $have = $this->import->questions()->where('is_duplicate', false)->count();
-            $stillNeed = max(0, $needed - $have);
+            $stillCounts = $this->remainingCounts($this->import, is_array($counts) ? $counts : []);
+            $stillNeed = array_sum($stillCounts);
 
             // 2) Fill remaining with LLM generation (exercise / past-paper style).
             if ($stillNeed > 0) {
                 $meta = $this->import->meta ?? [];
-                $meta['counts'] = $this->scaleCounts($counts, $stillNeed, $needed);
+                $meta['counts'] = $stillCounts;
                 $this->import->update(['meta' => $meta]);
 
-                $result = $gemini->generateQuestions($this->import->fresh());
-                $generated = $parser->storeStagingQuestions($this->import, $result['questions']);
+                $result = $questionAi->generateQuestions($this->import->fresh());
+                $generated = $parser->storeStagingQuestions(
+                    $this->import,
+                    $parser->takeRequestedCounts($result['questions'] ?? [], $stillCounts)
+                );
                 $duplicates->scanMany($generated);
                 $created = array_merge($created, $generated);
             }
@@ -112,43 +118,23 @@ class ProcessGenerateQuestionsJob implements ShouldQueue
     }
 
     /**
-     * @param  array<string, mixed>  $counts
+     * @param  array<string, mixed>  $requested
      * @return array<string, int>
      */
-    protected function scaleCounts(array $counts, int $stillNeed, int $originalTotal): array
+    protected function remainingCounts(AIImport $import, array $requested): array
     {
-        $types = ['mcq', 'short', 'long', 'fill', 'truefalse'];
-        $scaled = [];
-        $assigned = 0;
+        $have = $import->questions()
+            ->where('is_duplicate', false)
+            ->selectRaw('type, count(*) as aggregate')
+            ->groupBy('type')
+            ->pluck('aggregate', 'type');
 
-        foreach ($types as $type) {
-            $orig = (int) ($counts[$type] ?? 0);
-            if ($originalTotal < 1 || $orig < 1) {
-                $scaled[$type] = 0;
-
-                continue;
-            }
-            $n = (int) max(0, round(($orig / $originalTotal) * $stillNeed));
-            $scaled[$type] = $n;
-            $assigned += $n;
+        $remaining = [];
+        foreach (['mcq', 'short', 'long', 'fill', 'truefalse'] as $type) {
+            $remaining[$type] = max(0, (int) ($requested[$type] ?? 0) - (int) ($have[$type] ?? 0));
         }
 
-        // Distribute remainder to the largest original bucket.
-        while ($assigned < $stillNeed) {
-            $best = 'mcq';
-            $bestOrig = -1;
-            foreach ($types as $type) {
-                $orig = (int) ($counts[$type] ?? 0);
-                if ($orig > $bestOrig) {
-                    $bestOrig = $orig;
-                    $best = $type;
-                }
-            }
-            $scaled[$best]++;
-            $assigned++;
-        }
-
-        return $scaled;
+        return $remaining;
     }
 
     public static function dispatchFor(AIImport $import): void

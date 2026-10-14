@@ -18,7 +18,7 @@ class GeminiOcrProvider implements OcrProvider
 
     public function isAvailable(): bool
     {
-        return filled(AISetting::current()->resolvedGeminiApiKey());
+        return AISetting::current()->isGeminiUsable();
     }
 
     public function supports(string $mimeType): bool
