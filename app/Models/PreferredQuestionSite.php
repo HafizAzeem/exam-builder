@@ -109,7 +109,42 @@ class PreferredQuestionSite extends Model
             ->orderBy('priority')
             ->orderBy('id')
             ->get()
+            ->reject(fn (self $site) => $site->isGetPastPaperOnly())
+            ->values()
             ->all();
+    }
+
+    /**
+     * Domains reserved for teacher Get past paper (not Smart Generate harvest).
+     *
+     * @return list<string>
+     */
+    public static function getPastPaperOnlyDomains(): array
+    {
+        return static::query()
+            ->active()
+            ->orderBy('priority')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (self $site) => $site->isGetPastPaperOnly())
+            ->map(fn (self $site) => self::normalizeDomain((string) $site->domain))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Past-paper-only sites are used by Get past paper, not textbook/practice harvest.
+     */
+    public function isGetPastPaperOnly(): bool
+    {
+        $types = collect($this->source_types ?? [])
+            ->filter(fn ($type) => is_string($type) && $type !== '')
+            ->unique()
+            ->values();
+
+        return $types->count() === 1 && $types->first() === self::SOURCE_PAST_PAPER;
     }
 
     public function label(): string

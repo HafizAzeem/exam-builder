@@ -151,6 +151,13 @@ class AIImport extends Model
             return $error;
         }
 
+        if (preg_match(
+            '/attempted too many times|langsearch|searxng|temporarily down|http 502|http 503|web search error/i',
+            $error
+        )) {
+            return 'Web search is temporarily down. Wait a few minutes and try Get past paper again, or paste the paper text instead.';
+        }
+
         if (preg_match('/website|web site|gemini|preferred site|api key|rate limit/i', $error)) {
             return 'No questions were produced. Try different chapters or counts.';
         }

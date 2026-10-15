@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { hasRealtime, usePrivateChannel } from '@/composables/usePrivateChannel';
 
@@ -11,6 +11,8 @@ const props = defineProps({
 });
 
 const status = ref({ ...props.statusPayload });
+const page = usePage();
+const reusedFromDatabase = computed(() => Boolean(page.props.flash?.past_paper_reused));
 let timer = null;
 let redirected = false;
 
@@ -41,7 +43,7 @@ const stageHint = computed(() => {
         processing: 'Classifying and writing exam questions…',
         importing: 'Adding selected questions…',
         review: 'Opening review…',
-        failed: 'You can go back and try again.',
+        failed: 'Try Get past paper again in a few minutes, or paste the paper text.',
     };
     return map[status.value.status] || '';
 });
@@ -159,6 +161,9 @@ onUnmounted(() => {
                             <div class="min-w-0 flex-1">
                                 <p class="text-lg font-semibold tracking-tight text-slate-900">{{ label }}</p>
                                 <p class="mt-1 text-sm text-slate-500">{{ stageHint }}</p>
+                                <p v-if="reusedFromDatabase" class="mt-2 rounded-lg bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-800">
+                                    Same class, board, and year — opening saved questions.
+                                </p>
                             </div>
                             <div class="shrink-0 text-right">
                                 <p class="text-2xl font-semibold tabular-nums text-slate-900">{{ progress }}%</p>

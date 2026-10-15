@@ -1050,9 +1050,12 @@ const teacherAnswerFor = (question) => {
 }
 
 .tpl1-past-ref {
-    margin: 2px 0 0 1.2rem;
-    font-size: 0.72rem;
-    color: #374151;
+    margin: 1px 0 0 1.2rem;
+    font-size: 9px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.2;
+    color: #9ca3af;
 }
 
 .tpl1-mcq-options {

@@ -184,14 +184,16 @@ class TeacherAIController extends Controller
         if ($result['reused'] && in_array($import->status, ['review', 'completed'], true)) {
             return redirect()
                 ->route('builder.ai.review', $import)
-                ->with('success', 'Matching past paper found in the database. Review and add questions to your paper / bank.');
+                ->with('past_paper_reused', true)
+                ->with('success', 'Loaded from saved papers — same class, board, and year. No web fetch.');
         }
 
         return redirect()
             ->route('builder.ai.status', $import)
+            ->with('past_paper_reused', (bool) $result['reused'])
             ->with('success', $result['reused']
-                ? 'Matching past paper found — opening stored result.'
-                : 'Past paper extraction started.');
+                ? 'Matching past paper found in the database — opening saved questions.'
+                : 'Searching for that past paper. Questions will be saved to the bank with board and year.');
     }
 
     public function status(Request $request, AIImport $import): Response
@@ -253,6 +255,7 @@ class TeacherAIController extends Controller
                 ->get(['id', 'number', 'title_en']),
             'composeQuery' => $this->composeQuery($import),
             'paperLanguage' => $import->language,
+            'reusedFromDatabase' => (bool) $request->session()->get('past_paper_reused'),
         ]);
     }
 
@@ -436,7 +439,7 @@ class TeacherAIController extends Controller
 
         $grade = Grade::query()->find($gradeId);
         $subject = Subject::query()->where('id', $subjectId)->where('grade_id', $gradeId)->first();
-        $allowedGrades = config('exam.teacher_ai_grade_numbers', [9, 10, 11, 12]);
+        $allowedGrades = config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]);
 
         if (! $grade || ! $subject || ! $grade->is_active || ! $subject->is_active) {
             return redirect()->route('builder');
@@ -447,7 +450,7 @@ class TeacherAIController extends Controller
                 'grade' => $gradeId,
                 'subject' => $subjectId,
                 'chapters' => implode(',', $chapterIds),
-            ])->with('error', 'AI paper tools are available for classes 9–12.');
+            ])->with('error', 'AI paper tools are available for classes 5–12.');
         }
 
         $this->assertTeacherScope($request, $gradeId, $subjectId);

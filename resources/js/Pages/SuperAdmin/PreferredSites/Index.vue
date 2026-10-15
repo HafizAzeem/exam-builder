@@ -91,6 +91,9 @@ const destroy = (site) => {
 
 const formatTypes = (types) => {
     if (!Array.isArray(types) || !types.length) return 'All';
+    if (types.length === 1 && types[0] === 'past_paper') {
+        return 'Get past paper only';
+    }
     return types.map((t) => sourceLabels[t] || t).join(', ');
 };
 </script>
@@ -103,7 +106,7 @@ const formatTypes = (types) => {
             <div>
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Preferred AI websites</h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    Teacher AI Generate tries these sites first (waterfall). If none are active, AI invents questions on its own.
+                    Teacher Smart Generate tries these sites first (waterfall). A site with only Past papers checked is reserved for Get past paper (e.g. pastpaper.pk).
                 </p>
             </div>
         </template>
@@ -139,6 +142,7 @@ const formatTypes = (types) => {
                                 {{ sourceLabels[opt] || opt }}
                             </label>
                         </div>
+                        <p class="mt-1 text-xs text-gray-500">Past papers only (no Exercise / Additional) is used by Get past paper, not Smart Generate.</p>
                         <InputError :message="createForm.errors.source_types" class="mt-1" />
                     </div>
                     <div class="flex items-end gap-3">

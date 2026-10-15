@@ -32,14 +32,17 @@ class SearchQueryGenerator
             ])));
         }
 
+        $bise = $this->bisePhrase($board);
+
         $queries = [
             "{$board} {$grade} {$subject} {$year}".($session ? " {$session}" : '').' Paper PDF',
             "{$board} {$subject} Class {$grade} Annual {$year}",
-            "BISE Lahore {$grade} {$subject} Past Paper {$year}",
+            "{$bise} {$grade} {$subject} Past Paper {$year}",
             "{$subject} {$grade} {$board} {$year} Objective Paper",
             "{$subject} {$grade} {$board} {$year} Subjective Paper",
             "{$board} {$grade} {$subject} {$year} {$country}",
-            "BISE Lahore {$subject} {$grade} {$year} past paper PDF",
+            "{$bise} {$subject} {$grade} {$year} past paper PDF",
+            "{$subject} {$grade} class {$board} {$year} past paper",
         ];
 
         if ($paperType === 'objective') {
@@ -49,7 +52,7 @@ class SearchQueryGenerator
         }
 
         if ($session) {
-            $queries[] = "BISE Lahore {$subject} {$grade} {$year} {$session} session";
+            $queries[] = "{$bise} {$subject} {$grade} {$year} {$session} session";
         }
 
         if ($language && strtolower($language) !== 'english') {
@@ -68,11 +71,31 @@ class SearchQueryGenerator
         $number = (string) $grade->number;
 
         return match ($number) {
+            '5' => '5th',
+            '6' => '6th',
+            '7' => '7th',
+            '8' => '8th',
             '9' => '9th',
             '10' => '10th',
             '11' => '11th',
             '12' => '12th',
             default => $number,
         };
+    }
+
+    protected function bisePhrase(string $board): string
+    {
+        $name = trim($board);
+        if ($name === '') {
+            return 'BISE';
+        }
+
+        if (preg_match('/^bise\b/i', $name)) {
+            return $name;
+        }
+
+        $withoutBoard = trim((string) preg_replace('/\s+board$/i', '', $name));
+
+        return 'BISE '.$withoutBoard;
     }
 }

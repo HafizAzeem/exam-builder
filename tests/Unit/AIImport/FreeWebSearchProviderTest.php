@@ -56,6 +56,90 @@ class FreeWebSearchProviderTest extends TestCase
         $this->assertSame('https://ilmkidunya.com/physics-mcq', $results[0]['url']);
         Http::assertSent(fn ($request) => str_contains($request->url(), 'api.langsearch.com'));
         Http::assertNotSent(fn ($request) => str_contains($request->url(), 'api.groq.com'));
+        Http::assertSent(function ($request) {
+            $payload = $request->data();
+
+            return ($payload['includeDomains'] ?? null) === ['ilmkidunya.com'];
+        });
+    }
+
+    public function test_searxng_prefixes_all_include_domains(): void
+    {
+        AISetting::current()->update([
+            'langsearch_api_key' => null,
+            'searxng_url' => 'http://127.0.0.1:8080',
+        ]);
+
+        Http::fake([
+            '127.0.0.1:8080/*' => Http::response([
+                'results' => [
+                    ['title' => 'Paper', 'url' => 'https://pastpaper.pk/paper', 'content' => 'BISE'],
+                ],
+            ], 200),
+        ]);
+
+        app(FreeWebSearchProvider::class)->search('Gujranwala Board English 2024', 3, [
+            'include_domains' => ['pastpaper.pk', 'ilmkidunya.com'],
+        ]);
+
+        Http::assertSent(function ($request) {
+            $query = urldecode((string) $request->url());
+
+            return str_contains($query, 'site:pastpaper.pk')
+                && str_contains($query, 'site:ilmkidunya.com');
+        });
+    }
+
+    public function test_langsearch_502_falls_back_to_searxng(): void
+    {
+        AISetting::current()->update([
+            'langsearch_api_key' => 'ls_test_key',
+            'searxng_url' => 'http://127.0.0.1:8080',
+        ]);
+
+        Http::fake([
+            'api.langsearch.com/*' => Http::response(['message' => 'web search error', 'code' => '502'], 502),
+            '127.0.0.1:8080/*' => Http::response([
+                'results' => [
+                    ['title' => 'BISE paper', 'url' => 'https://ilmkidunya.com/paper.pdf', 'content' => 'Lahore Board'],
+                ],
+            ], 200),
+        ]);
+
+        $results = app(FreeWebSearchProvider::class)->search('Lahore Board Physics 2024', 3);
+
+        $this->assertSame('https://ilmkidunya.com/paper.pdf', $results[0]['url']);
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'api.langsearch.com'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '127.0.0.1:8080'));
+    }
+
+    public function test_langsearch_down_without_searxng_throws_teacher_message(): void
+    {
+        AISetting::current()->update([
+            'langsearch_api_key' => 'ls_test_key',
+            'searxng_url' => null,
+        ]);
+
+        Http::fake([
+            'api.langsearch.com/*' => Http::response(['message' => 'web search error'], 502),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Web search is temporarily down');
+
+        app(FreeWebSearchProvider::class)->search('Lahore Board Physics 2024', 3);
+    }
+
+    public function test_teacher_facing_error_maps_max_attempts_and_langsearch(): void
+    {
+        $this->assertStringContainsString(
+            'Web search is temporarily down',
+            (string) AIImport::teacherFacingError('App\\Jobs\\CollectPastPapersJob has been attempted too many times.')
+        );
+        $this->assertStringContainsString(
+            'Web search is temporarily down',
+            (string) AIImport::teacherFacingError('LangSearch request failed (HTTP 502): web search error')
+        );
     }
 
     public function test_searxng_is_used_when_langsearch_key_missing(): void

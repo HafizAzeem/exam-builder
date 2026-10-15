@@ -61,15 +61,15 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Extract past paper" />
+    <Head title="Get past paper" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">Extract past paper</h2>
+                    <h2 class="text-xl font-semibold leading-tight text-gray-800">Get past paper</h2>
                     <p class="mt-1 text-sm text-gray-500">
-                        {{ grade.label_en }} · {{ selectedSubjectName }} — questions go into the shared bank.
+                        {{ grade.label_en }} · {{ selectedSubjectName }} — saved to the bank with board and year. Same search loads from saved data.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -77,7 +77,7 @@ const submit = () => {
                         :href="route('builder.ai.generate', composeQuery)"
                         class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                        AI Generate
+                        Smart Generate
                     </Link>
                     <Link
                         :href="route('builder.create', composeQuery)"
@@ -92,6 +92,10 @@ const submit = () => {
         <div class="py-8">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <form class="space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm" @submit.prevent="submit">
+                    <p class="rounded-lg bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                        Pick board, year, and paper type for this class. Questions are stored with a thin
+                        “Appeared in year · board” line. Searching the same paper again opens saved questions — no second web fetch.
+                    </p>
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel value="Class" />
@@ -159,7 +163,7 @@ const submit = () => {
                             Cancel
                         </Link>
                         <PrimaryButton :disabled="form.processing || !form.board || !form.year || !form.subject_id">
-                            {{ form.processing ? 'Starting…' : 'Find / extract past paper' }}
+                            {{ form.processing ? 'Starting…' : 'Get past paper' }}
                         </PrimaryButton>
                     </div>
                 </form>

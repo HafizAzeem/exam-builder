@@ -16,7 +16,7 @@ class StoreTeacherAIGenerateRequest extends FormRequest
 
     public function rules(): array
     {
-        $allowedGrades = config('exam.teacher_ai_grade_numbers', [9, 10, 11, 12]);
+        $allowedGrades = config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]);
 
         return [
             'grade_id' => [

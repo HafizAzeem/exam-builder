@@ -4,12 +4,15 @@ namespace Tests\Unit\PastPaperCollector;
 
 use App\Models\AIPaperCollection;
 use App\Models\Grade;
+use App\Models\PreferredQuestionSite;
 use App\Models\Subject;
 use App\Services\PastPaperCollector\PaperAwareChunkerService;
+use App\Services\PastPaperCollector\PastPaperCollectionService;
 use App\Services\PastPaperCollector\SearchQueryGenerator;
 use App\Services\PastPaperCollector\SourceFetchService;
 use App\Services\PastPaperCollector\SourceRelevanceFilter;
 use App\Services\PastPaperCollector\UrlSafetyService;
+use Database\Seeders\PreferredQuestionSiteSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -49,6 +52,39 @@ class CollectorHelpersTest extends TestCase
         $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, 'Physics')));
         $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, '2020')));
         $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, 'BISE Lahore')));
+        $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, '9th class Lahore Board 2020 past paper')));
+    }
+
+    public function test_search_query_generator_uses_selected_board_not_lahore(): void
+    {
+        $grade = Grade::query()->create([
+            'number' => 9,
+            'label_en' => 'Class 9',
+            'label_ur' => null,
+        ]);
+        $subject = Subject::query()->create([
+            'grade_id' => $grade->id,
+            'name_en' => 'English',
+            'name_ur' => null,
+            'sort_order' => 1,
+        ]);
+
+        $collection = new AIPaperCollection([
+            'board' => 'Gujranwala Board',
+            'year' => 2024,
+            'paper_type' => 'complete',
+            'language' => 'english',
+            'country' => 'Pakistan',
+        ]);
+        $collection->setRelation('grade', $grade);
+        $collection->setRelation('subject', $subject);
+
+        $queries = app(SearchQueryGenerator::class)->generate($collection);
+
+        $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, 'BISE Gujranwala')));
+        $this->assertTrue(collect($queries)->contains(fn ($q) => str_contains($q, 'Gujranwala Board')));
+        $this->assertFalse(collect($queries)->contains(fn ($q) => str_contains($q, 'BISE Lahore')));
+        $this->assertFalse(collect($queries)->contains(fn ($q) => str_contains($q, 'Lahore Board')));
     }
 
     public function test_keywords_override_replaces_generated_queries(): void
@@ -108,6 +144,38 @@ class CollectorHelpersTest extends TestCase
             'url' => 'https://example.com/casino',
             'snippet' => 'shopping offers',
         ], $collection));
+
+        $this->assertTrue($filter->isRelevant([
+            'title' => 'English 9th class Lahore board 2020 past paper',
+            'url' => 'https://pastpaper.pk/english-9th-class-lahore-board-2020-past-paper/',
+            'snippet' => 'Punjab board past paper',
+        ], $collection));
+
+        $this->assertFalse($filter->isRelevant([
+            'title' => 'English 9th class Gujranwala board 2020 past paper',
+            'url' => 'https://pastpaper.pk/english-9th-class-gujranwala-board-2020-past-paper/',
+            'snippet' => 'Gujranwala Board annual exam',
+        ], $collection));
+    }
+
+    public function test_preferred_past_paper_domains_are_pastpaper_pk_only(): void
+    {
+        $this->seed(PreferredQuestionSiteSeeder::class);
+
+        $domains = app(PastPaperCollectionService::class)->preferredPastPaperDomains();
+
+        $this->assertSame(['pastpaper.pk'], $domains);
+
+        $site = PreferredQuestionSite::query()->where('domain', 'pastpaper.pk')->first();
+        $this->assertNotNull($site);
+        $this->assertTrue($site->isGetPastPaperOnly());
+        $this->assertSame(['past_paper'], $site->source_types);
+
+        $harvestDomains = collect(PreferredQuestionSite::orderedActiveFor('past_paper'))
+            ->map(fn (PreferredQuestionSite $row) => $row->domain)
+            ->all();
+        $this->assertNotContains('pastpaper.pk', $harvestDomains);
+        $this->assertContains('ilmkidunya.com', $harvestDomains);
     }
 
     public function test_paper_aware_chunker_splits_on_question_markers(): void

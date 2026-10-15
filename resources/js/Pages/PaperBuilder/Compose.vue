@@ -661,34 +661,32 @@ const cancelPaper = () => {
                 <!-- Add -->
                 <div class="flex flex-wrap items-center gap-1.5">
                     <span class="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:inline">Add</span>
-                    <button
-                        v-if="useSystemQuestionBank"
-                        type="button"
+                    <Link
+                        v-if="aiToolsAllowed"
+                        :href="aiGenerateUrl"
                         class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Smart Generate
+                    </Link>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-900 hover:bg-teal-100"
                         @click="showQuestionMenu = true"
                     >
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
-                        Question menu
+                        From question bank
                     </button>
-                    <Link
-                        v-if="aiToolsAllowed"
-                        :href="aiGenerateUrl"
-                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white shadow-sm"
-                        :class="useSystemQuestionBank ? 'bg-teal-700 hover:bg-teal-600' : 'bg-emerald-600 hover:bg-emerald-500'"
-                    >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        AI Generate
-                    </Link>
                     <Link
                         v-if="aiToolsAllowed"
                         :href="aiExtractPastPaperUrl"
                         class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
                     >
-                        Extract past paper
+                        Get past paper
                     </Link>
                     <Link
                         v-if="aiToolsAllowed"
@@ -773,13 +771,10 @@ const cancelPaper = () => {
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
                         <template v-if="aiToolsAllowed">
-                            Use <strong>AI Generate</strong>, <strong>Extract past paper</strong>, or <strong>Paste text</strong> to create questions, review them, then add to this paper.
-                        </template>
-                        <template v-else-if="useSystemQuestionBank">
-                            Click <strong>Question menu</strong> to search and add questions.
+                            Use <strong>Smart Generate</strong> for new questions, <strong>From question bank</strong> for saved ones, or <strong>Get past paper</strong> by board and year.
                         </template>
                         <template v-else>
-                            Select class 9–12 to use AI paper tools.
+                            Use <strong>From question bank</strong> to add saved questions, or pick a class 5–12 for Smart Generate.
                         </template>
                     </p>
                     <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -788,14 +783,21 @@ const cancelPaper = () => {
                             :href="aiGenerateUrl"
                             class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
                         >
-                            AI Generate
+                            Smart Generate
                         </Link>
+                        <button
+                            type="button"
+                            class="rounded-xl border border-teal-300 bg-teal-50 px-5 py-2.5 text-sm font-semibold text-teal-900 hover:bg-teal-100"
+                            @click="showQuestionMenu = true"
+                        >
+                            From question bank
+                        </button>
                         <Link
                             v-if="aiToolsAllowed"
                             :href="aiExtractPastPaperUrl"
                             class="rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
                         >
-                            Extract past paper
+                            Get past paper
                         </Link>
                         <Link
                             v-if="aiToolsAllowed"
@@ -804,14 +806,6 @@ const cancelPaper = () => {
                         >
                             Paste text
                         </Link>
-                        <button
-                            v-if="useSystemQuestionBank"
-                            type="button"
-                            class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
-                            @click="showQuestionMenu = true"
-                        >
-                            Open Question menu
-                        </button>
                     </div>
                 </div>
 
@@ -875,7 +869,6 @@ const cancelPaper = () => {
         </Teleport>
 
         <QuestionMenuModal
-            v-if="useSystemQuestionBank"
             :show="showQuestionMenu"
             :grade-label="gradeLabel"
             :subject-name="selectedSubject?.name_en ?? ''"
@@ -940,6 +933,15 @@ const cancelPaper = () => {
                                 <span class="block text-sm font-medium text-slate-800">Dual page print (2 copies / sheet)</span>
                                 <span class="mt-0.5 block text-xs text-slate-500">
                                     Prints two complete papers on one landscape A4 sheet to save paper.
+                                </span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                            <input v-model="settings.show_past_paper_tags" type="checkbox" class="mt-0.5 rounded text-teal-600" />
+                            <span>
+                                <span class="block text-sm font-medium text-slate-800">Show “Appeared in year · board”</span>
+                                <span class="mt-0.5 block text-xs text-slate-500">
+                                    Thin citation under past-paper questions. Turn off to hide it on the printed paper.
                                 </span>
                             </span>
                         </label>

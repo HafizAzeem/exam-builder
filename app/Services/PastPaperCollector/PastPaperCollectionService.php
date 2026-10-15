@@ -10,6 +10,7 @@ use App\Models\AIImport;
 use App\Models\AIPaperCollection;
 use App\Models\AIPaperSource;
 use App\Models\AISetting;
+use App\Models\PreferredQuestionSite;
 use App\Services\AIImport\DuplicateDetectionService;
 use App\Services\AIImport\QuestionParserService;
 use App\Support\CurriculumLookup;
@@ -222,23 +223,23 @@ class PastPaperCollectionService
                 $collection->import->broadcastProgress();
             }
         } catch (\Throwable $e) {
+            $message = AIImport::teacherFacingError($e->getMessage()) ?: $e->getMessage();
+
             $collection->update([
                 'status' => 'failed',
                 'progress_stage' => 'failed',
                 'progress_percent' => 100,
-                'error_message' => $e->getMessage(),
+                'error_message' => $message,
                 'completed_at' => now(),
                 'processing_time_ms' => (int) round((microtime(true) - $started) * 1000),
             ]);
             $collection->broadcastProgress();
             $collection->import?->update([
                 'status' => 'failed',
-                'error_message' => $e->getMessage(),
+                'error_message' => $message,
                 'progress_percent' => 100,
             ]);
             $collection->import?->broadcastProgress();
-
-            throw $e;
         }
     }
 
@@ -252,6 +253,7 @@ class PastPaperCollectionService
         $max = max(1, min((int) $collection->max_results, (int) $settings->max_urls_per_search));
         $seen = [];
         $created = [];
+        $searchFailures = [];
 
         foreach ($queries as $query) {
             if (count($created) >= $max) {
@@ -263,9 +265,11 @@ class PastPaperCollectionService
                     'timeout' => $settings->search_timeout,
                     'country_code' => 'pk',
                     'language' => str_starts_with(strtolower((string) $collection->language), 'ur') ? 'ur' : 'en',
+                    'include_domains' => $this->preferredPastPaperDomains(),
                 ]);
             } catch (\Throwable $e) {
                 // Continue with other queries on provider errors for best-effort collection.
+                $searchFailures[] = $e->getMessage();
                 report($e);
 
                 continue;
@@ -305,7 +309,40 @@ class PastPaperCollectionService
 
         $collection->refreshCounters();
 
+        if ($created === [] && $searchFailures !== []) {
+            $allUnavailable = collect($searchFailures)->every(function (string $message) {
+                $lower = strtolower($message);
+
+                return str_contains($lower, 'temporarily down')
+                    || str_contains($lower, 'langsearch')
+                    || str_contains($lower, 'searxng')
+                    || str_contains($lower, 'http 502')
+                    || str_contains($lower, 'http 503')
+                    || str_contains($lower, 'http 429')
+                    || str_contains($lower, 'rate limit');
+            });
+
+            if ($allUnavailable) {
+                throw new \RuntimeException($searchFailures[0]);
+            }
+        }
+
         return $created;
+    }
+
+    /**
+     * Restrict Get past paper search to HTML past-paper sites (pastpaper.pk).
+     *
+     * @return list<string>
+     */
+    public function preferredPastPaperDomains(): array
+    {
+        $domains = PreferredQuestionSite::getPastPaperOnlyDomains();
+        if ($domains !== []) {
+            return $domains;
+        }
+
+        return ['pastpaper.pk'];
     }
 
     protected function processSources(AIPaperCollection $collection, AISetting $settings): void

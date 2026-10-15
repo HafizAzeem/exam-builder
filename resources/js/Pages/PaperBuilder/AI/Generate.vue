@@ -76,15 +76,15 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="AI Generate · Paper" />
+    <Head title="Smart Generate · Paper" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">AI Generate</h2>
+                    <h2 class="text-xl font-semibold leading-tight text-gray-800">Smart Generate</h2>
                     <p class="mt-1 text-sm text-gray-500">
-                        {{ grade.label_en }} · {{ subject.name_en }} — AI prepares exam-ready questions for your paper.
+                        {{ grade.label_en }} · {{ subject.name_en }} — exam-ready questions from your selected chapters.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -92,7 +92,7 @@ const submit = () => {
                         :href="route('builder.ai.extract-past-paper', composeQuery)"
                         class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
                     >
-                        Extract past paper
+                        Get past paper
                     </Link>
                     <Link
                         :href="route('builder.create', composeQuery)"
@@ -203,7 +203,7 @@ const submit = () => {
                             Cancel
                         </Link>
                         <PrimaryButton :disabled="form.processing || totalRequested < 1 || form.content_sources.length < 1">
-                            {{ form.processing ? 'Starting…' : 'Generate questions' }}
+                            {{ form.processing ? 'Starting…' : 'Smart Generate' }}
                         </PrimaryButton>
                     </div>
                 </form>

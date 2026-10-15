@@ -60,8 +60,6 @@ class QuestionSelectorController extends Controller
 
     public function questions(Request $request)
     {
-        abort_unless(config('exam.use_system_question_bank'), 403, 'System question bank is disabled for launch.');
-
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],
@@ -100,8 +98,6 @@ class QuestionSelectorController extends Controller
 
     public function all(Request $request)
     {
-        abort_unless(config('exam.use_system_question_bank'), 403, 'System question bank is disabled for launch.');
-
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],
@@ -152,8 +148,6 @@ class QuestionSelectorController extends Controller
 
     public function random(Request $request)
     {
-        abort_unless(config('exam.use_system_question_bank'), 403, 'System question bank is disabled for launch.');
-
         $validated = $request->validate([
             'chapter_ids' => ['required', 'array'],
             'chapter_ids.*' => ['integer'],

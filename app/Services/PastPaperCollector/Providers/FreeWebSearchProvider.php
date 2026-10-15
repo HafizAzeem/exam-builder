@@ -4,6 +4,7 @@ namespace App\Services\PastPaperCollector\Providers;
 
 use App\Contracts\PastPaperCollector\WebSearchProvider;
 use App\Models\AISetting;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -41,12 +42,32 @@ class FreeWebSearchProvider implements WebSearchProvider
         $maxResults = max(1, min(10, $maxResults));
         $timeout = max(10, (int) ($options['timeout'] ?? AISetting::current()->search_timeout ?? 20));
         $query = $this->normalizeQuery($query);
+        $lastError = null;
 
         if (filled($this->langsearchKey())) {
-            return $this->searchLangsearch($query, $maxResults, $options, $timeout);
+            try {
+                return $this->searchLangsearch($query, $maxResults, $options, $timeout);
+            } catch (\Throwable $e) {
+                if (! $this->shouldFallbackFromLangsearch($e)) {
+                    throw $e;
+                }
+                $lastError = $e;
+                report($e);
+            }
         }
 
-        return $this->searchSearxng($query, $maxResults, $options, $timeout);
+        if (filled($this->searxngUrl())) {
+            try {
+                return $this->searchSearxng($query, $maxResults, $options, $timeout);
+            } catch (\Throwable $e) {
+                $lastError = $e;
+                report($e);
+            }
+        }
+
+        throw new \RuntimeException(
+            $this->unavailableMessage($lastError)
+        );
     }
 
     /**
@@ -72,6 +93,7 @@ class FreeWebSearchProvider implements WebSearchProvider
         }
 
         $response = Http::timeout($timeout)
+            ->connectTimeout(min(10, $timeout))
             ->acceptJson()
             ->asJson()
             ->withToken((string) $this->langsearchKey())
@@ -99,10 +121,14 @@ class FreeWebSearchProvider implements WebSearchProvider
         $base = $this->searxngUrl();
         $domains = $this->includeDomains($options);
         if ($domains !== []) {
-            $query = 'site:'.$domains[0].' '.$query;
+            $siteFilter = count($domains) === 1
+                ? 'site:'.$domains[0]
+                : '('.implode(' OR ', array_map(fn (string $domain) => 'site:'.$domain, $domains)).')';
+            $query = $siteFilter.' '.$query;
         }
 
         $response = Http::timeout($timeout)
+            ->connectTimeout(min(10, $timeout))
             ->acceptJson()
             ->withHeaders([
                 'User-Agent' => 'ExamBuilderTeacherAI/1.0',
@@ -227,6 +253,21 @@ class FreeWebSearchProvider implements WebSearchProvider
 
             return rtrim(explode('/', $domain)[0] ?? '', '.');
         }, $raw)));
+    }
+
+    protected function shouldFallbackFromLangsearch(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+
+        return str_contains($message, 'HTTP 429')
+            || str_contains($message, 'HTTP 5')
+            || str_contains($message, 'rate limit')
+            || $e instanceof ConnectionException;
+    }
+
+    protected function unavailableMessage(?\Throwable $previous = null): string
+    {
+        return 'Web search is temporarily down. Wait a few minutes and try Get past paper again, or paste the paper text instead.';
     }
 
     protected function normalizeQuery(string $query): string

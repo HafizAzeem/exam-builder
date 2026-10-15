@@ -11,6 +11,7 @@ const props = defineProps({
     chapters: { type: Array, default: () => [] },
     composeQuery: { type: Object, required: true },
     paperLanguage: { type: String, default: 'english' },
+    reusedFromDatabase: { type: Boolean, default: false },
 });
 
 const localQuestions = ref([...props.questions]);
@@ -36,6 +37,19 @@ const selectedIds = computed(() =>
 );
 
 const selectedCount = computed(() => selectedIds.value.length);
+
+const isPastPaperReview = computed(() =>
+    props.aiImport?.mode === 'past_paper_extract' || props.aiImport?.book_type === 'past_paper'
+);
+
+const pastPaperCitation = computed(() => {
+    const year = props.aiImport?.year;
+    const board = props.aiImport?.board;
+    if (year && board) return `Appeared in ${year} · ${board}`;
+    if (year) return `Appeared in ${year}`;
+    if (board) return board;
+    return '';
+});
 
 const form = useForm({
     staging_ids: [],
@@ -230,15 +244,17 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Review AI questions" />
+    <Head :title="isPastPaperReview ? 'Review past paper' : 'Review questions'" />
 
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-xl font-semibold leading-tight text-gray-800">Review questions</h2>
+                    <h2 class="text-xl font-semibold leading-tight text-gray-800">
+                        {{ isPastPaperReview ? 'Review past paper' : 'Review questions' }}
+                    </h2>
                     <p class="mt-1 text-sm text-gray-500">
-                        Uncheck or remove anything you don’t want. You can also search the bank or write your own.
+                        Uncheck or remove anything you don’t want. Selected questions go on the paper and into the bank.
                     </p>
                 </div>
                 <Link
@@ -277,6 +293,18 @@ const submit = () => {
             <div class="mx-auto max-w-4xl space-y-3 px-4 sm:px-6">
                 <p v-if="flashError" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ flashError }}</p>
 
+                <div
+                    v-if="reusedFromDatabase"
+                    class="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900"
+                >
+                    Loaded from saved papers for this class, board, and year. Nothing was fetched from the web.
+                </div>
+                <p v-else-if="isPastPaperReview && pastPaperCitation" class="text-sm text-slate-600">
+                    These questions will be stored in the bank with
+                    <span class="italic text-slate-500">{{ pastPaperCitation }}</span>
+                    (shown as thin text on the paper; hide it from Details).
+                </p>
+
                 <p v-if="!localQuestions.length" class="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-slate-600">
                     No questions yet. Search the bank or write your own.
                 </p>
@@ -302,6 +330,9 @@ const submit = () => {
                             </div>
                             <p class="whitespace-pre-wrap text-sm text-slate-800" :dir="q.text_ur && !q.text_en ? 'rtl' : undefined">
                                 {{ questionText(q) }}
+                            </p>
+                            <p v-if="isPastPaperReview && pastPaperCitation" class="mt-1 text-[11px] font-normal italic leading-tight text-slate-400">
+                                {{ pastPaperCitation }}
                             </p>
                             <p v-if="q.text_en && q.text_ur" class="mt-1 whitespace-pre-wrap text-sm text-slate-600" dir="rtl">
                                 {{ q.text_ur }}

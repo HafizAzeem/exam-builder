@@ -17,7 +17,7 @@ class StoreTeacherAIPasteRequest extends FormRequest
     public function rules(): array
     {
         $isPastPaper = $this->input('book_type') === 'past_paper';
-        $allowedGrades = config('exam.teacher_ai_grade_numbers', [9, 10, 11, 12]);
+        $allowedGrades = config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]);
 
         return [
             'grade_id' => [

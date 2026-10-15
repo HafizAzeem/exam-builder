@@ -49,15 +49,23 @@ const submit = () => {
                 <div>
                     <h2 class="text-xl font-semibold leading-tight text-gray-800">Paste text</h2>
                     <p class="mt-1 text-sm text-gray-500">
-                        {{ grade.label_en }} · {{ subject.name_en }} — paste notes or questions, then pick what goes on the paper.
+                        {{ grade.label_en }} · {{ subject.name_en }} — paste your own notes or questions. For a board paper, use Get past paper instead.
                     </p>
                 </div>
-                <Link
-                    :href="route('builder.create', composeQuery)"
-                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                    ← Back to paper
-                </Link>
+                <div class="flex flex-wrap gap-2">
+                    <Link
+                        :href="route('builder.ai.extract-past-paper', composeQuery)"
+                        class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
+                    >
+                        Get past paper
+                    </Link>
+                    <Link
+                        :href="route('builder.create', composeQuery)"
+                        class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    >
+                        ← Back to paper
+                    </Link>
+                </div>
             </div>
         </template>
 

@@ -7,9 +7,8 @@ return [
     | Use system question bank in paper builder
     |--------------------------------------------------------------------------
     |
-    | When false (launch mode), teachers make papers via AI Generate / Paste only.
-    | Super Admin web crawl still seeds the global bank. Flip to true later when
-    | enough questions exist for pick/random from the system bank.
+    | When false, Compose still offers From question bank / Smart Generate / Get past paper.
+    | Super Admin web crawl still seeds the global bank. Flip to true to emphasise bank-first.
     |
     */
     'use_system_question_bank' => (bool) env('USE_SYSTEM_QUESTION_BANK', false),
@@ -19,7 +18,7 @@ return [
     | Teacher AI paper grades
     |--------------------------------------------------------------------------
     */
-    'teacher_ai_grade_numbers' => [9, 10, 11, 12],
+    'teacher_ai_grade_numbers' => [5, 6, 7, 8, 9, 10, 11, 12],
 
     /*
     |--------------------------------------------------------------------------

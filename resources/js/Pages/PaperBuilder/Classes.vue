@@ -71,7 +71,7 @@ const selectGrade = (grade) => {
                         Pick your class
                     </h1>
                     <p class="mx-auto mt-2 max-w-xl text-sm text-slate-600 sm:text-base">
-                        Class 9 is ready now. Other classes will unlock as content is added.
+                        Classes 5–12 are ready. Pick a class to generate a paper.
                     </p>
                 </div>
 

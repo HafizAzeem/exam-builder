@@ -11,6 +11,13 @@ class PreferredQuestionSiteSeeder extends Seeder
     {
         $sites = [
             [
+                'name' => 'PastPaper.pk',
+                'domain' => 'pastpaper.pk',
+                'source_types' => ['past_paper'],
+                'priority' => 5,
+                'notes' => 'Get past paper only. Punjab BISE HTML papers (all Punjab boards, not Lahore-only).',
+            ],
+            [
                 'name' => 'Free Ilm',
                 'domain' => 'freeilm.com',
                 'source_types' => ['online_practice', 'exercise'],
@@ -56,7 +63,7 @@ class PreferredQuestionSiteSeeder extends Seeder
                     'source_types' => $site['source_types'],
                     'priority' => $site['priority'],
                     'is_active' => true,
-                    'notes' => null,
+                    'notes' => $site['notes'] ?? null,
                 ]
             );
         }

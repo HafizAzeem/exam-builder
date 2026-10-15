@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'watermark_upload' => fn () => $request->session()->get('watermark_upload'),
+                'past_paper_reused' => fn () => $request->session()->get('past_paper_reused'),
             ],
             'pusher' => [
                 'key' => config('broadcasting.default') === 'pusher'

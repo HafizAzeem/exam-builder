@@ -278,9 +278,12 @@ const selectAllSources = (checked) => {
             <!-- Header -->
             <div class="flex items-center justify-between gap-3 bg-gradient-to-r from-teal-700 to-teal-600 px-5 py-3 text-white">
                 <div class="w-9" aria-hidden="true" />
-                <h3 class="text-lg font-bold tracking-tight">
-                    {{ gradeLabel }} — {{ subjectName }}
-                </h3>
+                <div class="text-center">
+                    <p class="text-[11px] font-medium uppercase tracking-wider text-white/70">From question bank</p>
+                    <h3 class="text-lg font-bold tracking-tight">
+                        {{ gradeLabel }} — {{ subjectName }}
+                    </h3>
+                </div>
                 <button type="button" class="rounded-lg p-1.5 hover:bg-white/15" aria-label="Close" @click="emit('close')">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -483,7 +486,7 @@ const selectAllSources = (checked) => {
                                 </div>
                                 <p
                                     v-if="showBoardYears && getPastPaperTag(q)"
-                                    class="mt-1 text-xs text-slate-500"
+                                    class="mt-1 text-[11px] font-normal italic leading-tight text-slate-400"
                                 >
                                     Appeared in {{ getPastPaperTag(q).year }} · {{ getPastPaperTag(q).board_name }}
                                 </p>
