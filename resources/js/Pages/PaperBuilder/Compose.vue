@@ -438,7 +438,6 @@ const composeQuery = computed(() => ({
 
 const aiPasteUrl = computed(() => route('builder.ai.paste', composeQuery.value));
 const aiGenerateUrl = computed(() => route('builder.ai.generate', composeQuery.value));
-const aiExtractPastPaperUrl = computed(() => route('builder.ai.extract-past-paper', composeQuery.value));
 
 const loadPendingQuestions = async () => {
     const ids = (props.pendingQuestionIds || []).map((id) => Number(id)).filter(Boolean);
@@ -683,13 +682,6 @@ const cancelPaper = () => {
                     </button>
                     <Link
                         v-if="aiToolsAllowed"
-                        :href="aiExtractPastPaperUrl"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
-                    >
-                        Get past paper
-                    </Link>
-                    <Link
-                        v-if="aiToolsAllowed"
                         :href="aiPasteUrl"
                         class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
@@ -771,7 +763,7 @@ const cancelPaper = () => {
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
                         <template v-if="aiToolsAllowed">
-                            Use <strong>Smart Generate</strong> for new questions, <strong>From question bank</strong> for saved ones, or <strong>Get past paper</strong> by board and year.
+                            Use <strong>Smart Generate</strong> for new questions, <strong>From question bank</strong> for saved ones, or <strong>Paste text</strong> for a board past paper.
                         </template>
                         <template v-else>
                             Use <strong>From question bank</strong> to add saved questions, or pick a class 5–12 for Smart Generate.
@@ -792,13 +784,6 @@ const cancelPaper = () => {
                         >
                             From question bank
                         </button>
-                        <Link
-                            v-if="aiToolsAllowed"
-                            :href="aiExtractPastPaperUrl"
-                            class="rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100"
-                        >
-                            Get past paper
-                        </Link>
                         <Link
                             v-if="aiToolsAllowed"
                             :href="aiPasteUrl"

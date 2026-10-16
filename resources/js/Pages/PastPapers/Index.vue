@@ -3,7 +3,14 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
-const props = defineProps({ tags: Object, boards: Array, years: Array, grades: Array, subjects: Array, filters: Object });
+const props = defineProps({
+    papers: Object,
+    boards: Array,
+    years: Array,
+    grades: Array,
+    subjects: Array,
+    filters: Object,
+});
 
 const form = ref({
     board: props.filters?.board ?? '',
@@ -30,6 +37,15 @@ const reset = () => {
     form.value = { board: '', year: '', session: '', grade_id: '', subject_id: '' };
     apply();
 };
+
+const paperHref = (paper) =>
+    route('past-papers.show', {
+        board: paper.board_name,
+        year: paper.year,
+        session: paper.session || '',
+        grade_id: paper.grade_id,
+        subject_id: paper.subject_id,
+    });
 </script>
 
 <template>
@@ -37,6 +53,9 @@ const reset = () => {
     <AuthenticatedLayout>
         <template #header><h2 class="text-xl font-semibold text-gray-800">Past Papers Repository</h2></template>
         <div class="mx-auto max-w-5xl px-4 py-8">
+            <p class="mb-4 text-sm text-slate-600">
+                Each card is one board paper (class, subject, year). Add papers by pasting the text in Compose → Paste text → Past paper.
+            </p>
             <div class="mb-6 grid gap-3 rounded-lg bg-white p-4 shadow md:grid-cols-6">
                 <select v-model="form.board" class="rounded border-gray-300 md:col-span-2">
                     <option value="">All boards</option>
@@ -65,20 +84,25 @@ const reset = () => {
             </div>
 
             <div class="space-y-3">
-                <div v-for="tag in tags.data" :key="tag.id" class="flex items-center justify-between rounded-lg bg-white p-4 shadow">
+                <Link
+                    v-for="paper in papers.data"
+                    :key="`${paper.board_name}-${paper.year}-${paper.session}-${paper.subject_id}`"
+                    :href="paperHref(paper)"
+                    class="flex items-center justify-between rounded-lg bg-white p-4 shadow transition hover:border-indigo-200 hover:ring-1 hover:ring-indigo-100"
+                >
                     <div>
-                        <p class="font-medium">
-                            {{ tag.board_name }} — {{ tag.year }}
-                            <span v-if="tag.session" class="ms-2 rounded bg-gray-100 px-2 py-0.5 text-xs uppercase">{{ tag.session }}</span>
+                        <p class="font-medium text-slate-900">
+                            {{ paper.board_name }} — {{ paper.year }}
+                            <span v-if="paper.session" class="ms-2 rounded bg-gray-100 px-2 py-0.5 text-xs uppercase">{{ paper.session }}</span>
                         </p>
-                        <p class="text-sm text-gray-600">{{ tag.question?.text_en }}</p>
-                        <p class="text-xs text-gray-500">
-                            {{ tag.question?.chapter?.subject?.grade?.label_en }} · {{ tag.question?.chapter?.subject?.name_en }}
-                        </p>
+                        <p class="text-sm text-gray-600">{{ paper.grade_label }} · {{ paper.subject_name }}</p>
+                        <p class="text-xs text-gray-500">{{ paper.question_count }} questions</p>
                     </div>
-                    <Link :href="route('past-papers.print', tag.question_id)" class="text-indigo-600 hover:underline">Quick Print</Link>
-                </div>
-                <p v-if="!tags.data?.length" class="text-center text-gray-500">No past papers in database yet.</p>
+                    <span class="text-sm font-medium text-indigo-600">Open paper</span>
+                </Link>
+                <p v-if="!papers.data?.length" class="text-center text-gray-500">
+                    No past papers yet. Paste a board paper from Compose to add one.
+                </p>
             </div>
         </div>
     </AuthenticatedLayout>

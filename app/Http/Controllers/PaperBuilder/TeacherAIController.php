@@ -7,7 +7,6 @@ use App\Http\Requests\PaperBuilder\AddTeacherAIQuestionsToPaperRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIGenerateRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIManualQuestionRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIPasteRequest;
-use App\Http\Requests\PaperBuilder\StoreTeacherPastPaperExtractRequest;
 use App\Jobs\ProcessGenerateQuestionsJob;
 use App\Jobs\ProcessUploadedDocumentJob;
 use App\Models\AIImport;
@@ -17,7 +16,6 @@ use App\Models\Grade;
 use App\Models\Subject;
 use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\QuestionImportService;
-use App\Services\PastPaperCollector\PastPaperCollectionService;
 use App\Services\QuestionBankService;
 use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
@@ -32,7 +30,6 @@ class TeacherAIController extends Controller
         protected AIImportService $imports,
         protected QuestionImportService $questionImport,
         protected QuestionBankService $questionBank,
-        protected PastPaperCollectionService $pastPapers,
     ) {}
 
     public function pasteForm(Request $request): Response|RedirectResponse
@@ -121,79 +118,18 @@ class TeacherAIController extends Controller
             ->with('success', 'AI is preparing your questions.');
     }
 
-    public function extractPastPaperForm(Request $request): Response|RedirectResponse
+    public function extractPastPaperForm(Request $request): RedirectResponse
     {
-        $context = $this->resolveBuilderContext($request);
-        if ($context instanceof RedirectResponse) {
-            return $context;
-        }
-
-        $subjectsQuery = CurriculumLookup::subjects((int) $context['grade']['id'])
-            ->get(['id', 'name_en', 'name_ur']);
-
-        $user = $request->user();
-        if ($user?->hasRole('teacher')) {
-            $allowedSubjects = $user->teacherPermission?->allowed_subjects;
-            if (is_array($allowedSubjects) && count($allowedSubjects)) {
-                $subjectsQuery = $subjectsQuery->whereIn('id', $allowedSubjects)->values();
-            }
-        }
-
-        return Inertia::render('PaperBuilder/AI/ExtractPastPaper', [
-            ...$context,
-            'subjects' => $subjectsQuery,
-            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
-            'defaults' => [
-                'board' => CurriculumLookup::boards()->value('name') ?: '',
-                'year' => (int) date('Y') - 1,
-                'paper_type' => 'complete',
-                'language' => strcasecmp((string) ($context['subject']['name_en'] ?? ''), 'Urdu') === 0
-                    ? 'urdu'
-                    : 'english',
-                'session' => '',
-            ],
-        ]);
+        return redirect()
+            ->route('builder.ai.paste', $request->query())
+            ->with('success', 'Paste the past paper text and set source type to Past paper.');
     }
 
-    public function storeExtractPastPaper(StoreTeacherPastPaperExtractRequest $request): RedirectResponse
+    public function storeExtractPastPaper(Request $request): RedirectResponse
     {
-        $this->assertTeacherScope($request, $request->integer('grade_id'), $request->integer('subject_id'));
-
-        $data = $request->validated();
-        $data['country'] = 'Pakistan';
-        $data['paper_type'] = $data['paper_type'] ?? 'complete';
-        $data['max_results'] = min(15, (int) ($data['max_results'] ?? 8));
-        $data['mode'] = 'past_paper_extract';
-
-        $result = $this->pastPapers->createOrReuse($data, (int) $request->user()->id);
-        $collection = $result['collection']->loadMissing('import');
-        $import = $collection->import;
-
-        abort_unless($import, 500);
-
-        if ($import->mode !== 'past_paper_extract') {
-            $import->update(['mode' => 'past_paper_extract']);
-        }
-
-        if (! empty($data['chapter_ids'])) {
-            $meta = $import->meta ?? [];
-            $meta['chapter_ids'] = array_values(array_map('intval', $data['chapter_ids']));
-            $import->update(['meta' => $meta]);
-        }
-
-        if ($result['reused'] && in_array($import->status, ['review', 'completed'], true)) {
-            return redirect()
-                ->route('builder.ai.review', $import)
-                ->with('past_paper_reused', true)
-                ->with('success', 'Loaded from saved papers — same class, board, and year. No web fetch.');
-        }
-
         return redirect()
-            ->route('builder.ai.status', $import)
-            ->with('past_paper_reused', (bool) $result['reused'])
-            ->with('success', $result['reused']
-                ? 'Matching past paper found in the database — opening saved questions.'
-                : 'Searching for that past paper. Questions will be saved to the bank with board and year.');
+            ->route('builder.ai.paste', $request->query())
+            ->with('success', 'Paste the past paper text and set source type to Past paper.');
     }
 
     public function status(Request $request, AIImport $import): Response

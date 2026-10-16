@@ -50,7 +50,12 @@ class DashboardController extends Controller
         $stats = [
             'papersGenerated' => (clone $papersGeneratedQuery)->count(),
             'savedPapers' => (clone $savedPapersQuery)->count(),
-            'pastPapers' => PastPaperTag::query()->count(),
+            'pastPapers' => (int) PastPaperTag::query()
+                ->join('questions', 'questions.id', '=', 'past_paper_tags.question_id')
+                ->join('chapters', 'chapters.id', '=', 'questions.chapter_id')
+                ->whereNull('questions.parent_question_id')
+                ->selectRaw('COUNT(DISTINCT CONCAT_WS("|", past_paper_tags.board_name, past_paper_tags.year, COALESCE(past_paper_tags.session, ""), chapters.subject_id)) as aggregate')
+                ->value('aggregate'),
             'teachers' => $isAdmin
                 ? User::role('teacher')->where('institution_id', $institutionId)->count()
                 : null,

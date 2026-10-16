@@ -7,7 +7,7 @@ return [
     | Use system question bank in paper builder
     |--------------------------------------------------------------------------
     |
-    | When false, Compose still offers From question bank / Smart Generate / Get past paper.
+    | When false, Compose still offers From question bank / Smart Generate / Paste text.
     | Super Admin web crawl still seeds the global bank. Flip to true to emphasise bank-first.
     |
     */

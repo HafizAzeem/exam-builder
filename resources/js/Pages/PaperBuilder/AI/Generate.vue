@@ -89,12 +89,6 @@ const submit = () => {
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <Link
-                        :href="route('builder.ai.extract-past-paper', composeQuery)"
-                        class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-800 hover:bg-indigo-100"
-                    >
-                        Get past paper
-                    </Link>
-                    <Link
                         :href="route('builder.create', composeQuery)"
                         class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >

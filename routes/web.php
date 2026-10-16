@@ -76,7 +76,8 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::post('/papers/{paper}/duplicate', [PaperController::class, 'duplicate'])->name('papers.duplicate');
 
     Route::get('/past-papers', [PastPaperController::class, 'index'])->name('past-papers.index');
-    Route::get('/past-papers/{question}/print', [PastPaperController::class, 'quickPrint'])->name('past-papers.print');
+    Route::get('/past-papers/view', [PastPaperController::class, 'show'])->name('past-papers.show');
+    Route::get('/past-papers/view/print', [PastPaperController::class, 'print'])->name('past-papers.print');
 
     Route::middleware('role:institution_admin')->prefix('admin')->group(function () {
         Route::get('/teachers', [TeacherController::class, 'index'])->name('admin.teachers');

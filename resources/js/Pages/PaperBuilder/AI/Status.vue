@@ -43,7 +43,7 @@ const stageHint = computed(() => {
         processing: 'Classifying and writing exam questions…',
         importing: 'Adding selected questions…',
         review: 'Opening review…',
-        failed: 'Try Get past paper again in a few minutes, or paste the paper text.',
+        failed: 'Try pasting the paper text again, or use Smart Generate.',
     };
     return map[status.value.status] || '';
 });
