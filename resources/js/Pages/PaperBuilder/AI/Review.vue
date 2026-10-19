@@ -100,10 +100,59 @@ const deselectAll = () => {
     });
 };
 
-const removeRow = (id) => {
+const removeRow = async (id) => {
     selected.value[id] = false;
-    // Paper-only: drop from this review checklist (does not delete bank questions).
-    localQuestions.value = localQuestions.value.filter((q) => q.id !== id);
+    flashError.value = '';
+    try {
+        const res = await fetch(route('builder.ai.questions.remove', [props.aiImport.id, id]), {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrf(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        });
+        if (!res.ok) throw new Error('failed');
+        localQuestions.value = localQuestions.value.filter((q) => q.id !== id);
+    } catch {
+        flashError.value = 'Could not remove question.';
+    }
+};
+
+const changeChapter = async (q, chapterId) => {
+    const nextId = chapterId === '' || chapterId === null ? null : Number(chapterId);
+    const previous = q.chapter_id;
+    q.chapter_id = nextId;
+    if (!nextId) {
+        selected.value[q.id] = false;
+        return;
+    }
+    flashError.value = '';
+    try {
+        const res = await fetch(route('builder.ai.questions.update', [props.aiImport.id, q.id]), {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrf(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ chapter_id: nextId }),
+        });
+        if (!res.ok) throw new Error('failed');
+        const json = await res.json();
+        if (json.question) {
+            Object.assign(q, json.question);
+        }
+        if (canSelect(q) && selected.value[q.id] === undefined) {
+            selected.value[q.id] = true;
+        }
+    } catch {
+        q.chapter_id = previous;
+        flashError.value = 'Could not update chapter.';
+    }
 };
 
 const typeLabel = (type) => ({
@@ -325,7 +374,14 @@ const submit = () => {
                         <div class="min-w-0 flex-1">
                             <div class="mb-1 flex flex-wrap items-center gap-2 text-xs font-medium">
                                 <span class="rounded bg-slate-100 px-2 py-0.5 text-slate-700">{{ typeLabel(q.type) }}</span>
-                                <span v-if="chapterTitle(q.chapter_id)" class="text-slate-500">{{ chapterTitle(q.chapter_id) }}</span>
+                                <select
+                                    class="rounded-md border-slate-300 py-0.5 text-xs text-slate-700"
+                                    :value="q.chapter_id ?? ''"
+                                    @change="changeChapter(q, $event.target.value)"
+                                >
+                                    <option value="">Select chapter</option>
+                                    <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
+                                </select>
                                 <span v-if="q.is_duplicate" class="rounded bg-amber-100 px-2 py-0.5 text-amber-800">Already in bank</span>
                             </div>
                             <p class="whitespace-pre-wrap text-sm text-slate-800" :dir="q.text_ur && !q.text_en ? 'rtl' : undefined">

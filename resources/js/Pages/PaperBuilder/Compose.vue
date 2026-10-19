@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import QuestionMenuModal from '@/Components/PaperBuilder/QuestionMenuModal.vue';
+import OwnQuestionsModal from '@/Components/PaperBuilder/OwnQuestionsModal.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE } from '@/utils/paperContent';
@@ -25,6 +26,7 @@ const props = defineProps({
 });
 
 const showQuestionMenu = ref(false);
+const showOwnQuestion = ref(false);
 const showEditMeta = ref(false);
 const showSaveModal = ref(false);
 const showPrintLandscapeHint = ref(false);
@@ -116,6 +118,9 @@ const sectionSettings = ref({
 
 const dualMedium = ref(false);
 const selectedQuestions = ref([]);
+const alreadyOnPaperTexts = computed(() =>
+    selectedQuestions.value.flatMap((q) => [q.text_en, q.text_ur]).filter(Boolean),
+);
 const addFeedback = ref('');
 
 const allowedCategories = computed(() => props.teacherPermissions?.allowed_categories ?? null);
@@ -680,6 +685,16 @@ const cancelPaper = () => {
                         </svg>
                         From question bank
                     </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
+                        @click="showOwnQuestion = true"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add my questions
+                    </button>
                     <Link
                         v-if="aiToolsAllowed"
                         :href="aiPasteUrl"
@@ -763,20 +778,20 @@ const cancelPaper = () => {
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
                         <template v-if="aiToolsAllowed">
-                            Use <strong>Smart Generate</strong> for new questions, <strong>From question bank</strong> for saved ones, or <strong>Paste text</strong> for a board past paper.
+                            Use <strong>Add my questions</strong> to type your own paper, <strong>From question bank</strong> for saved ones, <strong>Smart Generate</strong> for AI, or <strong>Paste text</strong> for a board past paper.
                         </template>
                         <template v-else>
-                            Use <strong>From question bank</strong> to add saved questions, or pick a class 5–12 for Smart Generate.
+                            Use <strong>Add my questions</strong> to type your own paper, or <strong>From question bank</strong> for saved ones.
                         </template>
                     </p>
                     <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
-                        <Link
-                            v-if="aiToolsAllowed"
-                            :href="aiGenerateUrl"
-                            class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                        <button
+                            type="button"
+                            class="rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
+                            @click="showOwnQuestion = true"
                         >
-                            Smart Generate
-                        </Link>
+                            Add my questions
+                        </button>
                         <button
                             type="button"
                             class="rounded-xl border border-teal-300 bg-teal-50 px-5 py-2.5 text-sm font-semibold text-teal-900 hover:bg-teal-100"
@@ -784,6 +799,13 @@ const cancelPaper = () => {
                         >
                             From question bank
                         </button>
+                        <Link
+                            v-if="aiToolsAllowed"
+                            :href="aiGenerateUrl"
+                            class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
+                        >
+                            Smart Generate
+                        </Link>
                         <Link
                             v-if="aiToolsAllowed"
                             :href="aiPasteUrl"
@@ -852,6 +874,17 @@ const cancelPaper = () => {
                 />
             </div>
         </Teleport>
+
+        <OwnQuestionsModal
+            :show="showOwnQuestion"
+            :chapters="selectedChapters.length ? selectedChapters : chapters"
+            :selected-chapter-ids="selectedChapterIds"
+            :grade-id="selectedGradeId"
+            :subject-id="selectedSubjectId"
+            :already-on-paper-texts="alreadyOnPaperTexts"
+            @close="showOwnQuestion = false"
+            @add="onAddQuestions"
+        />
 
         <QuestionMenuModal
             :show="showQuestionMenu"

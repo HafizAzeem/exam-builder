@@ -4,6 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\LoginSession;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -39,11 +40,10 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         $login = trim($this->string('login')->toString());
-        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
-        $user = User::query()
-            ->where($field, $login)
-            ->first();
+        $user = filter_var($login, FILTER_VALIDATE_EMAIL)
+            ? User::query()->where('email', $login)->first()
+            : $this->findByPhone($login);
 
         $success = $user
             && $user->is_active
@@ -69,6 +69,16 @@ class LoginRequest extends FormRequest
 
         Auth::login($user, $this->boolean('remember'));
         RateLimiter::clear($this->throttleKey());
+    }
+
+    protected function findByPhone(string $login): ?User
+    {
+        $normalized = Phone::normalize($login);
+        $candidates = array_values(array_unique(array_filter([$login, $normalized])));
+
+        return User::query()
+            ->whereIn('phone', $candidates)
+            ->first();
     }
 
     /**

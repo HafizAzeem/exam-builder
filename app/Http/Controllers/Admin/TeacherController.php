@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TeacherPermission;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
@@ -27,6 +28,12 @@ class TeacherController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('phone')) {
+            $request->merge([
+                'phone' => Phone::normalize($request->string('phone')->toString()) ?? $request->string('phone')->toString(),
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'unique:users,email'],

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Question extends Model
 {
     protected $fillable = [
+        'institution_id',
         'chapter_id',
         'topic_id',
         'type',
@@ -30,6 +31,11 @@ class Question extends Model
         'is_active' => 'boolean',
         'estimated_marks' => 'integer',
     ];
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
+    }
 
     public function chapter(): BelongsTo
     {

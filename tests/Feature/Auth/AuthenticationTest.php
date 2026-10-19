@@ -22,11 +22,41 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->post('/login', [
-            'email' => $user->email,
+            'login' => $user->email,
             'password' => 'password',
         ]);
 
         $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_users_can_authenticate_with_eleven_digit_phone(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '03211414695',
+        ]);
+
+        $response = $this->post('/login', [
+            'login' => '03211414695',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_users_can_authenticate_with_plus_ninety_two_phone(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '03211414695',
+        ]);
+
+        $response = $this->post('/login', [
+            'login' => '+923211414695',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
@@ -35,7 +65,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->post('/login', [
-            'email' => $user->email,
+            'login' => $user->email,
             'password' => 'wrong-password',
         ]);
 

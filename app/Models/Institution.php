@@ -31,5 +31,10 @@ class Institution extends Model
     {
         return $this->hasMany(SavedPaper::class);
     }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(Question::class);
+    }
 }
 

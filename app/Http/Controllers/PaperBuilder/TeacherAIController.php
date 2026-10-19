@@ -7,6 +7,7 @@ use App\Http\Requests\PaperBuilder\AddTeacherAIQuestionsToPaperRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIGenerateRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIManualQuestionRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIPasteRequest;
+use App\Http\Requests\PaperBuilder\UpdateTeacherAIQuestionRequest;
 use App\Jobs\ProcessGenerateQuestionsJob;
 use App\Jobs\ProcessUploadedDocumentJob;
 use App\Models\AIImport;
@@ -163,6 +164,7 @@ class TeacherAIController extends Controller
         $this->imports->constrainChapters($import);
 
         $questions = $import->questions()
+            ->whereNotIn('status', ['rejected'])
             ->orderBy('id')
             ->get([
                 'id',
@@ -262,6 +264,35 @@ class TeacherAIController extends Controller
         return response()->json([
             'question' => $staging->fresh(),
         ], 201);
+    }
+
+    public function updateQuestion(UpdateTeacherAIQuestionRequest $request, AIImport $import, AIImportQuestion $question)
+    {
+        $this->authorizeTeacherImport($request, $import);
+        abort_unless((int) $question->ai_import_id === (int) $import->id, 404);
+
+        $chapterId = (int) $request->validated('chapter_id');
+        abort_unless(in_array($chapterId, $import->chapterIds(), true), 422, 'Invalid chapter.');
+
+        $question->update([
+            'chapter_id' => $chapterId,
+            'match_status' => 'manual',
+        ]);
+
+        return response()->json([
+            'question' => $question->fresh(),
+        ]);
+    }
+
+    public function removeQuestion(Request $request, AIImport $import, AIImportQuestion $question)
+    {
+        $this->authorizeTeacherImport($request, $import);
+        abort_unless((int) $question->ai_import_id === (int) $import->id, 404);
+
+        $question->update(['status' => 'rejected']);
+        $import->refreshCounters();
+
+        return response()->json(['ok' => true]);
     }
 
     public function addBankQuestionsToSelection(Request $request, AIImport $import)

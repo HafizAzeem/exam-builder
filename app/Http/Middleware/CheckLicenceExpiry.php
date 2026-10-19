@@ -17,6 +17,8 @@ class CheckLicenceExpiry
         'papers/*',
         'editor/*',
         'admin/*',
+        'questions',
+        'questions/*',
     ];
 
     public function handle(Request $request, Closure $next): Response

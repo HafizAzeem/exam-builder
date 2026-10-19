@@ -30,7 +30,7 @@ const submit = () => {
 
         <div class="mb-6 text-center">
             <h1 class="text-2xl font-bold text-gray-900">Smart Exam Builder</h1>
-            <p class="mt-1 text-sm text-gray-600">Sign in with email or phone number</p>
+            <p class="mt-1 text-sm text-gray-600">Email or 11-digit WhatsApp (03XXXXXXXXX)</p>
         </div>
 
         <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
@@ -47,7 +47,7 @@ const submit = () => {
                     v-model="form.login"
                     required
                     autofocus
-                    placeholder="admin@demo.edu or 03001111111"
+                    placeholder="ms@gmail.com or 03211414695"
                 />
                 <InputError class="mt-2" :message="form.errors.login" />
             </div>

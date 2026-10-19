@@ -9,6 +9,7 @@ use App\Http\Controllers\Dashboard\PaperController;
 use App\Http\Controllers\Dashboard\PaperHistoryController;
 use App\Http\Controllers\LayoutEditor\LayoutEditorController;
 use App\Http\Controllers\PaperBuilder\QuestionSelectorController;
+use App\Http\Controllers\PaperBuilder\SchoolQuestionBankController;
 use App\Http\Controllers\PaperBuilder\TeacherAIController;
 use App\Http\Controllers\PaperBuilder\WizardController;
 use App\Http\Controllers\PastPaperController;
@@ -52,7 +53,11 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::get('/builder/ai/{import}/search-bank', [TeacherAIController::class, 'searchBank'])->name('builder.ai.search-bank');
     Route::post('/builder/ai/{import}/manual-question', [TeacherAIController::class, 'storeManualQuestion'])->name('builder.ai.manual-question');
     Route::post('/builder/ai/{import}/bank-questions', [TeacherAIController::class, 'addBankQuestionsToSelection'])->name('builder.ai.bank-questions');
+    Route::patch('/builder/ai/{import}/questions/{question}', [TeacherAIController::class, 'updateQuestion'])->name('builder.ai.questions.update');
+    Route::post('/builder/ai/{import}/questions/{question}/remove', [TeacherAIController::class, 'removeQuestion'])->name('builder.ai.questions.remove');
     Route::post('/builder/ai/{import}/add-to-paper', [TeacherAIController::class, 'addToPaper'])->name('builder.ai.add-to-paper');
+
+    Route::post('/questions', [SchoolQuestionBankController::class, 'store'])->name('questions.store');
 
     Route::prefix('api/builder')->group(function () {
         Route::get('/grades/{grade}/subjects', [QuestionSelectorController::class, 'subjects']);
