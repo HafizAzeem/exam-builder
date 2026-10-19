@@ -60,7 +60,7 @@ const navLinks = computed(() => {
                         <div class="flex min-w-0 flex-1">
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800" />
+                                    <ApplicationLogo class="block h-[3.25rem] w-[3.25rem]" />
                                 </Link>
                             </div>
 
