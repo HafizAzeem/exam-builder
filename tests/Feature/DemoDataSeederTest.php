@@ -30,7 +30,16 @@ class DemoDataSeederTest extends TestCase
         $this->assertSame('MS', $admin->name);
         $this->assertSame('03211414695', $admin->phone);
         $this->assertTrue($admin->hasRole('institution_admin'));
-        $this->assertTrue(Hash::check('password', $admin->password));
+        $this->assertTrue(Hash::check('Password123!', $admin->password));
+
+        $teacher = User::query()->where('email', 'teacher@demo.edu')->first();
+        $this->assertNotNull($teacher);
+        $this->assertTrue(Hash::check('Password123!', $teacher->password));
+
+        $superAdmin = User::query()->where('email', 'super@exambuilder.test')->first();
+        $this->assertNotNull($superAdmin);
+        $this->assertTrue($superAdmin->hasRole('super_admin'));
+        $this->assertTrue(Hash::check('Password123!', $superAdmin->password));
     }
 
     public function test_seeder_updates_legacy_demo_school(): void
@@ -69,5 +78,6 @@ class DemoDataSeederTest extends TestCase
             'phone' => '03211414695',
             'name' => 'MS',
         ]);
+        $this->assertTrue(Hash::check('Password123!', $admin->fresh()->password));
     }
 }

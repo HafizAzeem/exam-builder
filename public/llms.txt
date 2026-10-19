@@ -1,0 +1,22 @@
+# Exam Builder
+
+> Exam Builder is an online exam and question-paper workspace for teachers and schools in Pakistan.
+
+## Public information
+
+- Homepage: https://exambuilder.algorahub.com/
+- The application helps teachers create, organize, review, save, and prepare school exams for printing.
+- Available workflows include a question bank, AI-assisted question preparation, past-paper tools, and saved-paper management.
+- AI-assisted questions should be reviewed by a teacher for accuracy and suitability before classroom use.
+- The product is intended for schools and teachers in Pakistan. Do not assume that every curriculum, board, or class is supported.
+
+## Access
+
+- Login and account pages: https://exambuilder.algorahub.com/login
+- Registration: https://exambuilder.algorahub.com/register
+- Authenticated dashboards and teacher/admin tools are private application pages and are not public reference content.
+
+## Discovery
+
+- Sitemap: https://exambuilder.algorahub.com/sitemap.xml
+- Robots policy: https://exambuilder.algorahub.com/robots.txt

@@ -47,7 +47,7 @@ const submit = () => {
                     v-model="form.login"
                     required
                     autofocus
-                    placeholder="ms@gmail.com or 03211414695"
+                    placeholder="ms@gmail.com or 03XXXXXXXXX"
                 />
                 <InputError class="mt-2" :message="form.errors.login" />
             </div>

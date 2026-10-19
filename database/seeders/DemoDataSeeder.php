@@ -6,12 +6,12 @@ use App\Models\Institution;
 use App\Models\User;
 use App\Support\Phone;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        $demoPassword = 'Password123!';
         $adminPhone = Phone::normalize('03211414695') ?? '03211414695';
 
         $institution = Institution::query()
@@ -51,16 +51,14 @@ class DemoDataSeeder extends Seeder
             'name' => 'MS',
             'email' => 'ms@gmail.com',
             'phone' => $adminPhone,
+            'password' => $demoPassword,
             'is_active' => true,
         ];
 
         if ($admin) {
             $admin->fill($adminData)->save();
         } else {
-            $admin = User::create([
-                ...$adminData,
-                'password' => Hash::make('password'),
-            ]);
+            $admin = User::create($adminData);
         }
 
         if (! $admin->hasRole('institution_admin')) {
@@ -76,16 +74,14 @@ class DemoDataSeeder extends Seeder
             'name' => 'Demo Teacher',
             'email' => 'teacher@demo.edu',
             'phone' => Phone::normalize('03002222222') ?? '03002222222',
+            'password' => $demoPassword,
             'is_active' => true,
         ];
 
         if ($teacher) {
             $teacher->fill($teacherData)->save();
         } else {
-            $teacher = User::create([
-                ...$teacherData,
-                'password' => Hash::make('password'),
-            ]);
+            $teacher = User::create($teacherData);
         }
 
         if (! $teacher->hasRole('teacher')) {
@@ -101,16 +97,14 @@ class DemoDataSeeder extends Seeder
             'name' => 'Super Admin',
             'email' => 'super@exambuilder.test',
             'phone' => Phone::normalize('03009999999') ?? '03009999999',
+            'password' => $demoPassword,
             'is_active' => true,
         ];
 
         if ($superAdmin) {
             $superAdmin->fill($superData)->save();
         } else {
-            $superAdmin = User::create([
-                ...$superData,
-                'password' => Hash::make('password'),
-            ]);
+            $superAdmin = User::create($superData);
         }
 
         if (! $superAdmin->hasRole('super_admin')) {

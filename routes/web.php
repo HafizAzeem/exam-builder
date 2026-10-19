@@ -28,7 +28,7 @@ use App\Http\Controllers\SuperAdmin\ReviewController;
 use App\Http\Controllers\SuperAdmin\SettingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/login');
+Route::get('/', fn () => view('landing'))->name('home');
 
 Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
