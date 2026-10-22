@@ -2,118 +2,84 @@
 
 namespace Database\Seeders;
 
-use App\Models\Chapter;
 use App\Models\Grade;
 use App\Models\Subject;
 use Illuminate\Database\Seeder;
 
+/**
+ * Seeds PECTAA-listed textbook subjects for Grades 1–4.
+ *
+ * Chapter names are intentionally left to the detailed chapter seeders: the
+ * PECTAA e-book catalogue confirms book/subject availability, but is not a
+ * chapter list. Older generic "Subject Chapter N" rows are disabled below.
+ * Catalogue: https://pectaa.edu.pk/curriculum-compliance/
+ */
 class CurriculumSeeder extends Seeder
 {
+    /** @var array<int, list<string>> */
+    private const SUBJECTS = [
+        1 => [
+            'Tajveedi Qaida', 'Urdu', 'English', 'Mathematics', 'Waqfiyat e Aama',
+            'Islamiyat', 'Akhlaqiat', 'Buddhism', 'Sikhism', 'Sanatan Dharam',
+            'Zoroastrian Religion', 'Mashi Taleem',
+        ],
+        2 => [
+            'Nazra Quran', 'Urdu', 'English', 'Mathematics', 'Waqfiyat e Aama',
+            'Islamiyat', 'Akhlaqiat', 'Buddhism', 'Sikhism', 'Sanatan Dharam',
+            'Zoroastrian Religion', 'Mashi Taleem',
+        ],
+        3 => [
+            'Nazra Quran', 'Urdu', 'English', 'Mathematics', 'Waqfiyat e Aama',
+            'Islamiyat', 'Akhlaqiat', 'Buddhism', 'Sikhism', 'Sanatan Dharam',
+            'Zoroastrian Religion', 'Mashi Taleem',
+        ],
+        4 => [
+            'Nazra Quran', 'Urdu', 'English', 'Mathematics', 'General Science',
+            'Islamiyat', 'Social Studies', 'Akhlaqiat', 'Zoroastrian Religion',
+            'Mashi Taleem',
+        ],
+    ];
+
     public function run(): void
     {
-        /**
-         * Minimal but broad curriculum for dropdown testing.
-         * Creates Subjects + Chapters for all 12 grades.
-         */
-        $subjectsByGrade = [
-            'default' => [
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Urdu', 'ur' => 'اردو'],
-                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
-                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
-                ['en' => 'General Science', 'ur' => 'جنرل سائنس'],
-                ['en' => 'Mathematics', 'ur' => 'ریاضی'],
-            ],
-            9 => [
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Urdu', 'ur' => 'اردو'],
-                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
-                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
-                ['en' => 'Mathematics', 'ur' => 'ریاضی'],
-                ['en' => 'Physics', 'ur' => 'طبیعیات'],
-                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
-                ['en' => 'Biology', 'ur' => 'حیاتیات'],
-                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
-                ['en' => 'Tarjuma-tul-Quran', 'ur' => 'ترجمۃ القرآن'],
-            ],
-            10 => [
-                ['en' => 'Mathematics', 'ur' => 'ریاضی'],
-                ['en' => 'Physics', 'ur' => 'طبیعیات'],
-                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
-                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Urdu', 'ur' => 'اردو'],
-                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
-                ['en' => 'Biology', 'ur' => 'حیاتیات'],
-                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
-            ],
-            11 => [
-                ['en' => 'Physics', 'ur' => 'طبیعیات'],
-                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
-                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
-                ['en' => 'Biology', 'ur' => 'حیاتیات'],
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Urdu', 'ur' => 'اردو'],
-                ['en' => 'Islamiyat', 'ur' => 'اسلامیات'],
-                ['en' => 'Tarjuma-tul-Quran', 'ur' => 'ترجمۃ القرآن'],
-            ],
-            12 => [
-                ['en' => 'Physics', 'ur' => 'طبیعیات'],
-                ['en' => 'Chemistry', 'ur' => 'کیمسٹری'],
-                ['en' => 'Biology', 'ur' => 'حیاتیات'],
-                ['en' => 'Mathematics', 'ur' => 'ریاضی'],
-                ['en' => 'Computer Science', 'ur' => 'کمپیوٹر سائنس'],
-                ['en' => 'English', 'ur' => 'انگریزی'],
-                ['en' => 'Pakistan Studies', 'ur' => 'مطالعہ پاکستان'],
-            ],
-        ];
+        foreach (self::SUBJECTS as $gradeNumber => $names) {
+            $grade = Grade::query()->where('number', $gradeNumber)->first();
+            if (! $grade) {
+                continue;
+            }
 
-        /** @var \Illuminate\Support\Collection<int, Grade> $grades */
-        $grades = Grade::query()->orderBy('number')->get();
+            $grade->update(['is_active' => true]);
+            $keepIds = [];
 
-        foreach ($grades as $grade) {
-            $gradeSubjects = $subjectsByGrade[$grade->number] ?? $subjectsByGrade['default'];
-
-            $sort = 1;
-            foreach ($gradeSubjects as $s) {
+            foreach ($names as $sort => $name) {
                 $subject = Subject::query()->firstOrCreate(
-                    ['grade_id' => $grade->id, 'name_en' => $s['en']],
-                    ['name_ur' => $s['ur'], 'sort_order' => $sort]
+                    ['grade_id' => $grade->id, 'name_en' => $name],
+                    ['name_ur' => $name, 'sort_order' => $sort + 1, 'is_active' => true]
                 );
 
-                // Keep stable order if seeded previously.
-                if (! $subject->sort_order) {
-                    $subject->update(['sort_order' => $sort]);
-                }
+                $subject->update([
+                    'sort_order' => $sort + 1,
+                    'is_active' => true,
+                ]);
+                $keepIds[] = $subject->id;
 
-                $this->seedChaptersForSubject($grade->number, $subject);
-                $sort++;
+                // The old seeder generated fictitious chapter names. Preserve
+                // their rows/IDs for existing references, but keep them out of
+                // current chapter selection until official book contents are
+                // extracted and verified.
+                $subject->chapters()
+                    ->where('title_en', 'like', $name.' Chapter %')
+                    ->update(['is_active' => false]);
             }
-        }
-    }
 
-    protected function seedChaptersForSubject(int $gradeNumber, Subject $subject): void
-    {
-        // A small, consistent chapter set per subject (enough for dropdowns and testing).
-        $chapterCount = match ($subject->name_en) {
-            'Mathematics' => 8,
-            'Physics', 'Chemistry', 'Biology', 'Computer Science' => 6,
-            'English' => ($gradeNumber === 9 ? 11 : ($gradeNumber <= 5 ? 10 : 7)),
-            default => ($gradeNumber <= 5 ? 10 : 7),
-        };
-
-        for ($i = 1; $i <= $chapterCount; $i++) {
-            Chapter::query()->firstOrCreate(
-                [
-                    'subject_id' => $subject->id,
-                    'number' => $i,
-                ],
-                [
-                    'title_en' => "{$subject->name_en} Chapter {$i}",
-                    'title_ur' => "{$subject->name_ur} باب {$i}",
-                ]
-            );
+            // Retire only the broad placeholder subjects from the former
+            // seeder. Preserve any subjects added by an administrator or
+            // another curriculum package.
+            Subject::query()
+                ->where('grade_id', $grade->id)
+                ->whereIn('name_en', ['English', 'Urdu', 'Islamiyat', 'Pakistan Studies', 'General Science', 'Mathematics'])
+                ->whereNotIn('id', $keepIds)
+                ->update(['is_active' => false]);
         }
     }
 }
-
