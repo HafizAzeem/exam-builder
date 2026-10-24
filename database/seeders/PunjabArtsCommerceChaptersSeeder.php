@@ -32,7 +32,7 @@ class PunjabArtsCommerceChaptersSeeder extends Seeder
         $sortBase = (int) $grade->subjects()->max('sort_order');
 
         foreach ($subjects as $item) {
-            $names = array_merge([$item['en']], $item['aliases'] ?? []);
+            $names = array_merge([$item['en']], $item['aliases'] ?? [], $this->renamedSubjectAliases($grade, $item['en']));
             $sortBase++;
 
             $subject = $grade->subjects()->whereIn('name_en', $names)->first();

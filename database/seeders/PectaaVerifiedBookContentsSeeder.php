@@ -137,14 +137,21 @@ class PectaaVerifiedBookContentsSeeder extends Seeder
 
         // The PECTAA catalogue links the book, but does not state that this
         // edition is applicable to the selected examination session.
-        $edition->update([
-            'status' => 'unverified',
-            'source_url' => self::ENGLISH_SOURCES[$gradeNumber],
-            'source_type' => 'official_textbook_catalog_link',
-            'verified_at' => null,
-        ]);
+        if (! $edition->verified_at && $edition->status === 'unverified') {
+            $edition->update([
+                'status' => 'unverified',
+                'source_url' => self::ENGLISH_SOURCES[$gradeNumber],
+                'source_type' => 'official_textbook_catalog_link',
+                'verified_at' => null,
+            ]);
+        }
 
         foreach ($chapters as $number => $chapter) {
+            $existing = SyllabusChapter::query()->where('syllabus_edition_id', $edition->id)
+                ->where('chapter_number', $number)->first();
+            if ($existing && ($existing->verified_at || $existing->status !== 'unverified')) {
+                continue;
+            }
             SyllabusChapter::query()->updateOrCreate(
                 ['syllabus_edition_id' => $edition->id, 'chapter_number' => $number],
                 [

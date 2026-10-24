@@ -67,13 +67,18 @@ class Pectaa2025_26VerifiedSyllabusSeeder extends Seeder
             'source_type' => 'official_textbook_and_smart_syllabus',
         ];
 
-        if ($edition) {
+        if ($edition && ! $edition->verified_at && $edition->status === 'unverified') {
             $edition->update($attributes);
-        } else {
+        } elseif (! $edition) {
             $edition = SyllabusEdition::query()->create($attributes);
         }
 
         foreach (self::CHAPTERS as $number => $title) {
+            $existing = SyllabusChapter::query()->where('syllabus_edition_id', $edition->id)
+                ->where('chapter_number', $number)->first();
+            if ($existing && ($existing->verified_at || $existing->status !== 'unverified')) {
+                continue;
+            }
             $excluded = in_array($number, self::EXCLUDED_UNITS, true);
             $sourceUrl = $excluded ? self::ALP_URL : self::BOOK_URL;
 
@@ -107,7 +112,7 @@ class Pectaa2025_26VerifiedSyllabusSeeder extends Seeder
             return;
         }
 
-        $edition = SyllabusEdition::query()->updateOrCreate(
+        $edition = SyllabusEdition::query()->firstOrNew(
             [
                 'academic_session' => self::SESSION,
                 'grade_id' => $grade->id,
@@ -115,15 +120,17 @@ class Pectaa2025_26VerifiedSyllabusSeeder extends Seeder
                 'board' => 'Punjab Boards',
                 'group_name' => null,
                 'textbook_edition' => 'PECTAA Computer Science 9 2025-26',
-            ],
-            [
+            ]
+        );
+        if (! $edition->exists || (! $edition->verified_at && $edition->status === 'unverified')) {
+            $edition->fill([
                 'effective_session' => self::SESSION,
                 'status' => 'current',
                 'source_url' => self::COMPUTER_BOOK_URL,
                 'verified_at' => now()->toDateString(),
                 'source_type' => 'official_textbook',
-            ]
-        );
+            ])->save();
+        }
 
         $titles = [
             'Introduction to Systems', 'Number Systems', 'Digital Systems and Logic Design',
@@ -134,6 +141,11 @@ class Pectaa2025_26VerifiedSyllabusSeeder extends Seeder
         ];
 
         foreach ($titles as $index => $title) {
+            $existing = SyllabusChapter::query()->where('syllabus_edition_id', $edition->id)
+                ->where('chapter_number', $index + 1)->first();
+            if ($existing && ($existing->verified_at || $existing->status !== 'unverified')) {
+                continue;
+            }
             SyllabusChapter::query()->updateOrCreate(
                 ['syllabus_edition_id' => $edition->id, 'chapter_number' => $index + 1],
                 [

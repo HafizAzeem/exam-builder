@@ -10,7 +10,7 @@ class GradeSeeder extends Seeder
     public function run(): void
     {
         for ($n = 1; $n <= 12; $n++) {
-            Grade::query()->firstOrCreate(
+            Grade::query()->updateOrCreate(
                 ['number' => $n],
                 [
                     'label_en' => "Class {$n}",

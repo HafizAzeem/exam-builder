@@ -1,0 +1,18 @@
+The `punjab-latest-textbooks.json` snapshot supplies the paper builder with published Punjab textbook names and chapter titles for Classes 1–12. It is applied after the historical curriculum seeders by `LatestPunjabTextbooksSeeder`.
+
+Sources were checked against the [PECTAA textbook catalogue](https://pectaa.edu.pk/curriculum-compliance/) and the linked official textbook PDFs, including the published 2026–27 and August/October 2026 revisions. Each record retains its book link; `contents_pdf_pages`, where present, identifies the PDF contents pages reviewed. Books without a newly published replacement retain the latest available catalogue edition. English Classes 1–5 and 9 reuse the existing source-reviewed contents, with review exercises excluded from the chapter list.
+
+Selection and numbering:
+
+- One book per class and subject/track is selected; English-medium versions are preferred where both media are available. Matric Tech remains a separate subject track.
+- Chapter numbers printed in the books are retained, including second-part science and statistics books whose numbering continues from the previous class. Paragraphs, exercises, glossaries and model papers are not additional chapters. Religious books use their top-level chapters; Nazra Quran uses its prescribed para numbers.
+- Shared Classes 9–10 and 11–12 textbooks are included. Printed class allocations are used where available; Part I / Paper I and Part II / Paper II are assigned to the lower and upper classes respectively. Where no class allocation appears, the shared book's full contents are available in both classes. These choices are recorded in `contents_notes`. When sections restart their chapter numbers, consecutive selector numbers are used with `printed_number` and `section` retained where applicable. Reference grammars, curricula, practical workbooks and model papers are excluded from the course chapter lists.
+- The newer Computer Science and Entrepreneurship books replace the old Computer Science offerings. Existing subject IDs are retained through aliases where possible.
+- Repeated poetry headings are distinguished by the printed poet names. The three Class 11 Saraiki ghazals use this same genre-and-poet format, avoiding uncertain transcription of dialect-specific first-line spellings.
+- The catalogue's Class 12 Civics link actually downloads Education. Civics Classes 11 and 12 therefore use the valid, cover-checked 2023–24 Civics PDFs still published in the catalogue.
+- Class 11 Education uses the catalogue's alternative, cover-checked PECTAA PDF, which supplies its complete eight-chapter contents.
+- The Class 12 Chemistry catalogue link starts at Chapter 1 rather than a complete contents page. Its chapter list is corroborated by the [official eLearn Punjab Chemistry Grade 12 repository](https://www.elearn.gov.pk/elearn_app/chapters/20), recorded separately as `contents_source_url`.
+
+The registry's `2026-2027` session is a snapshot grouping, not a claim that every book applies to that examination session. Published contents are stored as `unverified` for examination applicability; this seeder does not apply examination exclusions or overwrite separately verified registry records. The paper builder receives full published book contents. Existing subject/chapter IDs are reused by subject alias and printed chapter number, and obsolete chapter numbers are deactivated.
+
+To update an existing application database, run `php artisan db:seed --class=LatestPunjabTextbooksSeeder`. The normal `DatabaseSeeder` also runs this update after the legacy curriculum seeders. No database reset is required.

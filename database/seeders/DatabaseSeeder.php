@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
             Pectaa2025_26VerifiedSyllabusSeeder::class,
             PectaaCurriculumCatalogueSeeder::class,
             PectaaVerifiedBookContentsSeeder::class,
+            LatestPunjabTextbooksSeeder::class,
             // Class9TopicsSeeder::class,
             // QuestionBankSeeder::class,
             DemoDataSeeder::class,

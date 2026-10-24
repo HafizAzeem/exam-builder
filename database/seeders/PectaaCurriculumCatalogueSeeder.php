@@ -6,6 +6,7 @@ use App\Models\Grade;
 use App\Models\Subject;
 use App\Models\SyllabusEdition;
 use App\Models\SyllabusChapter;
+use Database\Seeders\Concerns\SeedsSubjectChapters;
 use Illuminate\Database\Seeder;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Database\Seeder;
  */
 class PectaaCurriculumCatalogueSeeder extends Seeder
 {
+    use SeedsSubjectChapters;
+
     private const CATALOGUE_URL = 'https://pectaa.edu.pk/curriculum-compliance/';
 
     /** @var array<int, list<array{subject:string, group:string, edition:string}>> */
@@ -79,10 +82,11 @@ class PectaaCurriculumCatalogueSeeder extends Seeder
             }
 
             foreach ($offerings as $index => $offering) {
-                $subject = Subject::query()->firstOrCreate(
-                    ['grade_id' => $grade->id, 'name_en' => $offering['subject']],
-                    ['name_ur' => $offering['subject'], 'sort_order' => 100 + $index, 'is_active' => true]
-                );
+                $subject = $grade->subjects()->whereIn('name_en', $this->renamedSubjectAliases($grade, $offering['subject']))->first()
+                    ?? Subject::query()->firstOrCreate(
+                        ['grade_id' => $grade->id, 'name_en' => $offering['subject']],
+                        ['name_ur' => $offering['subject'], 'sort_order' => 100 + $index, 'is_active' => true]
+                    );
                 if (! $subject->is_active) {
                     $subject->update(['is_active' => true]);
                 }
@@ -109,7 +113,7 @@ class PectaaCurriculumCatalogueSeeder extends Seeder
                 $edition = SyllabusEdition::query()->firstOrNew($editionKey);
                 // Never downgrade an independently verified edition when the
                 // catalogue inventory seeder is rerun.
-                if ($edition->exists && in_array($edition->status, ['current', 'revised'], true)) {
+                if ($edition->exists && ($edition->verified_at || $edition->status !== 'unverified')) {
                     continue;
                 }
                 $edition->fill([
@@ -126,6 +130,11 @@ class PectaaCurriculumCatalogueSeeder extends Seeder
                 // Preserve existing seeded chapter titles for review, but
                 // never promote them to verified from catalogue evidence.
                 foreach ($subject->chapters()->where('is_active', true)->orderBy('number')->get() as $chapter) {
+                    $existing = SyllabusChapter::query()->where('syllabus_edition_id', $edition->id)
+                        ->where('chapter_number', $chapter->number)->first();
+                    if ($existing && ($existing->verified_at || $existing->status !== 'unverified')) {
+                        continue;
+                    }
                     SyllabusChapter::query()->updateOrCreate(
                         ['syllabus_edition_id' => $edition->id, 'chapter_number' => $chapter->number],
                         [

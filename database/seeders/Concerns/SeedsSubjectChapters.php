@@ -8,6 +8,21 @@ use App\Models\Subject;
 
 trait SeedsSubjectChapters
 {
+    /** Names already adopted by the reviewed textbook inventory. */
+    protected function renamedSubjectAliases(Grade $grade, string $name): array
+    {
+        return match ($name) {
+            'Computer Science', 'Computer and Entrepreneurship' => ['Computer Science and Entrepreneurship'],
+            'Art and Drawing' => ['Art and Model Drawing'],
+            'Zari Taleem' => ['Agriculture'],
+            'Itlaqi Barqiat' => ['Applied Electricity'],
+            'Persian' => ['Farsi'],
+            'Farsi' => ['Persian'],
+            'Philosophy' => $grade->number === 12 ? ['Logic'] : [],
+            default => [],
+        };
+    }
+
     /**
      * @param  list<array{en: string, ur: string, aliases?: list<string>}>  $subjects
      * @return list<int>
@@ -18,7 +33,7 @@ trait SeedsSubjectChapters
         $sort = 1;
 
         foreach ($subjects as $item) {
-            $names = array_merge([$item['en']], $item['aliases'] ?? []);
+            $names = array_merge([$item['en']], $item['aliases'] ?? [], $this->renamedSubjectAliases($grade, $item['en']));
 
             $subject = Subject::query()
                 ->where('grade_id', $grade->id)
