@@ -10,6 +10,7 @@ use App\Models\Subject;
 use App\Support\ActivityLogger;
 use App\Support\CurriculumLookup;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,7 +29,7 @@ class WizardController extends Controller
         }
 
         $grades = Grade::query()
-            ->whereBetween('number', [5, 12])
+            ->whereBetween('number', [1, 12])
             ->orderByDesc('number')
             ->get(['id', 'number', 'label_en', 'label_ur', 'is_active'])
             ->map(function (Grade $grade) use ($allowedNumbers) {
@@ -50,7 +51,7 @@ class WizardController extends Controller
         ]);
     }
 
-    public function subjects(Request $request): Response
+    public function subjects(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $gradeId = $request->integer('grade');
@@ -90,7 +91,7 @@ class WizardController extends Controller
         ]);
     }
 
-    public function chapters(Request $request): Response
+    public function chapters(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $gradeId = $request->integer('grade');
@@ -134,7 +135,7 @@ class WizardController extends Controller
         ]);
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
         $gradesQuery = CurriculumLookup::grades();

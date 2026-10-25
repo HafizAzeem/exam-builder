@@ -33,6 +33,8 @@ class PaperController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        $query->where(fn ($q) => $q->whereNull('layout_snapshot->paper_mode')->orWhere('layout_snapshot->paper_mode', '!=', 'worksheet'));
+
         if ($search = $request->string('search')->toString()) {
             $query->where('title', 'like', "%{$search}%");
         }
@@ -55,6 +57,8 @@ class PaperController extends Controller
     public function duplicate(Request $request, SavedPaper $paper)
     {
         $this->authorizePaper($request, $paper);
+
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
 
         $copy = $paper->replicate();
         $copy->title = $paper->title.' (Copy)';

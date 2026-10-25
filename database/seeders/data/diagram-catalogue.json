@@ -1,0 +1,3564 @@
+[
+  {
+    "builtin_key": "square",
+    "title": "Square",
+    "category": "Basic shapes",
+    "description": "Editable square teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.0,
+        "y": 50.0,
+        "width": 140,
+        "height": 140
+      }
+    ]
+  },
+  {
+    "builtin_key": "rectangle",
+    "title": "Rectangle",
+    "category": "Basic shapes",
+    "description": "Editable rectangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 90.0,
+        "y": 60.0,
+        "width": 220,
+        "height": 120
+      }
+    ]
+  },
+  {
+    "builtin_key": "circle",
+    "title": "Circle",
+    "category": "Basic shapes",
+    "description": "Editable circle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 80,
+        "ry": 80
+      }
+    ]
+  },
+  {
+    "builtin_key": "ellipse",
+    "title": "Ellipse",
+    "category": "Basic shapes",
+    "description": "Editable ellipse teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 120,
+        "ry": 65
+      }
+    ]
+  },
+  {
+    "builtin_key": "equilateral-triangle",
+    "title": "Equilateral triangle",
+    "category": "Basic shapes",
+    "description": "Editable equilateral triangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 277.9,165.0 122.1,165.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "pentagon",
+    "title": "Pentagon",
+    "category": "Basic shapes",
+    "description": "Editable pentagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 285.6,92.2 252.9,192.8 147.1,192.8 114.4,92.2"
+      }
+    ]
+  },
+  {
+    "builtin_key": "hexagon",
+    "title": "Hexagon",
+    "category": "Basic shapes",
+    "description": "Editable hexagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 277.9,75.0 277.9,165.0 200.0,210.0 122.1,165.0 122.1,75.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "heptagon",
+    "title": "Heptagon",
+    "category": "Basic shapes",
+    "description": "Editable heptagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 270.4,63.9 287.7,140.0 239.0,201.1 161.0,201.1 112.3,140.0 129.6,63.9"
+      }
+    ]
+  },
+  {
+    "builtin_key": "octagon",
+    "title": "Octagon",
+    "category": "Basic shapes",
+    "description": "Editable octagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 263.6,56.4 290.0,120.0 263.6,183.6 200.0,210.0 136.4,183.6 110.0,120.0 136.4,56.4"
+      }
+    ]
+  },
+  {
+    "builtin_key": "nonagon",
+    "title": "Nonagon",
+    "category": "Basic shapes",
+    "description": "Editable nonagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 257.9,51.1 288.6,104.4 277.9,165.0 230.8,204.6 169.2,204.6 122.1,165.0 111.4,104.4 142.1,51.1"
+      }
+    ]
+  },
+  {
+    "builtin_key": "decagon",
+    "title": "Decagon",
+    "category": "Basic shapes",
+    "description": "Editable decagon teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 252.9,47.2 285.6,92.2 285.6,147.8 252.9,192.8 200.0,210.0 147.1,192.8 114.4,147.8 114.4,92.2 147.1,47.2"
+      }
+    ]
+  },
+  {
+    "builtin_key": "right-triangle",
+    "title": "Right triangle",
+    "category": "Basic shapes",
+    "description": "Editable right triangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "90.0,35.0 90.0,200.0 310.0,200.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "isosceles-triangle",
+    "title": "Isosceles triangle",
+    "category": "Basic shapes",
+    "description": "Editable isosceles triangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,30.0 110.0,200.0 290.0,200.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "scalene-triangle",
+    "title": "Scalene triangle",
+    "category": "Basic shapes",
+    "description": "Editable scalene triangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "130.0,35.0 65.0,200.0 330.0,200.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "parallelogram",
+    "title": "Parallelogram",
+    "category": "Basic shapes",
+    "description": "Editable parallelogram teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "120.0,60.0 330.0,60.0 280.0,185.0 70.0,185.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "rhombus",
+    "title": "Rhombus",
+    "category": "Basic shapes",
+    "description": "Editable rhombus teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,25.0 330.0,120.0 200.0,215.0 70.0,120.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "trapezium",
+    "title": "Trapezium",
+    "category": "Basic shapes",
+    "description": "Editable trapezium teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "140.0,55.0 260.0,55.0 330.0,190.0 70.0,190.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "kite",
+    "title": "Kite",
+    "category": "Basic shapes",
+    "description": "Editable kite teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "200.0,20.0 270.0,90.0 200.0,220.0 130.0,90.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "cube",
+    "title": "Cube",
+    "category": "Solid shapes",
+    "description": "Editable cube teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 85,
+        "y": 85,
+        "width": 110,
+        "height": 110
+      },
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "85.0,85.0 150.0,35.0 260.0,35.0 195.0,85.0"
+      },
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "195.0,85.0 260.0,35.0 260.0,145.0 195.0,195.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "cuboid",
+    "title": "Cuboid",
+    "category": "Solid shapes",
+    "description": "Editable cuboid teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 85,
+        "y": 85,
+        "width": 180,
+        "height": 90
+      },
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "85.0,85.0 150.0,35.0 330.0,35.0 265.0,85.0"
+      },
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "265.0,85.0 330.0,35.0 330.0,125.0 265.0,175.0"
+      }
+    ]
+  },
+  {
+    "builtin_key": "sphere",
+    "title": "Sphere",
+    "category": "Solid shapes",
+    "description": "Editable sphere teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 85,
+        "ry": 85
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 85,
+        "ry": 25
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 25,
+        "ry": 85
+      }
+    ]
+  },
+  {
+    "builtin_key": "cylinder",
+    "title": "Cylinder",
+    "category": "Solid shapes",
+    "description": "Editable cylinder teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 60,
+        "rx": 75,
+        "ry": 25
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 185,
+        "rx": 75,
+        "ry": 25
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 125,
+        "y": 60,
+        "x2": 125,
+        "y2": 185
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 275,
+        "y": 60,
+        "x2": 275,
+        "y2": 185
+      }
+    ]
+  },
+  {
+    "builtin_key": "cone",
+    "title": "Cone",
+    "category": "Solid shapes",
+    "description": "Editable cone teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "rx": 80,
+        "ry": 25
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120,
+        "y": 190,
+        "x2": 200,
+        "y2": 30
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280,
+        "y": 190,
+        "x2": 200,
+        "y2": 30
+      }
+    ]
+  },
+  {
+    "builtin_key": "square-pyramid",
+    "title": "Square pyramid",
+    "category": "Solid shapes",
+    "description": "Editable square pyramid teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "90.0,165.0 220.0,210.0 320.0,150.0 190.0,115.0"
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 25,
+        "x2": 90,
+        "y2": 165
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 25,
+        "x2": 220,
+        "y2": 210
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 25,
+        "x2": 320,
+        "y2": 150
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 25,
+        "x2": 190,
+        "y2": 115,
+        "dashed": true
+      }
+    ]
+  },
+  {
+    "builtin_key": "triangular-prism",
+    "title": "Triangular prism",
+    "category": "Solid shapes",
+    "description": "Editable triangular prism teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "60.0,200.0 120.0,70.0 180.0,200.0"
+      },
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "220.0,150.0 280.0,20.0 340.0,150.0"
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 200,
+        "x2": 220,
+        "y2": 150
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120,
+        "y": 70,
+        "x2": 280,
+        "y2": 20
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 180,
+        "y": 200,
+        "x2": 340,
+        "y2": 150
+      }
+    ]
+  },
+  {
+    "builtin_key": "acute-angle",
+    "title": "Acute angle",
+    "category": "Geometry",
+    "description": "Editable acute angle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 340,
+        "y2": 190
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 298.99494936611666,
+        "y2": 91.00505063388334
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 175,
+        "text": "45 degrees",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "right-angle",
+    "title": "Right angle",
+    "category": "Geometry",
+    "description": "Editable right angle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 340,
+        "y2": 190
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 200.0,
+        "y2": 50.0
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 175,
+        "text": "90 degrees",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "obtuse-angle",
+    "title": "Obtuse angle",
+    "category": "Geometry",
+    "description": "Editable obtuse angle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 340,
+        "y2": 190
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 110.00973464388449,
+        "y2": 82.75377796334308
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 175,
+        "text": "130 degrees",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "straight-angle",
+    "title": "Straight angle",
+    "category": "Geometry",
+    "description": "Editable straight angle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 340,
+        "y2": 190
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 190,
+        "x2": 60.0,
+        "y2": 189.99999999999997
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 175,
+        "text": "180 degrees",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "parallel-lines",
+    "title": "Parallel lines",
+    "category": "Geometry",
+    "description": "Editable parallel lines teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 70,
+        "x2": 340,
+        "y2": 70
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 170,
+        "x2": 340,
+        "y2": 170
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 350,
+        "y": 75,
+        "text": "l",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 350,
+        "y": 175,
+        "text": "m",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "perpendicular-lines",
+    "title": "Perpendicular lines",
+    "category": "Geometry",
+    "description": "Editable perpendicular lines teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 160,
+        "x2": 340,
+        "y2": 160
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 30,
+        "x2": 200,
+        "y2": 210
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 140,
+        "width": 20,
+        "height": 20
+      }
+    ]
+  },
+  {
+    "builtin_key": "labelled-triangle",
+    "title": "Labelled triangle",
+    "category": "Geometry",
+    "description": "Editable labelled triangle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polygon",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "70.0,195.0 200.0,35.0 330.0,195.0"
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 45,
+        "y": 215,
+        "text": "A",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 195,
+        "y": 25,
+        "text": "B",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 340,
+        "y": 215,
+        "text": "C",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 110,
+        "y": 105,
+        "text": "5 cm",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 205,
+        "y": 220,
+        "text": "8 cm",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "circle-radius-and-diameter",
+    "title": "Circle radius and diameter",
+    "category": "Geometry",
+    "description": "Editable circle radius and diameter teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 85,
+        "ry": 85
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 115,
+        "y": 120,
+        "x2": 285,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "x2": 200,
+        "y2": 35
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 80,
+        "text": "r",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160,
+        "y": 145,
+        "text": "diameter",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "line-of-symmetry",
+    "title": "Line of symmetry",
+    "category": "Geometry",
+    "description": "Editable line of symmetry teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 100,
+        "y": 45,
+        "width": 200,
+        "height": 150
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 20,
+        "x2": 200,
+        "y2": 220,
+        "dashed": true
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-2",
+    "title": "Fraction bar 1 over 2",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 2 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 160.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200.0,
+        "y": 75,
+        "width": 160.0,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 2",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-3",
+    "title": "Fraction bar 1 over 3",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 3 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 106.66666666666667,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 146.66666666666669,
+        "y": 75,
+        "width": 106.66666666666667,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 253.33333333333334,
+        "y": 75,
+        "width": 106.66666666666667,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 3",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-4",
+    "title": "Fraction bar 1 over 4",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 4 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 80.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120.0,
+        "y": 75,
+        "width": 80.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200.0,
+        "y": 75,
+        "width": 80.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280.0,
+        "y": 75,
+        "width": 80.0,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 4",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-5",
+    "title": "Fraction bar 1 over 5",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 5 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 64.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 104.0,
+        "y": 75,
+        "width": 64.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 168.0,
+        "y": 75,
+        "width": 64.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 232.0,
+        "y": 75,
+        "width": 64.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 296.0,
+        "y": 75,
+        "width": 64.0,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 5",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-8",
+    "title": "Fraction bar 1 over 8",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 8 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 240.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 320.0,
+        "y": 75,
+        "width": 40.0,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 8",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "fraction-bar-1-over-10",
+    "title": "Fraction bar 1 over 10",
+    "category": "Fractions",
+    "description": "Editable fraction bar 1 over 10 teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "#cbd5e1",
+        "strokeWidth": 2,
+        "x": 40.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 72.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 104.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 136.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 168.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 232.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 264.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 296.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 328.0,
+        "y": 75,
+        "width": 32.0,
+        "height": 85
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 200,
+        "text": "1 / 10",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "coordinate-grid",
+    "title": "Coordinate grid",
+    "category": "Graphs",
+    "description": "Editable coordinate grid teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 20,
+        "x2": 20,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 40,
+        "y": 20,
+        "x2": 40,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 20,
+        "x2": 60,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 20,
+        "x2": 80,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 100,
+        "y": 20,
+        "x2": 100,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120,
+        "y": 20,
+        "x2": 120,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 140,
+        "y": 20,
+        "x2": 140,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160,
+        "y": 20,
+        "x2": 160,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 180,
+        "y": 20,
+        "x2": 180,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 20,
+        "x2": 200,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 220,
+        "y": 20,
+        "x2": 220,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 240,
+        "y": 20,
+        "x2": 240,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 260,
+        "y": 20,
+        "x2": 260,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280,
+        "y": 20,
+        "x2": 280,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 300,
+        "y": 20,
+        "x2": 300,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 320,
+        "y": 20,
+        "x2": 320,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 340,
+        "y": 20,
+        "x2": 340,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 360,
+        "y": 20,
+        "x2": 360,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 380,
+        "y": 20,
+        "x2": 380,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 20,
+        "x2": 380,
+        "y2": 20
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 40,
+        "x2": 380,
+        "y2": 40
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 60,
+        "x2": 380,
+        "y2": 60
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 80,
+        "x2": 380,
+        "y2": 80
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 100,
+        "x2": 380,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 120,
+        "x2": 380,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 140,
+        "x2": 380,
+        "y2": 140
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 160,
+        "x2": 380,
+        "y2": 160
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 180,
+        "x2": 380,
+        "y2": 180
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 200,
+        "x2": 380,
+        "y2": 200
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 220,
+        "x2": 380,
+        "y2": 220
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 3,
+        "x": 20,
+        "y": 120,
+        "x2": 390,
+        "y2": 120
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 3,
+        "x": 200,
+        "y": 220,
+        "x2": 200,
+        "y2": 10
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 375,
+        "y": 145,
+        "text": "x",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 210,
+        "y": 20,
+        "text": "y",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "bar-chart",
+    "title": "Bar chart",
+    "category": "Graphs",
+    "description": "Editable bar chart teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 55,
+        "y": 20,
+        "x2": 55,
+        "y2": 200
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 55,
+        "y": 200,
+        "x2": 370,
+        "y2": 200
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 85,
+        "y": 140,
+        "width": 40,
+        "height": 60
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 150,
+        "y": 70,
+        "width": 40,
+        "height": 130
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 215,
+        "y": 110,
+        "width": 40,
+        "height": 90
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280,
+        "y": 40,
+        "width": 40,
+        "height": 160
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 95,
+        "y": 225,
+        "text": "A",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160,
+        "y": 225,
+        "text": "B",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 225,
+        "y": 225,
+        "text": "C",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 290,
+        "y": 225,
+        "text": "D",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "line-graph",
+    "title": "Line graph",
+    "category": "Graphs",
+    "description": "Editable line graph teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 55,
+        "y": 20,
+        "x2": 55,
+        "y2": 200
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 55,
+        "y": 200,
+        "x2": 370,
+        "y2": 200
+      },
+      {
+        "kind": "polyline",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "60,180 130,120 200,140 270,70 340,35"
+      }
+    ]
+  },
+  {
+    "builtin_key": "number-line",
+    "title": "Number line",
+    "category": "Measurement",
+    "description": "Editable number line teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 30,
+        "y": 110,
+        "x2": 375,
+        "y2": 110
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 50,
+        "y": 100,
+        "x2": 50,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 100,
+        "x2": 80,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 110,
+        "y": 100,
+        "x2": 110,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 140,
+        "y": 100,
+        "x2": 140,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 170,
+        "y": 100,
+        "x2": 170,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 100,
+        "x2": 200,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230,
+        "y": 100,
+        "x2": 230,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 260,
+        "y": 100,
+        "x2": 260,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 290,
+        "y": 100,
+        "x2": 290,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 320,
+        "y": 100,
+        "x2": 320,
+        "y2": 120
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 350,
+        "y": 100,
+        "x2": 350,
+        "y2": 120
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 44,
+        "y": 150,
+        "text": "0",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 74,
+        "y": 150,
+        "text": "1",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 104,
+        "y": 150,
+        "text": "2",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 134,
+        "y": 150,
+        "text": "3",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 164,
+        "y": 150,
+        "text": "4",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194,
+        "y": 150,
+        "text": "5",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 224,
+        "y": 150,
+        "text": "6",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 254,
+        "y": 150,
+        "text": "7",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 284,
+        "y": 150,
+        "text": "8",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 314,
+        "y": 150,
+        "text": "9",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 344,
+        "y": 150,
+        "text": "10",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "ruler",
+    "title": "Ruler",
+    "category": "Measurement",
+    "description": "Editable ruler teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 30,
+        "y": 70,
+        "width": 340,
+        "height": 85
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 40,
+        "y": 70,
+        "x2": 40,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 70,
+        "y": 70,
+        "x2": 70,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 100,
+        "y": 70,
+        "x2": 100,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130,
+        "y": 70,
+        "x2": 130,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160,
+        "y": 70,
+        "x2": 160,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 190,
+        "y": 70,
+        "x2": 190,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 220,
+        "y": 70,
+        "x2": 220,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 250,
+        "y": 70,
+        "x2": 250,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 280,
+        "y": 70,
+        "x2": 280,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 310,
+        "y": 70,
+        "x2": 310,
+        "y2": 100
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 340,
+        "y": 70,
+        "x2": 340,
+        "y2": 100
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 35,
+        "y": 130,
+        "text": "0",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 65,
+        "y": 130,
+        "text": "1",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 95,
+        "y": 130,
+        "text": "2",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 125,
+        "y": 130,
+        "text": "3",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 155,
+        "y": 130,
+        "text": "4",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 185,
+        "y": 130,
+        "text": "5",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 215,
+        "y": 130,
+        "text": "6",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 245,
+        "y": 130,
+        "text": "7",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 275,
+        "y": 130,
+        "text": "8",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 305,
+        "y": 130,
+        "text": "9",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 335,
+        "y": 130,
+        "text": "10",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "clock-blank",
+    "title": "Clock blank",
+    "category": "Measurement",
+    "description": "Editable clock blank teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 90,
+        "ry": 90
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 62.780145523735975,
+        "text": "1",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 89.5,
+        "text": "2",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 267.0,
+        "y": 126.0,
+        "text": "3",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 162.5,
+        "text": "4",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 189.21985447626403,
+        "text": "5",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 199.0,
+        "text": "6",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.5,
+        "y": 189.21985447626403,
+        "text": "7",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 162.50000000000003,
+        "text": "8",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 121.0,
+        "y": 126.00000000000001,
+        "text": "9",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 89.5,
+        "text": "10",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.49999999999997,
+        "y": 62.78014552373599,
+        "text": "11",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 53.0,
+        "text": "12",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "clock-three-oclock",
+    "title": "Clock three oclock",
+    "category": "Measurement",
+    "description": "Editable clock three oclock teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 90,
+        "ry": 90
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 62.780145523735975,
+        "text": "1",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 89.5,
+        "text": "2",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 267.0,
+        "y": 126.0,
+        "text": "3",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 162.5,
+        "text": "4",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 189.21985447626403,
+        "text": "5",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 199.0,
+        "text": "6",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.5,
+        "y": 189.21985447626403,
+        "text": "7",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 162.50000000000003,
+        "text": "8",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 121.0,
+        "y": 126.00000000000001,
+        "text": "9",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 89.5,
+        "text": "10",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.49999999999997,
+        "y": 62.78014552373599,
+        "text": "11",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 53.0,
+        "text": "12",
+        "fontSize": 18
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "x2": 245.0,
+        "y2": 120.0
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "x2": 200.0,
+        "y2": 57.0
+      }
+    ]
+  },
+  {
+    "builtin_key": "clock-half-past-six",
+    "title": "Clock half past six",
+    "category": "Measurement",
+    "description": "Editable clock half past six teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 90,
+        "ry": 90
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 62.780145523735975,
+        "text": "1",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 89.5,
+        "text": "2",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 267.0,
+        "y": 126.0,
+        "text": "3",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 257.219854476264,
+        "y": 162.5,
+        "text": "4",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230.5,
+        "y": 189.21985447626403,
+        "text": "5",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 199.0,
+        "text": "6",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.5,
+        "y": 189.21985447626403,
+        "text": "7",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 162.50000000000003,
+        "text": "8",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 121.0,
+        "y": 126.00000000000001,
+        "text": "9",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130.780145523736,
+        "y": 89.5,
+        "text": "10",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 157.49999999999997,
+        "y": 62.78014552373599,
+        "text": "11",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194.0,
+        "y": 53.0,
+        "text": "12",
+        "fontSize": 18
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "x2": 188.35314297038656,
+        "y2": 163.46666218300808
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "x2": 200.00000000000003,
+        "y2": 183.0
+      }
+    ]
+  },
+  {
+    "builtin_key": "simple-electric-circuit",
+    "title": "Simple electric circuit",
+    "category": "Science",
+    "description": "Editable simple electric circuit teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polyline",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "80,80 80,185 320,185 320,80 190,80"
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 80,
+        "x2": 170,
+        "y2": 80
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 170,
+        "y": 55,
+        "x2": 170,
+        "y2": 105
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 190,
+        "y": 65,
+        "x2": 190,
+        "y2": 95
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "#ffffff",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 185,
+        "rx": 25,
+        "ry": 25
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 182,
+        "y": 167,
+        "x2": 218,
+        "y2": 203
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 182,
+        "y": 203,
+        "x2": 218,
+        "y2": 167
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 135,
+        "y": 35,
+        "text": "Cell",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 175,
+        "y": 235,
+        "text": "Lamp",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "bar-magnet",
+    "title": "Bar magnet",
+    "category": "Science",
+    "description": "Editable bar magnet teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 70,
+        "y": 80,
+        "width": 260,
+        "height": 80
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 80,
+        "x2": 200,
+        "y2": 160
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 120,
+        "y": 130,
+        "text": "N",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 265,
+        "y": 130,
+        "text": "S",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "plant-parts",
+    "title": "Plant parts",
+    "category": "Science",
+    "description": "Editable plant parts teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 80,
+        "x2": 200,
+        "y2": 185
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 160,
+        "y": 125,
+        "rx": 40,
+        "ry": 18,
+        "rotation": -25
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 240,
+        "y": 100,
+        "rx": 40,
+        "ry": 18,
+        "rotation": 25
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 55,
+        "rx": 28,
+        "ry": 28
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 185,
+        "x2": 160,
+        "y2": 220
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 185,
+        "x2": 240,
+        "y2": 220
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 245,
+        "y": 60,
+        "text": "Flower",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 285,
+        "y": 105,
+        "text": "Leaf",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 215,
+        "y": 160,
+        "text": "Stem",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 250,
+        "y": 220,
+        "text": "Roots",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "animal-cell-schematic",
+    "title": "Animal cell schematic",
+    "category": "Science",
+    "description": "Editable animal cell schematic teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 120,
+        "rx": 140,
+        "ry": 85
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 205,
+        "y": 115,
+        "rx": 35,
+        "ry": 30
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 165,
+        "y": 120,
+        "text": "Nucleus",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 75,
+        "text": "Cytoplasm",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130,
+        "y": 230,
+        "text": "Cell membrane",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "plant-cell-schematic",
+    "title": "Plant cell schematic",
+    "category": "Science",
+    "description": "Editable plant cell schematic teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 65,
+        "y": 35,
+        "width": 270,
+        "height": 170
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 75,
+        "y": 45,
+        "width": 250,
+        "height": 150
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 125,
+        "y": 110,
+        "rx": 25,
+        "ry": 25
+      },
+      {
+        "kind": "rect",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 170,
+        "y": 70,
+        "width": 130,
+        "height": 100
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 182,
+        "y": 125,
+        "text": "Vacuole",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 70,
+        "y": 230,
+        "text": "Cell wall and membrane",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "food-chain",
+    "title": "Food chain",
+    "category": "Science",
+    "description": "Editable food chain teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 20,
+        "y": 125,
+        "text": "Grass",
+        "fontSize": 18
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 85,
+        "y": 120,
+        "x2": 145,
+        "y2": 120
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 150,
+        "y": 125,
+        "text": "Rabbit",
+        "fontSize": 18
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 225,
+        "y": 120,
+        "x2": 290,
+        "y2": 120
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 300,
+        "y": 125,
+        "text": "Fox",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "water-cycle",
+    "title": "Water cycle",
+    "category": "Science",
+    "description": "Editable water cycle teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 30,
+        "y": 190,
+        "text": "Water",
+        "fontSize": 18
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 65,
+        "y": 155,
+        "x2": 65,
+        "y2": 65
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 15,
+        "y": 45,
+        "text": "Evaporation",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 180,
+        "y": 45,
+        "text": "Condensation",
+        "fontSize": 18
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 145,
+        "y": 45,
+        "x2": 175,
+        "y2": 45
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 300,
+        "y": 65,
+        "x2": 300,
+        "y2": 155
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 235,
+        "y": 190,
+        "text": "Precipitation",
+        "fontSize": 18
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 230,
+        "y": 200,
+        "x2": 110,
+        "y2": 200
+      }
+    ]
+  },
+  {
+    "builtin_key": "light-reflection",
+    "title": "Light reflection",
+    "category": "Science",
+    "description": "Editable light reflection teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 60,
+        "y": 170,
+        "x2": 340,
+        "y2": 170
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 20,
+        "x2": 200,
+        "y2": 170,
+        "dashed": true
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 40,
+        "x2": 200,
+        "y2": 170
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 170,
+        "x2": 320,
+        "y2": 40
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 140,
+        "y": 230,
+        "text": "Plane mirror",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "beaker",
+    "title": "Beaker",
+    "category": "Science",
+    "description": "Editable beaker teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "polyline",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "points": "115,40 115,200 285,200 285,40"
+      },
+      {
+        "kind": "line",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 115,
+        "y": 125,
+        "x2": 285,
+        "y2": 125
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 145,
+        "y": 155,
+        "text": "Liquid",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "compass-directions",
+    "title": "Compass directions",
+    "category": "Maps",
+    "description": "Editable compass directions teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 200,
+        "y": 210,
+        "x2": 200,
+        "y2": 30
+      },
+      {
+        "kind": "arrow",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 80,
+        "y": 120,
+        "x2": 320,
+        "y2": 120
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194,
+        "y": 22,
+        "text": "N",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 194,
+        "y": 235,
+        "text": "S",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 50,
+        "y": 126,
+        "text": "W",
+        "fontSize": 18
+      },
+      {
+        "kind": "text",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 335,
+        "y": 126,
+        "text": "E",
+        "fontSize": 18
+      }
+    ]
+  },
+  {
+    "builtin_key": "counting-objects",
+    "title": "Counting objects",
+    "category": "Counting",
+    "description": "Editable counting objects teaching diagram. Schematic, not to scale.",
+    "elements": [
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 65,
+        "y": 120,
+        "rx": 22,
+        "ry": 22
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 130,
+        "y": 120,
+        "rx": 22,
+        "ry": 22
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 195,
+        "y": 120,
+        "rx": 22,
+        "ry": 22
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 260,
+        "y": 120,
+        "rx": 22,
+        "ry": 22
+      },
+      {
+        "kind": "ellipse",
+        "stroke": "#111111",
+        "fill": "none",
+        "strokeWidth": 2,
+        "x": 325,
+        "y": 120,
+        "rx": 22,
+        "ry": 22
+      }
+    ]
+  }
+]

@@ -8,6 +8,10 @@ const props = defineProps({
 });
 
 const ordinals = {
+    1: 'First',
+    2: 'Second',
+    3: 'Third',
+    4: 'Fourth',
     5: 'Fifth',
     6: 'Sixth',
     7: 'Seventh',
@@ -36,7 +40,7 @@ const cards = computed(() =>
             ...grade,
             ordinal: ordinals[grade.number] ?? grade.label_en,
             displayNumber: grade.number === 11 ? '11' : grade.number === 12 ? '12' : String(grade.number),
-            suffix: grade.number <= 10 ? 'th' : '',
+            suffix: grade.number <= 10 ? ({1:'st',2:'nd',3:'rd'}[grade.number] ?? 'th') : '',
             theme,
         };
     }),
@@ -71,7 +75,7 @@ const selectGrade = (grade) => {
                         Pick your class
                     </h1>
                     <p class="mx-auto mt-2 max-w-xl text-sm text-slate-600 sm:text-base">
-                        Classes 5–12 are ready. Pick a class to generate a paper.
+                        Choose from classes 1–12. Pick an available class to generate a paper.
                     </p>
                 </div>
 

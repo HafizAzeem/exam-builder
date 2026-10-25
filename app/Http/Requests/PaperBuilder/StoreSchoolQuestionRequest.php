@@ -3,6 +3,7 @@
 namespace App\Http\Requests\PaperBuilder;
 
 use App\Support\CurriculumLookup;
+use App\Support\DiagramRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreSchoolQuestionRequest extends FormRequest
@@ -23,10 +24,13 @@ class StoreSchoolQuestionRequest extends FormRequest
                 'questions' => [[
                     'chapter_id' => $this->input('chapter_id'),
                     'type' => $this->input('type'),
+                    'source' => $this->input('source', 'additional'),
+                    'board_name' => $this->input('board_name'),
                     'text_en' => $this->input('text_en'),
                     'text_ur' => $this->input('text_ur'),
                     'correct_answer' => $this->input('correct_answer'),
                     'mcq' => $this->input('mcq'),
+                    'diagram' => $this->input('diagram'),
                 ]],
             ]);
         }
@@ -48,6 +52,12 @@ class StoreSchoolQuestionRequest extends FormRequest
             'questions' => ['required', 'array', 'min:1', 'max:50'],
             'questions.*.chapter_id' => CurriculumLookup::activeChapterId(),
             'questions.*.type' => ['required', 'in:mcq,short,long,fill,truefalse'],
+            'questions.*.source' => ['sometimes', 'required', 'in:exercise,additional,past_paper'],
+            'questions.*.board_name' => [
+                'exclude_unless:questions.*.source,past_paper',
+                'required_if:questions.*.source,past_paper',
+                ...CurriculumLookup::activeBoardName(false),
+            ],
             'questions.*.text_en' => ['nullable', 'string', 'max:5000'],
             'questions.*.text_ur' => ['nullable', 'string', 'max:5000'],
             'questions.*.correct_answer' => ['nullable', 'in:true,false'],
@@ -57,7 +67,9 @@ class StoreSchoolQuestionRequest extends FormRequest
             'questions.*.mcq.option_c_en' => ['nullable', 'string', 'max:1000'],
             'questions.*.mcq.option_d_en' => ['nullable', 'string', 'max:1000'],
             'questions.*.mcq.correct_option' => ['nullable', 'in:a,b,c,d'],
-        ];
+            'questions.*.mcq.option_diagrams' => ['nullable', 'array:A,B,C,D'],
+        ] + DiagramRules::diagram('questions.*.diagram')
+            + DiagramRules::diagram('questions.*.mcq.option_diagrams.*');
     }
 
     public function withValidator($validator): void
@@ -70,7 +82,7 @@ class StoreSchoolQuestionRequest extends FormRequest
 
                 if (($row['type'] ?? null) === 'mcq') {
                     $opts = $row['mcq'] ?? [];
-                    $hasEn = ($opts['option_a_en'] ?? '') || ($opts['option_b_en'] ?? '');
+                    $hasEn = ($opts['option_a_en'] ?? '') || ($opts['option_b_en'] ?? '') || ! empty($opts['option_diagrams']);
                     if (! $hasEn) {
                         $validator->errors()->add("questions.$i.mcq", 'Add MCQ options.');
                     }

@@ -33,6 +33,8 @@ class QuestionBankService
             ->where('is_active', true)
             ->whereNull('parent_question_id');
 
+        $query->whereNull('worksheet');
+
         if ($topicIds) {
             $query->where(function ($q) use ($topicIds, $chapterIds) {
                 $q->whereIn('topic_id', $topicIds);
@@ -130,6 +132,7 @@ class QuestionBankService
                     ->where('type', $type)
                     ->where('is_active', true)
                     ->whereNull('parent_question_id');
+                $query->whereNull('worksheet');
 
                 if ($topicIds) {
                     $query->where(function ($q) use ($topicIds, $chapterIds) {

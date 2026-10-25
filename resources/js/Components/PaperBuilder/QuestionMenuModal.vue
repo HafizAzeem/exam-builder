@@ -55,7 +55,7 @@ const effectiveChapterIds = computed(() => {
 });
 
 const questionTypes = [
-    { value: 'mcq', label: 'Multiple Option' },
+    { value: 'mcq', label: 'Multiple choice' },
     { value: 'short', label: 'Short Question' },
     { value: 'long', label: 'Long Question' },
     { value: 'fill', label: 'Fill in the Blanks' },
@@ -274,40 +274,34 @@ const selectAllSources = (checked) => {
 
 <template>
     <Modal :show="show" max-width="7xl" @close="emit('close')">
-        <div class="flex max-h-[92vh] flex-col bg-slate-50">
+        <div class="question-bank flex max-h-[88vh] flex-col bg-slate-50" data-question-bank>
             <!-- Header -->
-            <div class="flex items-center justify-between gap-3 bg-gradient-to-r from-teal-700 to-teal-600 px-5 py-3 text-white">
-                <div class="w-9" aria-hidden="true" />
-                <div class="text-center">
-                    <p class="text-[11px] font-medium uppercase tracking-wider text-white/70">From question bank</p>
-                    <h3 class="text-lg font-bold tracking-tight">
-                        {{ gradeLabel }} — {{ subjectName }}
-                    </h3>
+            <div class="bank-header">
+                <div class="bank-heading">
+                    <span class="bank-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5.5A1.5 1.5 0 015.5 4H20v16H5.5A1.5 1.5 0 014 18.5m0-13v13m0 0A1.5 1.5 0 015.5 17H20M8 8h8M8 12h5" /></svg></span>
+                    <div><p class="bank-eyebrow">Build your paper</p><h3>Question bank</h3><p class="bank-context">{{ gradeLabel }} <span aria-hidden="true">·</span> {{ subjectName }}</p></div>
                 </div>
-                <button type="button" class="rounded-lg p-1.5 hover:bg-white/15" aria-label="Close" @click="emit('close')">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                <button type="button" class="bank-close" aria-label="Close question bank" @click="emit('close')"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
 
             <div class="min-h-0 flex-1 overflow-y-auto">
                 <!-- Filters -->
-                <div class="space-y-3 border-b border-slate-200 bg-slate-100/80 px-5 py-4">
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div class="bank-filters">
+                    <div class="bank-section-title"><div><h4>Find the right questions</h4><p>Choose a type and source, then select questions for your paper.</p></div></div>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                         <label class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Question Type</span>
+                            <span class="bank-label">Question type</span>
                             <select v-model="questionType" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
                                 <option v-for="t in questionTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                             </select>
                         </label>
 
-                        <div class="relative block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Selection</span>
+                        <div class="relative block bank-source">
+                            <span id="bank-source-label" class="bank-label">Question source</span>
                             <button
                                 type="button"
                                 class="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm shadow-sm"
-                                @click="sourceMenuOpen = !sourceMenuOpen"
+                                :aria-expanded="sourceMenuOpen" aria-labelledby="bank-source-label" aria-controls="bank-source-options" @click="sourceMenuOpen = !sourceMenuOpen"
                             >
                                 <span>{{ sourcesLabel }}</span>
                                 <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,7 +309,7 @@ const selectAllSources = (checked) => {
                                 </svg>
                             </button>
                             <div
-                                v-if="sourceMenuOpen"
+                                v-if="sourceMenuOpen" id="bank-source-options"
                                 class="absolute z-20 mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
                             >
                                 <label class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-slate-50">
@@ -344,7 +338,7 @@ const selectAllSources = (checked) => {
                         </div>
 
                         <label class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Chapter</span>
+                            <span class="bank-label">Chapter</span>
                             <select
                                 v-model="chapterFilterId"
                                 class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
@@ -356,41 +350,41 @@ const selectAllSources = (checked) => {
                         </label>
 
                         <label class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Required Questions</span>
+                            <span class="bank-label">Questions needed</span>
                             <input v-model.number="requiredCount" type="number" min="1" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500" />
                         </label>
 
                         <label class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Each Question Marks</span>
+                            <span class="bank-label">Marks per question</span>
                             <input v-model.number="marksPerQuestion" type="number" min="1" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500" />
                         </label>
-                    </div>
-
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                         <label class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Medium</span>
+                            <span class="bank-label">Medium</span>
                             <select v-model="dualMedium" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
-                                <option :value="true">Dual Medium</option>
-                                <option :value="false">English Only</option>
+                                <option :value="true">English + Urdu</option>
+                                <option :value="false">English only</option>
                             </select>
                         </label>
 
+                    </div>
+
+                    <div v-if="isShortOrLong || pastPapersSelected" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <!-- Short / Long dependent -->
                         <label v-if="isShortOrLong" class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Choice Questions</span>
+                            <span class="bank-label">Questions to attempt</span>
                             <input v-model.number="choiceQuestions" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" placeholder="e.g. Attempt any 5" />
                             <span class="mt-1 block text-[11px] text-slate-500">Shows as “Answer any X” on the paper</span>
                         </label>
 
                         <label v-if="isShortOrLong" class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Blank Lines</span>
+                            <span class="bank-label">Answer lines</span>
                             <input v-model.number="blankLines" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" />
                             <span class="mt-1 block text-[11px] text-slate-500">Answer space under each question</span>
                         </label>
 
                         <!-- Past Papers dependent filters -->
                         <label v-if="pastPapersSelected" class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Board</span>
+                            <span class="bank-label">Board</span>
                             <select v-model="boardName" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
                                 <option value="">All boards</option>
                                 <option v-for="b in boardOptions" :key="b" :value="b">{{ b }}</option>
@@ -398,7 +392,7 @@ const selectAllSources = (checked) => {
                         </label>
 
                         <label v-if="pastPapersSelected" class="block">
-                            <span class="mb-1 block rounded-md bg-sky-700 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white">Year</span>
+                            <span class="bank-label">Year</span>
                             <select v-model="boardYear" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
                                 <option value="">All years</option>
                                 <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
@@ -406,22 +400,22 @@ const selectAllSources = (checked) => {
                         </label>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <div class="bank-options flex flex-wrap items-center gap-x-5 gap-y-3">
                         <label v-if="isMcq" class="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <input v-model="tabularMcqs" type="checkbox" class="rounded text-teal-600" />
-                            Tabular MCQs
+                            MCQ options in a table
                         </label>
                         <label v-if="isShort" class="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <input v-model="questionsPerLine" type="checkbox" :true-value="2" :false-value="1" class="rounded text-teal-600" />
-                            2 Q(s) Per Line
+                            Two questions per line
                         </label>
                         <label v-if="isLong" class="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <input v-model="showParts" type="checkbox" class="rounded text-teal-600" />
-                            Ques Parts (A/B · Alif/Bay)
+                            Show question parts
                         </label>
                         <label v-if="pastPapersSelected" class="flex items-center gap-2 text-sm font-medium text-slate-700">
                             <input v-model="showBoardYears" type="checkbox" class="rounded text-teal-600" />
-                            Show Board &amp; Year on paper
+                            Show board and year
                         </label>
                         <p v-if="!isMcq && !isShortOrLong && !pastPapersSelected" class="text-xs text-slate-400">
                             Extra layout options appear for MCQ / Short / Long, and when Past Papers is selected.
@@ -431,45 +425,36 @@ const selectAllSources = (checked) => {
                     <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <button
                             type="button"
-                            class="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-700/20 transition hover:bg-teal-700 disabled:opacity-50"
+                            class="bank-button bank-button-primary"
                             :disabled="searching || !chapterIds.length"
                             @click="searchQuestions"
                         >
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.5-5.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             {{ searching ? 'Searching…' : 'Search Questions' }}
                         </button>
-                        <p class="text-sm font-medium text-slate-600">
-                            Selected
-                            <span class="font-bold text-sky-700">{{ selectedCount }}</span>
-                            Question(s) From
-                            <span class="font-bold text-rose-600">{{ results.length }}</span>
-                            <span v-if="lastAddedCount" class="ml-2 font-semibold text-emerald-700">
-                                · Added {{ lastAddedCount }} to paper
-                            </span>
-                        </p>
+                        <p class="bank-results-summary" role="status" aria-live="polite"><strong>{{ results.length }}</strong> questions available<span v-if="lastAddedCount" class="bank-added">{{ lastAddedCount }} added to paper</span></p>
                     </div>
                 </div>
 
                 <!-- Results -->
-                <div class="space-y-2 bg-[radial-gradient(circle_at_top,_#f8fafc,_#eef2ff)] px-4 py-4">
+                <div class="bank-results space-y-3" :aria-busy="searching">
                     <div
                         v-for="(q, index) in visibleResults"
                         :key="q.id"
-                        class="cursor-pointer rounded-xl border bg-white p-3 shadow-sm transition"
+                        class="bank-result cursor-pointer rounded-xl border bg-white p-4 transition"
                         :class="selectedIds.includes(q.id)
-                            ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-300'
+                            ? 'border-teal-500 bg-teal-50/50 ring-1 ring-teal-500'
                             : index % 2 === 1
-                                ? 'border-slate-200 bg-emerald-50/40'
+                                ? 'border-slate-200'
                                 : 'border-slate-200'"
                         @click="toggleResult(q.id)"
                     >
                         <div class="flex gap-3">
                             <input
                                 type="checkbox"
-                                class="mt-1 rounded text-teal-600"
+                                class="mt-1 rounded text-teal-600" :aria-label="`Select question ${index + 1}`"
                                 :checked="selectedIds.includes(q.id)"
                                 @click.stop
                                 @change="toggleResult(q.id)"
@@ -488,7 +473,7 @@ const selectAllSources = (checked) => {
                                     v-if="showBoardYears && getPastPaperTag(q)"
                                     class="mt-1 text-[11px] font-normal italic leading-tight text-slate-400"
                                 >
-                                    Appeared in {{ getPastPaperTag(q).year }} · {{ getPastPaperTag(q).board_name }}
+                                    <template v-if="getPastPaperTag(q).year">Appeared in {{ getPastPaperTag(q).year }} · </template>{{ getPastPaperTag(q).board_name }}
                                 </p>
 
                                 <div
@@ -530,55 +515,334 @@ const selectAllSources = (checked) => {
                         </div>
                     </div>
 
-                    <p v-if="!results.length" class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-10 text-center text-sm text-slate-500">
-                        Choose filters, then click <strong>Search Questions</strong>.
-                    </p>
-                    <p v-else-if="!visibleResults.length" class="rounded-xl border border-dashed border-slate-300 bg-white/70 px-4 py-8 text-center text-sm text-slate-500">
-                        No questions in this view.
-                    </p>
+                    <div v-if="!results.length" class="bank-empty" role="status">
+                        <span class="bank-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.5-5.5M17 10a7 7 0 11-14 0 7 7 0 0114 0z" /></svg></span>
+                        <h4>{{ searching ? 'Finding your questions…' : 'No questions to show yet' }}</h4><p>{{ searching ? 'Please wait while we check the question bank.' : 'Try another question type, chapter or source, then search again.' }}</p>
+                    </div>
+                    <div v-else-if="!visibleResults.length" class="bank-empty"><h4>No questions selected</h4><p>Open All questions and select the ones you want to add.</p></div>
                 </div>
             </div>
 
             <!-- Footer actions -->
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-5 py-3">
-                <div class="inline-flex overflow-hidden rounded-full border border-slate-200 bg-slate-50 p-1">
+            <div class="bank-footer">
+                <div class="bank-view-switch" aria-label="Question view">
                     <button
                         type="button"
-                        class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                        :class="listFilter === 'all' ? 'bg-sky-600 text-white shadow' : 'text-slate-600'"
-                        @click="listFilter = 'all'"
+                        class="bank-view-button"
+                        :class="listFilter === 'all' ? 'active' : ''"
+                        :aria-pressed="listFilter === 'all'" @click="listFilter = 'all'"
                     >
-                        All
+                        All questions <span>{{ results.length }}</span>
                     </button>
                     <button
                         type="button"
-                        class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                        :class="listFilter === 'selected' ? 'bg-sky-600 text-white shadow' : 'text-slate-600'"
-                        @click="listFilter = 'selected'"
+                        class="bank-view-button"
+                        :class="listFilter === 'selected' ? 'active' : ''"
+                        :aria-pressed="listFilter === 'selected'" @click="listFilter = 'selected'"
                     >
-                        Selected
+                        Selected <span>{{ selectedCount }}</span>
                     </button>
                 </div>
 
-                <div class="flex flex-wrap gap-2">
+                <div class="bank-footer-actions">
                     <button
                         type="button"
-                        class="rounded-xl bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-800 disabled:opacity-40"
+                        class="bank-button bank-button-secondary"
                         :disabled="!results.length || randomizing"
                         @click="randomSelect"
                     >
-                        Random Select
+                        Select randomly
                     </button>
                     <button
                         type="button"
-                        class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700 disabled:opacity-40"
+                        class="bank-button bank-button-primary"
                         :disabled="!selectedCount"
                         @click="addQuestions"
                     >
-                        Add Questions +
+                        {{ selectedCount ? `Add ${selectedCount} question${selectedCount === 1 ? '' : 's'} to paper` : 'Add to paper' }}
                     </button>
                 </div>
             </div>
         </div>
     </Modal>
 </template>
+
+<style scoped>
+.question-bank{
+    color:#334155;
+    border-radius:12px;
+    overflow:hidden}
+    .bank-header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:16px;
+        padding:22px 26px;
+        background:linear-gradient(115deg,#f0fdfa,#fff 75%);
+        border-bottom:1px solid #dcece8;
+        flex-shrink:0}
+        .bank-heading{
+            display:flex;
+            align-items:center;
+            gap:14px;
+            min-width:0}
+            .bank-icon{
+                display:grid;
+                place-items:center;
+                width:48px;
+                height:48px;
+                border:1px solid #b8e8df;
+                border-radius:14px;
+                background:#fff;
+                color:#0f766e;
+                flex-shrink:0}
+                .bank-icon svg{
+                    width:26px;
+                    height:26px}
+                    .bank-eyebrow{
+                        font-size:10px;
+                        font-weight:700;
+                        text-transform:uppercase;
+                        letter-spacing:.12em;
+                        color:#0f766e}
+                        .bank-heading h3{
+                            font-size:22px;
+                            font-weight:700;
+                            letter-spacing:-.025em;
+                            line-height:1.35;
+                            color:#0f172a}
+                            .bank-context{
+                                font-size:12px;
+                                color:#64748b;
+                                margin-top:3px}
+                                .bank-context span{
+                                    padding:0 5px;
+                                    color:#94a3b8}
+                                    .bank-close{
+                                        display:grid;
+                                        place-items:center;
+                                        border:1px solid #e2e8f0;
+                                        border-radius:9px;
+                                        background:#fff;
+                                        color:#64748b;
+                                        width:36px;
+                                        height:36px;
+                                        flex-shrink:0}
+                                        .bank-close:hover{
+                                            background:#f1f5f9;
+                                            color:#0f172a}
+                                            .bank-filters{
+                                                padding:20px 26px;
+                                                background:#fff;
+                                                border-bottom:1px solid #e2e8f0;
+                                                display:grid;
+                                                gap:18px}
+                                                .bank-section-title h4{
+                                                    font-size:14px;
+                                                    font-weight:650;
+                                                    color:#0f172a}
+                                                    .bank-section-title p{
+                                                        font-size:12px;
+                                                        color:#64748b;
+                                                        margin-top:3px}
+                                                        .bank-label{
+                                                            display:block;
+                                                            font-size:12px;
+                                                            font-weight:600;
+                                                            color:#475569;
+                                                            margin-bottom:7px}
+                                                            .bank-filters select,.bank-filters input[type=number],.bank-source>button{
+                                                                border:1px solid #cbd5e1;
+                                                                border-radius:8px;
+                                                                box-shadow:0 1px 2px #0f172a04;
+                                                                font-size:13px;
+                                                                min-height:42px;
+                                                                background-color:#fff;
+                                                                color:#334155}
+                                                                .question-bank input[type=checkbox]{
+                                                                    border-color:#94a3b8;
+                                                                    cursor:pointer}
+                                                                    .question-bank button,.question-bank select{
+                                                                        cursor:pointer}
+                                                                        .question-bank button:disabled{
+                                                                            cursor:not-allowed}
+                                                                            .question-bank button:focus-visible,.question-bank input:focus-visible,.question-bank select:focus-visible{
+                                                                                outline:2px solid #0d9488;
+                                                                                outline-offset:3px}
+                                                                                .bank-options{
+                                                                                    border:1px solid #e2e8f0;
+                                                                                    border-radius:9px;
+                                                                                    background:#f8fafc;
+                                                                                    padding:11px 14px}
+                                                                                    .bank-options label{
+                                                                                        font-size:12px}
+                                                                                        .bank-button{
+                                                                                            display:inline-flex;
+                                                                                            align-items:center;
+                                                                                            justify-content:center;
+                                                                                            gap:8px;
+                                                                                            border-radius:9px;
+                                                                                            min-height:42px;
+                                                                                            padding:10px 17px;
+                                                                                            font-size:13px;
+                                                                                            font-weight:600;
+                                                                                            transition:background .15s,border-color .15s;
+                                                                                            white-space:nowrap;
+                                                                                            border:1px solid transparent}
+                                                                                            .bank-button-primary{
+                                                                                                background:#0f766e;
+                                                                                                color:#fff;
+                                                                                                box-shadow:0 2px 4px #0f766e15}
+                                                                                                .bank-button-primary:hover:not(:disabled){
+                                                                                                    background:#115e59}
+                                                                                                    .bank-button-primary:disabled{
+                                                                                                        background:#cbd5e1;
+                                                                                                        color:#475569;
+                                                                                                        box-shadow:none}
+                                                                                                        .bank-button-secondary{
+                                                                                                            background:#fff;
+                                                                                                            color:#334155;
+                                                                                                            border-color:#cbd5e1}
+                                                                                                            .bank-button-secondary:hover:not(:disabled){
+                                                                                                                background:#f8fafc;
+                                                                                                                border-color:#94a3b8}
+                                                                                                                .bank-button-secondary:disabled{
+                                                                                                                    background:#f8fafc;
+                                                                                                                    color:#94a3b8;
+                                                                                                                    border-color:#e2e8f0}
+                                                                                                                    .bank-results-summary{
+                                                                                                                        font-size:12px;
+                                                                                                                        color:#64748b}
+                                                                                                                        .bank-results-summary strong{
+                                                                                                                            color:#334155}
+                                                                                                                            .bank-added{
+                                                                                                                                display:inline-block;
+                                                                                                                                margin-left:10px;
+                                                                                                                                background:#f0fdfa;
+                                                                                                                                border:1px solid #ccfbf1;
+                                                                                                                                color:#0f766e;
+                                                                                                                                padding:3px 8px;
+                                                                                                                                border-radius:6px}
+                                                                                                                                .bank-results{
+                                                                                                                                    padding:18px 26px;
+                                                                                                                                    background:#f8fafc;
+                                                                                                                                    min-height:180px}
+                                                                                                                                    .bank-result:hover{
+                                                                                                                                        border-color:#5eead4;
+                                                                                                                                        box-shadow:0 2px 8px #0f172a06}
+                                                                                                                                        .bank-empty{
+                                                                                                                                            display:flex;
+                                                                                                                                            align-items:center;
+                                                                                                                                            justify-content:center;
+                                                                                                                                            flex-direction:column;
+                                                                                                                                            text-align:center;
+                                                                                                                                            min-height:165px;
+                                                                                                                                            padding:24px;
+                                                                                                                                            border:1px dashed #cbd5e1;
+                                                                                                                                            border-radius:12px;
+                                                                                                                                            background:#fff}
+                                                                                                                                            .bank-empty-icon{
+                                                                                                                                                display:grid;
+                                                                                                                                                place-items:center;
+                                                                                                                                                width:40px;
+                                                                                                                                                height:40px;
+                                                                                                                                                border-radius:12px;
+                                                                                                                                                background:#f0fdfa;
+                                                                                                                                                color:#0f766e;
+                                                                                                                                                margin-bottom:10px}
+                                                                                                                                                .bank-empty-icon svg{
+                                                                                                                                                    width:21px;
+                                                                                                                                                    height:21px}
+                                                                                                                                                    .bank-empty h4{
+                                                                                                                                                        font-size:14px;
+                                                                                                                                                        font-weight:600;
+                                                                                                                                                        color:#334155}
+                                                                                                                                                        .bank-empty p{
+                                                                                                                                                            font-size:12px;
+                                                                                                                                                            color:#64748b;
+                                                                                                                                                            margin-top:5px;
+                                                                                                                                                            max-width:360px;
+                                                                                                                                                            line-height:1.7}
+                                                                                                                                                            .bank-footer{
+                                                                                                                                                                display:flex;
+                                                                                                                                                                align-items:center;
+                                                                                                                                                                justify-content:space-between;
+                                                                                                                                                                gap:16px;
+                                                                                                                                                                padding:15px 26px;
+                                                                                                                                                                background:#fff;
+                                                                                                                                                                border-top:1px solid #e2e8f0;
+                                                                                                                                                                flex-shrink:0}
+                                                                                                                                                                .bank-view-switch{
+                                                                                                                                                                    display:inline-flex;
+                                                                                                                                                                    gap:3px;
+                                                                                                                                                                    background:#f1f5f9;
+                                                                                                                                                                    border:1px solid #e2e8f0;
+                                                                                                                                                                    border-radius:9px;
+                                                                                                                                                                    padding:4px}
+                                                                                                                                                                    .bank-view-button{
+                                                                                                                                                                        display:inline-flex;
+                                                                                                                                                                        align-items:center;
+                                                                                                                                                                        gap:8px;
+                                                                                                                                                                        border-radius:6px;
+                                                                                                                                                                        padding:8px 12px;
+                                                                                                                                                                        font-size:12px;
+                                                                                                                                                                        font-weight:600;
+                                                                                                                                                                        color:#64748b;
+                                                                                                                                                                        white-space:nowrap}
+                                                                                                                                                                        .bank-view-button.active{
+                                                                                                                                                                            background:#fff;
+                                                                                                                                                                            box-shadow:0 1px 3px #0f172a14;
+                                                                                                                                                                            color:#0f766e}
+                                                                                                                                                                            .bank-view-button span{
+                                                                                                                                                                                background:#e2e8f0;
+                                                                                                                                                                                color:#475569;
+                                                                                                                                                                                border-radius:5px;
+                                                                                                                                                                                padding:1px 6px;
+                                                                                                                                                                                font-size:10px}
+                                                                                                                                                                                .bank-view-button.active span{
+                                                                                                                                                                                    background:#ccfbf1;
+                                                                                                                                                                                    color:#115e59}
+                                                                                                                                                                                    .bank-footer-actions{
+                                                                                                                                                                                        display:flex;
+                                                                                                                                                                                        gap:9px;
+                                                                                                                                                                                        align-items:center}
+                                                                                                                                                                                        @media(max-width:640px){
+                                                                                                                                                                                            .bank-header{
+                                                                                                                                                                                                padding:16px}
+                                                                                                                                                                                                .bank-heading h3{
+                                                                                                                                                                                                    font-size:19px}
+                                                                                                                                                                                                    .bank-icon{
+                                                                                                                                                                                                        width:40px;
+                                                                                                                                                                                                        height:40px;
+                                                                                                                                                                                                        border-radius:11px}
+                                                                                                                                                                                                        .bank-filters{
+                                                                                                                                                                                                            padding:16px;
+                                                                                                                                                                                                            gap:16px}
+                                                                                                                                                                                                            .bank-results{
+                                                                                                                                                                                                                padding:16px}
+                                                                                                                                                                                                                .bank-footer{
+                                                                                                                                                                                                                    padding:12px 16px;
+                                                                                                                                                                                                                    flex-wrap:wrap;
+                                                                                                                                                                                                                    gap:10px}
+                                                                                                                                                                                                                    .bank-footer-actions{
+                                                                                                                                                                                                                        width:100%}
+                                                                                                                                                                                                                        .bank-footer-actions>.bank-button{
+                                                                                                                                                                                                                            flex:1;
+                                                                                                                                                                                                                            padding:9px 10px;
+                                                                                                                                                                                                                            font-size:12px;
+                                                                                                                                                                                                                            white-space:normal}
+                                                                                                                                                                                                                            .bank-view-switch{
+                                                                                                                                                                                                                                width:100%}
+                                                                                                                                                                                                                                .bank-view-button{
+                                                                                                                                                                                                                                    flex:1;
+                                                                                                                                                                                                                                    justify-content:center}
+                                                                                                                                                                                                                                    .bank-context{
+                                                                                                                                                                                                                                        font-size:11px}
+                                                                                                                                                                                                                                        .question-bank{
+                                                                                                                                                                                                                                            max-height:88dvh}
+                                                                                                                                                                                                                                            .bank-added{
+                                                                                                                                                                                                                                                margin-left:0;
+                                                                                                                                                                                                                                                margin-top:5px;
+                                                                                                                                                                                                                                                display:block}
+                                                                                                                                                                                                                                            }
+</style>

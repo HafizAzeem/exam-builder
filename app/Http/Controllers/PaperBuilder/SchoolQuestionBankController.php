@@ -25,7 +25,8 @@ class SchoolQuestionBankController extends Controller
             foreach ($rows as $data) {
                 $this->assertChapterAllowed($request->user(), (int) $data['chapter_id']);
 
-                $key = mb_strtolower(trim((string) ($data['text_en'] ?? '')).'|'.trim((string) ($data['text_ur'] ?? '')));
+                $key = mb_strtolower(trim((string) ($data['text_en'] ?? '')).'|'.trim((string) ($data['text_ur'] ?? '')))
+                    .'|'.hash('sha256', json_encode([$data['diagram'] ?? null, $data['mcq'] ?? null, $data['source'] ?? 'additional', $data['board_name'] ?? null]));
                 if ($key === '|' || isset($seen[$key])) {
                     continue;
                 }
@@ -35,9 +36,10 @@ class SchoolQuestionBankController extends Controller
                     'institution_id' => $institutionId,
                     'chapter_id' => $data['chapter_id'],
                     'type' => $data['type'],
-                    'source' => 'additional',
+                    'source' => $data['source'] ?? 'additional',
                     'text_en' => $data['text_en'] ?? null,
                     'text_ur' => $data['text_ur'] ?? null,
+                    'diagram' => $data['diagram'] ?? null,
                     'is_active' => true,
                     'correct_answer' => ($data['type'] ?? null) === 'truefalse'
                         ? ($data['correct_answer'] ?? null)
@@ -45,6 +47,9 @@ class SchoolQuestionBankController extends Controller
                 ]);
 
                 $this->syncMcq($question, $data);
+                if ($question->source === 'past_paper') {
+                    $question->pastPaperTag()->create(['board_name' => $data['board_name'], 'year' => null]);
+                }
                 $created[] = $question->fresh(['mcqOptions', 'pastPaperTag', 'parts', 'chapter.subject.grade']);
             }
         });
@@ -95,6 +100,7 @@ class SchoolQuestionBankController extends Controller
                     'option_c_en' => $data['mcq']['option_c_en'] ?? '',
                     'option_d_en' => $data['mcq']['option_d_en'] ?? '',
                     'correct_option' => $data['mcq']['correct_option'] ?? 'a',
+                    'option_diagrams' => $data['mcq']['option_diagrams'] ?? null,
                 ]
             );
 

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import DiagramAttachment from '@/Components/Diagrams/DiagramAttachment.vue';
 import {
     buildPaperContentFromPreview,
     clonePaperContent,
@@ -146,6 +147,16 @@ const onEditableBlur = (event, mutator) => {
     patchContent((draft) => mutator(draft, text));
 };
 
+const updateDiagram = (type, id, diagram, option = null, partIndex = null) => {
+    if (!props.editable) return;
+    patchContent((draft) => {
+        const question = draft.sections.find((s) => s.type === type)?.questions.find((q) => q.id === id);
+        if (!question) return;
+        const target = partIndex !== null ? question.parts?.[partIndex] : option ? question.options?.[option] : question;
+        if (target) target.diagram = diagram;
+    });
+};
+
 const meta = computed(() => ({
     class: (header.value.class || '').trim() || (props.examMeta?.class || '').trim() || '',
     subject: (header.value.subject || '').trim() || (props.examMeta?.subject || '').trim() || '',
@@ -175,6 +186,7 @@ const mcqOptionCells = (q) => {
             key,
             en: q.options[key]?.en ?? '',
             ur: q.options[key]?.ur ?? '',
+            diagram: q.options[key]?.diagram ?? null,
         }));
     }
     const o = getMcqOptions(q);
@@ -282,7 +294,7 @@ const teacherAnswerFor = (question) => {
             '--wm-image-size': (layout?.watermark_image_size ?? 50) + '%',
         }"
     >
-        <header class="paper-header" :class="{ 'mb-6 border-b pb-4': !isTemplate1 }">
+        <header  class="paper-header" :class="{ 'mb-6 border-b pb-4': !isTemplate1 }">
             <template v-if="isTemplate1">
                 <div class="tpl1-header-dashed" :class="{ 'tpl1-zone--edit': editable }">
                     <h1
@@ -608,6 +620,7 @@ const teacherAnswerFor = (question) => {
                             </div>
                         </div>
 
+                        <DiagramAttachment :diagram="q.diagram" :image-path="q.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event)" />
                         <div
                             v-if="q.type === 'mcq' && mcqOptionCells(q).length"
                             class="tpl1-mcq-block"
@@ -641,6 +654,7 @@ const teacherAnswerFor = (question) => {
                                         if (question?.options?.[opt.key]) question.options[opt.key].ur = t;
                                     })"
                                 >{{ opt.ur }}</span>
+                                <DiagramAttachment class="mcq-diagram" :diagram="opt.diagram" :editable="editable" @update="updateDiagram(section.type, q.id, $event, opt.key)" />
                             </div>
                             </div>
                             <div
@@ -667,6 +681,7 @@ const teacherAnswerFor = (question) => {
                                             if (part) part.text_en = t;
                                         })"
                                     >{{ p.text_en }}</span>
+                                    <DiagramAttachment :diagram="p.diagram" :image-path="p.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event, null, pIdx)" />
                                 </div>
                                 <div
                                     v-if="dualMedium && (editable || p.text_ur)"
@@ -725,9 +740,10 @@ const teacherAnswerFor = (question) => {
                         <strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}
                     </p>
                     <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
+                    <DiagramAttachment :diagram="q.diagram" :image-path="q.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event)" />
                     <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="ms-6 mt-1">
                         <div class="grid grid-cols-2 gap-1">
-                            <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}</span>
+                            <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}<DiagramAttachment :diagram="opt.diagram" :editable="editable" @update="updateDiagram(section.type, q.id, $event, opt.key)" /></span>
                         </div>
                         <div
                             v-if="teacherAnswerFor(q)"
@@ -739,6 +755,10 @@ const teacherAnswerFor = (question) => {
                         </div>
                     </div>
                     <div v-else-if="settings?.blank_lines" :style="{ height: settings.blank_lines * 24 + 'px' }" />
+                    <div v-for="(part, pIdx) in q.parts || []" :key="part.id" class="mt-2 ms-5">
+                        <span>({{ part.label || String.fromCharCode(97+pIdx) }}) {{ part.text_en }}</span>
+                        <DiagramAttachment :diagram="part.diagram" :image-path="part.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event, null, pIdx)" />
+                    </div>
                 </div>
             </div>
         </template>
@@ -746,6 +766,7 @@ const teacherAnswerFor = (question) => {
         <template v-else>
             <div v-for="(q, idx) in questions" :key="q.id" class="question-block mb-4">
                 <p><strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}</p>
+                <DiagramAttachment :diagram="q.diagram" :image-path="q.image_path" />
                 <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
             </div>
         </template>
@@ -1148,6 +1169,7 @@ const teacherAnswerFor = (question) => {
 }
 
 .tpl1-mcq-cell {
+    flex-wrap: wrap;
     border-right: 1px solid #000;
     padding: 5px 6px;
     font-size: 0.78rem;
@@ -1157,6 +1179,9 @@ const teacherAnswerFor = (question) => {
     justify-content: space-between;
     gap: 6px;
 }
+
+.mcq-diagram { flex-basis: 100%; min-width: 0; }
+.tpl1-question { break-inside: avoid; page-break-inside: avoid; }
 
 .tpl1-mcq-options--tabular .tpl1-mcq-cell:last-child {
     border-right: none;
