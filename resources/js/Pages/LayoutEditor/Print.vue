@@ -2,11 +2,13 @@
 import PaperPreview from '@/Components/PaperPreview.vue';
 import { Head } from '@inertiajs/vue3';
 import { onMounted } from 'vue';
+import { waitForPrintAssets } from '@/utils/printStyles';
 
 const props = defineProps({ preview: Object, institutionOverride: Object });
 
-onMounted(() => {
-    setTimeout(() => window.print(), 500);
+onMounted(async () => {
+    await waitForPrintAssets(document.querySelector('.paper-preview'));
+    window.print();
 });
 </script>
 

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Chapter;
+use App\Models\Board;
 use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\Question;
@@ -147,4 +148,71 @@ class SchoolQuestionBankTest extends TestCase
 
         $this->assertSame(2, Question::query()->where('institution_id', $admin->institution_id)->count());
     }
+    public function test_each_question_keeps_its_selected_source_and_can_be_filtered(): void
+    {
+        $admin = $this->makeSchoolAdmin();
+        ['chapter' => $chapter] = $this->seedEnglish();
+        Board::firstOrCreate(['name' => 'Lahore Board'], ['is_active' => true]);
+        $rows = array_map(fn ($source) => [
+            'chapter_id' => $chapter->id,
+            'type' => 'short',
+            'source' => $source,
+            'text_en' => 'Question from '.$source,
+            'board_name' => $source === 'past_paper' ? 'Lahore Board' : null,
+        ], ['exercise', 'additional', 'past_paper']);
+
+        $this->actingAs($admin)->postJson(route('questions.store'), ['questions' => $rows])
+            ->assertCreated()->assertJsonPath('questions.0.source', 'exercise')
+            ->assertJsonPath('questions.1.source', 'additional')
+            ->assertJsonPath('questions.2.source', 'past_paper');
+
+        foreach (['exercise', 'additional', 'past_paper'] as $source) {
+            $this->getJson('/api/builder/questions/all?'.http_build_query([
+                'chapter_ids' => [$chapter->id], 'type' => 'short', 'sources' => [$source],
+            ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.source', $source);
+        }
+    }
+
+    public function test_single_question_source_is_saved_and_invalid_source_is_rejected(): void
+    {
+        $admin = $this->makeSchoolAdmin();
+        ['chapter' => $chapter] = $this->seedEnglish();
+        $question = ['chapter_id' => $chapter->id, 'type' => 'short', 'text_en' => 'Define a noun.', 'source' => 'exercise'];
+        $this->actingAs($admin)->postJson(route('questions.store'), $question)
+            ->assertCreated()->assertJsonPath('question.source', 'exercise');
+        $question['source'] = 'unknown';
+        $this->postJson(route('questions.store'), $question)->assertUnprocessable()->assertJsonValidationErrors('questions.0.source');
+        $this->assertSame(1, Question::count());
+    }
+
+    public function test_past_paper_board_is_saved_without_inventing_a_year_and_can_be_filtered(): void
+    {
+        $admin = $this->makeSchoolAdmin();
+        ['chapter' => $chapter] = $this->seedEnglish();
+        Board::firstOrCreate(['name' => 'Lahore Board'], ['is_active' => true]);
+        $this->actingAs($admin)->postJson(route('questions.store'), [
+            'chapter_id' => $chapter->id, 'type' => 'short', 'source' => 'past_paper',
+            'board_name' => 'Lahore Board', 'text_en' => 'Define a pronoun.',
+        ])->assertCreated()->assertJsonPath('question.past_paper_tag.board_name', 'Lahore Board')
+            ->assertJsonPath('question.past_paper_tag.year', null);
+        $this->getJson('/api/builder/questions/all?'.http_build_query([
+            'chapter_ids' => [$chapter->id], 'sources' => ['past_paper'], 'board_name' => 'Lahore Board',
+        ]))->assertOk()->assertJsonCount(1)->assertJsonPath('0.past_paper_tag.board_name', 'Lahore Board');
+    }
+
+    public function test_past_paper_requires_an_active_board_and_other_sources_do_not_keep_board_tags(): void
+    {
+        $admin = $this->makeSchoolAdmin();
+        ['chapter' => $chapter] = $this->seedEnglish();
+        Board::create(['name' => 'Inactive Board', 'is_active' => false]);
+        $question = ['chapter_id' => $chapter->id, 'type' => 'short', 'source' => 'past_paper', 'text_en' => 'What is grammar?'];
+        $this->actingAs($admin)->postJson(route('questions.store'), $question)->assertUnprocessable()->assertJsonValidationErrors('questions.0.board_name');
+        foreach (['Inactive Board', 'Unknown Board'] as $board) {
+            $this->postJson(route('questions.store'), $question + ['board_name' => $board])->assertUnprocessable()->assertJsonValidationErrors('questions.0.board_name');
+        }
+        $question['source'] = 'exercise';
+        $this->postJson(route('questions.store'), $question + ['board_name' => 'Inactive Board'])->assertCreated()->assertJsonPath('question.past_paper_tag', null);
+        $this->assertDatabaseCount('past_paper_tags', 0);
+    }
+
 }

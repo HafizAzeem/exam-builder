@@ -20,11 +20,13 @@ class McqOption extends Model
         'option_d_en',
         'option_d_ur',
         'correct_option',
+        'option_diagrams',
     ];
+
+    protected $casts = ['option_diagrams' => 'array'];
 
     public function question(): BelongsTo
     {
         return $this->belongsTo(Question::class);
     }
 }
-

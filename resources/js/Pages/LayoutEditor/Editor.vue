@@ -5,9 +5,9 @@ import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
-import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
+import { applyPrintStyles, clearPrintStyles, measurePrintFitScale, waitForPrintAssets } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 const props = defineProps({
     savedPaper: Object,
     preview: Object,
@@ -386,7 +386,9 @@ const onAfterPrint = () => {
     window.removeEventListener('afterprint', onAfterPrint);
 };
 
-const runPrint = () => {
+const runPrint = async () => {
+    await nextTick();
+    await waitForPrintAssets();
     const dual = layout.value.page_view === 'double';
     if (dual) {
         layout.value.orientation = 'landscape';
@@ -400,7 +402,7 @@ const runPrint = () => {
 
     window.addEventListener('afterprint', onAfterPrint);
     requestAnimationFrame(() => {
-        setTimeout(() => window.print(), 50);
+        window.print();
     });
 };
 

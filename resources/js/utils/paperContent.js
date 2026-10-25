@@ -60,10 +60,10 @@ const mcqOptionsContent = (q) => {
     const o = getMcqOptions(q);
     if (!o) return null;
     return {
-        A: { en: o.option_a_en ?? '', ur: o.option_a_ur ?? '' },
-        B: { en: o.option_b_en ?? '', ur: o.option_b_ur ?? '' },
-        C: { en: o.option_c_en ?? '', ur: o.option_c_ur ?? '' },
-        D: { en: o.option_d_en ?? '', ur: o.option_d_ur ?? '' },
+        A: { en: o.option_a_en ?? '', ur: o.option_a_ur ?? '', diagram: o.option_diagrams?.A ?? null },
+        B: { en: o.option_b_en ?? '', ur: o.option_b_ur ?? '', diagram: o.option_diagrams?.B ?? null },
+        C: { en: o.option_c_en ?? '', ur: o.option_c_ur ?? '', diagram: o.option_diagrams?.C ?? null },
+        D: { en: o.option_d_en ?? '', ur: o.option_d_ur ?? '', diagram: o.option_diagrams?.D ?? null },
     };
 };
 
@@ -89,6 +89,8 @@ export function buildPaperContentFromPreview(preview, title = '') {
                 roman: toRoman(idx),
                 text_en: q.text_en ?? '',
                 text_ur: q.text_ur ?? '',
+                image_path: q.image_path ?? null,
+                diagram: q.diagram ?? null,
                 past_ref: pastPaperRef(q, layout),
                 options: q.type === 'mcq' ? mcqOptionsContent(q) : null,
                 parts: showParts
@@ -97,6 +99,8 @@ export function buildPaperContentFromPreview(preview, title = '') {
                         label: String.fromCharCode(97 + pIdx),
                         text_en: p.text_en ?? '',
                         text_ur: p.text_ur ?? '',
+                        image_path: p.image_path ?? null,
+                        diagram: p.diagram ?? null,
                     }))
                     : [],
             })),

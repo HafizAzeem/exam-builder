@@ -6,7 +6,7 @@ import OwnQuestionsModal from '@/Components/PaperBuilder/OwnQuestionsModal.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE } from '@/utils/paperContent';
-import { applyPrintStyles, clearPrintStyles, measurePrintFitScale } from '@/utils/printStyles';
+import { applyPrintStyles, clearPrintStyles, measurePrintFitScale, waitForPrintAssets } from '@/utils/printStyles';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -276,6 +276,7 @@ const mergePaperContentEdits = (fresh, previous) => {
             question.text_en = prevQ.text_en ?? question.text_en;
             question.text_ur = prevQ.text_ur ?? question.text_ur;
             question.past_ref = prevQ.past_ref ?? question.past_ref;
+            if ('diagram' in prevQ) question.diagram = prevQ.diagram;
             if (prevQ.options) question.options = prevQ.options;
             if (prevQ.parts?.length) {
                 question.parts = (question.parts ?? []).map((part) => {
@@ -285,6 +286,7 @@ const mergePaperContentEdits = (fresh, previous) => {
                         ...part,
                         text_en: prevPart.text_en ?? part.text_en,
                         text_ur: prevPart.text_ur ?? part.text_ur,
+                        diagram: prevPart.diagram ?? part.diagram,
                     };
                 });
             }
@@ -570,7 +572,9 @@ const savePaper = () => {
     });
 };
 
-const runPrint = () => {
+const runPrint = async () => {
+    await nextTick();
+    await waitForPrintAssets();
     const dual = pageView.value === 'double';
     // Measure before print-active so we can auto-fit to 1 page when close.
     const fitScale = measurePrintFitScale({ dual });
@@ -580,7 +584,7 @@ const runPrint = () => {
     document.body.classList.toggle('print-single', !dual);
     window.addEventListener('afterprint', onAfterPrint);
     requestAnimationFrame(() => {
-        setTimeout(() => window.print(), 50);
+        window.print();
     });
 };
 
@@ -817,7 +821,7 @@ const cancelPaper = () => {
                 </div>
 
                 <p v-if="editingPaper" class="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700">
-                    Click text on the preview to edit. Use <strong>Apply Text</strong> or <strong>Save Paper</strong> when done.
+                    Click text to edit, or use <strong>Add diagram</strong> beside a question or answer option. Use <strong>Apply Text</strong> or <strong>Save Paper</strong> when done.
                 </p>
 
                 <!-- Screen preview: same Layout Template 1 A4 format as editor -->

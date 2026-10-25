@@ -22,6 +22,7 @@ const isSuperAdmin = computed(() =>
 const navLinks = computed(() => {
     if (isSuperAdmin.value) {
         return [
+            { href: route('diagrams.index'), label: 'Diagrams', active: route().current('diagrams.*') },
             { href: route('super-admin.ai-import.dashboard'), label: 'AI Dashboard', active: route().current('super-admin.ai-import.dashboard') || route().current('super-admin.ai-import.index') },
             { href: route('super-admin.curriculum.grades.index'), label: 'Curriculum', active: route().current('super-admin.curriculum.*') },
             { href: route('super-admin.question-bank.index'), label: 'Question Bank', active: route().current('super-admin.question-bank.*') },
@@ -35,6 +36,7 @@ const navLinks = computed(() => {
     }
 
     const links = [
+        { href: route('diagrams.index'), label: 'Diagrams', active: route().current('diagrams.*') },
         { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard') },
         { href: route('builder'), label: 'Generate Paper', active: route().current('builder') || route().current('builder.subjects') || route().current('builder.chapters') || route().current('builder.create') },
         { href: route('saved-papers.index'), label: 'Saved Papers', active: route().current('saved-papers.*') },

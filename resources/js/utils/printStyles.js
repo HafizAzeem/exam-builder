@@ -3,6 +3,15 @@ const STYLE_ID = 'exam-builder-print-page-style';
 /** Minimum zoom used to force a single page. Below this, allow 2+ pages. */
 export const MIN_PRINT_FIT_SCALE = 0.72;
 
+/** Wait for diagrams and fonts before measuring or opening the print dialog. */
+export async function waitForPrintAssets(root = document.getElementById('exam-print-root')) {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await Promise.all(Array.from(root?.querySelectorAll('img') ?? []).map((image) =>
+        image.decode().catch(() => {}),
+    ));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+}
+
 /**
  * Convert mm → CSS pixels using a live probe (accurate across DPI/zoom).
  * @param {number} mm
@@ -56,13 +65,13 @@ export function measurePrintFitScale(options = {}) {
         zoom: root.style.zoom,
     };
 
-    // Lay out off-screen at real A4 width so scrollHeight matches print.
+    // Lay out off-screen at A4 printable width (210mm minus 5mm margins) so scrollHeight matches print.
     root.style.display = 'block';
     root.style.visibility = 'hidden';
     root.style.position = 'absolute';
     root.style.left = '-99999px';
     root.style.top = '0';
-    root.style.width = '210mm';
+    root.style.width = '200mm';
     root.style.zIndex = '-1';
     root.style.pointerEvents = 'none';
     root.style.zoom = '1';
@@ -76,8 +85,8 @@ export function measurePrintFitScale(options = {}) {
     };
     paper.style.transform = 'none';
     paper.style.zoom = '1';
-    paper.style.width = '210mm';
-    paper.style.maxWidth = '210mm';
+    paper.style.width = '200mm';
+    paper.style.maxWidth = '200mm';
     // Measure real content height, not the A4 frame min-height.
     paper.style.minHeight = '0';
 
@@ -129,16 +138,16 @@ export function applyPrintStyles(options = {}) {
         ? `
         body.print-active > #exam-print-root:not(.exam-print-dual) {
             zoom: ${fitScale} !important;
-            width: 210mm !important;
-            max-width: 210mm !important;
+            width: 100% !important;
+            max-width: none !important;
             overflow: visible !important;
             --print-fit-scale: ${fitScale};
         }
         body.print-active > #exam-print-root:not(.exam-print-dual) > .paper-preview,
         body.print-active > #exam-print-root:not(.exam-print-dual) > .paper-preview--tpl1 {
             transform: none !important;
-            width: 210mm !important;
-            max-width: 210mm !important;
+            width: 100% !important;
+            max-width: none !important;
             margin: 0 !important;
             border: none !important;
             min-height: 0 !important;

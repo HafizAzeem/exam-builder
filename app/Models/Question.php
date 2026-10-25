@@ -19,6 +19,8 @@ class Question extends Model
         'text_en',
         'text_ur',
         'image_path',
+        'diagram',
+        'worksheet',
         'has_parts',
         'parent_question_id',
         'is_active',
@@ -30,6 +32,8 @@ class Question extends Model
         'has_parts' => 'boolean',
         'is_active' => 'boolean',
         'estimated_marks' => 'integer',
+        'diagram' => 'array',
+        'worksheet' => 'array',
     ];
 
     public function institution(): BelongsTo

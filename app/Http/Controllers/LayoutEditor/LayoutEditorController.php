@@ -20,6 +20,7 @@ class LayoutEditorController extends Controller
     public function show(Request $request, SavedPaper $paper): Response
     {
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
 
         $institution = Institution::find($request->user()->institution_id);
 
@@ -33,6 +34,7 @@ class LayoutEditorController extends Controller
     public function update(Request $request, SavedPaper $paper)
     {
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
 
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:500'],
@@ -66,6 +68,7 @@ class LayoutEditorController extends Controller
     public function print(Request $request, SavedPaper $paper): Response
     {
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
 
         $institution = Institution::find($request->user()->institution_id);
         ActivityLogger::log($request, 'paper.printed', ['paper_id' => $paper->id]);
@@ -77,6 +80,7 @@ class LayoutEditorController extends Controller
 
     public function signedPrint(Request $request, SavedPaper $paper): Response
     {
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
         // Signed URL is the authorization here (for Puppeteer).
         $institution = $paper->institute_snapshot ?? null;
 
@@ -89,6 +93,7 @@ class LayoutEditorController extends Controller
     public function uploadWatermarkImage(Request $request, SavedPaper $paper)
     {
         abort_unless($paper->institution_id === $request->user()->institution_id, 403);
+        abort_if(($paper->layout_snapshot['paper_mode'] ?? 'exam') === 'worksheet', 404);
 
         $request->validate([
             'image' => ['required', 'image', 'max:4096'],

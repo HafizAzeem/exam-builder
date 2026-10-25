@@ -7,6 +7,7 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Dashboard\LoginHistoryController;
 use App\Http\Controllers\Dashboard\PaperController;
 use App\Http\Controllers\Dashboard\PaperHistoryController;
+use App\Http\Controllers\DiagramController;
 use App\Http\Controllers\LayoutEditor\LayoutEditorController;
 use App\Http\Controllers\PaperBuilder\QuestionSelectorController;
 use App\Http\Controllers\PaperBuilder\SchoolQuestionBankController;
@@ -172,6 +173,14 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/diagrams', [DiagramController::class, 'index'])->name('diagrams.index');
+    Route::post('/diagrams', [DiagramController::class, 'store'])->name('diagrams.store');
+    Route::patch('/diagrams/{diagram}', [DiagramController::class, 'update'])->name('diagrams.update');
+    Route::get('/diagrams/{diagram}/image', [DiagramController::class, 'image'])->name('diagrams.image');
+    Route::post('/diagrams/{diagram}/copy', [DiagramController::class, 'copy'])->name('diagrams.copy');
+    Route::post('/diagrams/{diagram}/submit', [DiagramController::class, 'submit'])->name('diagrams.submit');
+    Route::post('/diagrams/{diagram}/review', [DiagramController::class, 'review'])->name('diagrams.review');
+    Route::delete('/diagrams/{diagram}', [DiagramController::class, 'destroy'])->name('diagrams.destroy');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
