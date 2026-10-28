@@ -9,8 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Question extends Model
 {
+    // Attribution is available through explicit super-admin relations, not public bank payloads.
+    protected $hidden = ['submitted_by', 'contributor_board_id'];
+
     protected $fillable = [
         'institution_id',
+        'submitted_by',
+        'contributor_board_id',
         'chapter_id',
         'topic_id',
         'type',
@@ -39,6 +44,16 @@ class Question extends Model
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function contributorBoard(): BelongsTo
+    {
+        return $this->belongsTo(Board::class, 'contributor_board_id');
     }
 
     public function chapter(): BelongsTo

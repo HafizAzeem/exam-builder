@@ -33,9 +33,20 @@ class ProfileController extends Controller
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
+            $request->user()->verification_due_at = now()->addHour();
         }
 
         $request->user()->save();
+
+        if ($request->user()->wasChanged('email') && $request->user()->hasRole('institution_admin')) {
+            try {
+                $request->user()->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {
+                report($e);
+
+                return Redirect::route('profile.edit')->with('error', 'Email updated, but delivery failed. Please resend verification or contact support.');
+            }
+        }
 
         return Redirect::route('profile.edit');
     }

@@ -11,6 +11,8 @@ import { computed, ref } from 'vue';
 import { examYearOptions } from '@/utils/years';
 
 const props = defineProps({
+    institutions: Array,
+    contributors: Array,
     grades: Array,
     subjects: Array,
     chapters: Array,
@@ -41,6 +43,9 @@ const filters = ref({
     type: props.filters?.type ?? '',
     source: props.filters?.source ?? '',
     search: props.filters?.search ?? '',
+    institution_id: props.filters?.institution_id ?? '',
+    submitted_by: props.filters?.submitted_by ?? '',
+    contributor_board_id: props.filters?.contributor_board_id ?? '',
 });
 
 const filteredSubjects = computed(() => subjectsForGrade(filters.value.grade_id));
@@ -60,13 +65,15 @@ const apply = () => {
 };
 
 const reset = () => {
-    filters.value = { grade_id: '', subject_id: '', chapter_id: '', type: '', source: '', search: '' };
+    filters.value = { grade_id: '', subject_id: '', chapter_id: '', type: '', source: '', search: '', institution_id: '', submitted_by: '', contributor_board_id: '' };
     apply();
 };
 
 const selectedIds = ref([]);
 const showEditModal = ref(false);
 const editingQuestion = ref(null);
+const showCreateUrdu = ref(false);
+const showEditUrdu = ref(false);
 
 const isSelected = (id) => selectedIds.value.includes(id);
 
@@ -201,6 +208,7 @@ const openEdit = (q) => {
             : { board_name: '', year: '', session: '' },
     });
     editForm.reset();
+    showEditUrdu.value = !!q.text_ur;
     showEditModal.value = true;
 };
 
@@ -280,6 +288,9 @@ const currentImageUrl = computed(() => {
                     <option value="fill">Fill</option>
                     <option value="truefalse">True/False</option>
                 </select>
+                <select v-model="filters.institution_id" aria-label="Contributor school" class="rounded border-gray-300"><option value="">All contributor schools</option><option v-for="school in institutions" :key="school.id" :value="school.id">{{ school.name }}</option></select>
+                <select v-model="filters.submitted_by" aria-label="Contributor" class="rounded border-gray-300"><option value="">All contributors</option><option v-for="user in contributors" :key="user.id" :value="user.id">{{ user.name }}</option></select>
+                <select v-model="filters.contributor_board_id" aria-label="Contributor board" class="rounded border-gray-300"><option value="">All contributor boards</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
                 <select v-model="filters.source" class="rounded border-gray-300">
                     <option value="">All sources</option>
                     <option value="exercise">Exercise</option>
@@ -332,13 +343,11 @@ const currentImageUrl = computed(() => {
                         <option value="additional">Additional</option>
                         <option value="past_paper">Past Paper</option>
                     </select>
-                    <textarea v-model="createForm.text_en" class="rounded border-gray-300" rows="3" placeholder="Question (EN)" />
-                    <textarea v-model="createForm.text_ur" class="rounded border-gray-300" rows="3" placeholder="Question (UR)" />
-                    <div class="md:col-span-2">
-                        <InputLabel value="Image (optional)" />
-                        <input type="file" accept="image/*" class="mt-1" @change="createForm.image = $event.target.files[0]" />
-                    </div>
-                    <div v-if="createForm.type === 'mcq'" class="md:col-span-2 grid gap-2 md:grid-cols-2">
+                    <textarea v-model="createForm.text_en" class="rounded border-gray-300" rows="2" placeholder="Question (EN)" />
+                    <label class="flex items-center gap-2 text-sm md:col-span-2"><input v-model="showCreateUrdu" type="checkbox" class="rounded border-gray-300" /> Add Urdu text</label>
+                    <textarea v-if="showCreateUrdu" v-model="createForm.text_ur" lang="ur" dir="rtl" class="rounded border-gray-300" rows="2" placeholder="Question (UR)" />
+
+                    <div v-if="createForm.type === 'mcq'" class="md:col-span-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <input v-model="createForm.mcq.option_a_en" class="rounded border-gray-300" placeholder="Option A" />
                         <input v-model="createForm.mcq.option_b_en" class="rounded border-gray-300" placeholder="Option B" />
                         <input v-model="createForm.mcq.option_c_en" class="rounded border-gray-300" placeholder="Option C" />
@@ -408,7 +417,7 @@ const currentImageUrl = computed(() => {
                                 {{ q.chapter?.number }}
                             </td>
                             <td class="px-4 py-3 uppercase">{{ q.type }}</td>
-                            <td class="px-4 py-3">{{ q.source }}</td>
+                            <td class="px-4 py-3">{{ q.source }}<div class="mt-2 text-xs text-slate-500"><p>{{ q.institution?.name ?? 'School not recorded' }}</p><p>{{ q.submitter?.name ?? 'Contributor not recorded' }}</p><p v-if="q.contributor_board">{{ q.contributor_board.name }}</p></div></td>
                             <td class="px-4 py-3">
                                 <div class="line-clamp-2 max-w-md">{{ q.text_en || q.text_ur }}</div>
                                 <img
@@ -481,7 +490,7 @@ const currentImageUrl = computed(() => {
                             </select>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3 md:col-span-2">
                         <div>
                             <InputLabel value="Type" />
                             <select v-model="editForm.type" class="mt-1 w-full rounded-md border-gray-300">
@@ -502,26 +511,21 @@ const currentImageUrl = computed(() => {
                         </div>
                     </div>
 
+                    <label class="flex items-center gap-2 text-sm md:col-span-2"><input v-model="showEditUrdu" type="checkbox" class="rounded border-gray-300" /> Add Urdu text</label>
+                    <div class="grid gap-3 md:col-span-2" :class="showEditUrdu ? 'sm:grid-cols-2' : ''">
                     <div>
                         <InputLabel value="Text (EN)" />
-                        <textarea v-model="editForm.text_en" rows="4" class="mt-1 w-full rounded-md border-gray-300" />
+                        <textarea v-model="editForm.text_en" rows="2" class="mt-1 w-full rounded-md border-gray-300" />
                     </div>
-                    <div>
+                    <div v-if="showEditUrdu">
                         <InputLabel value="Text (UR)" />
-                        <textarea v-model="editForm.text_ur" rows="4" class="mt-1 w-full rounded-md border-gray-300" />
+                        <textarea v-model="editForm.text_ur" lang="ur" dir="rtl" rows="2" class="mt-1 w-full rounded-md border-gray-300" />
                     </div>
 
-                    <div class="md:col-span-2">
-                        <InputLabel value="Image" />
-                        <img v-if="currentImageUrl" :src="currentImageUrl" class="mb-2 h-24 rounded object-contain" alt="Current" />
-                        <input type="file" accept="image/*" class="mt-1" @change="editForm.image = $event.target.files[0]" />
-                        <label v-if="currentImageUrl" class="mt-2 flex items-center gap-2 text-sm">
-                            <input v-model="editForm.remove_image" type="checkbox" />
-                            Remove current image
-                        </label>
                     </div>
 
-                    <div v-if="editForm.type === 'mcq'" class="md:col-span-2 grid gap-2 md:grid-cols-2">
+
+                    <div v-if="editForm.type === 'mcq'" class="md:col-span-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         <input v-model="editForm.mcq.option_a_en" class="rounded border-gray-300" placeholder="Option A" />
                         <input v-model="editForm.mcq.option_b_en" class="rounded border-gray-300" placeholder="Option B" />
                         <input v-model="editForm.mcq.option_c_en" class="rounded border-gray-300" placeholder="Option C" />

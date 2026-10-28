@@ -9,8 +9,8 @@ use App\Models\SavedPaper;
 use App\Models\Subject;
 use App\Support\ActivityLogger;
 use App\Support\CurriculumLookup;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -270,6 +270,8 @@ class WizardController extends Controller
         // Use the full request config — validated() only keeps explicitly ruled keys
         // (e.g. question_ids) and would strip exam_meta / layout / grade_id.
         $config = $request->input('config', []);
+        // Content snapshots must come from the server, never from a submitted payload.
+        unset($config['question_records']);
         $config = $this->enrichPaperConfig($config);
 
         $institution = Institution::find($request->user()->institution_id);

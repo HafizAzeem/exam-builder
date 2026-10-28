@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\SchoolAccess;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -31,6 +32,8 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'access' => fn () => SchoolAccess::status($request->user()),
+            'mailReady' => fn () => $request->user()?->hasRole('super_admin') ? SchoolAccess::mailReady() : null,
             'auth' => [
                 'user' => $request->user() ? [
                     ...$request->user()->toArray(),

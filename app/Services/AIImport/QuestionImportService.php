@@ -7,6 +7,7 @@ use App\Models\AIImportQuestion;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
 use App\Models\Question;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class QuestionImportService
@@ -67,7 +68,7 @@ class QuestionImportService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, AIImportQuestion>  $questions
+     * @param  Collection<int, AIImportQuestion>  $questions
      * @return array{imported:int, duplicates:int, failed:int, question_ids: list<int>}
      */
     protected function importStagingCollection(AIImport $import, $questions): array
@@ -139,8 +140,13 @@ class QuestionImportService
     protected function importOne(AIImportQuestion $staging, AIImport $import): Question
     {
         $parts = is_array($staging->parts) ? $staging->parts : [];
+        $contributor = $staging->contributed_at ? $staging->submitter : $import->user;
+        $contributorBoardId = $staging->contributed_at ? $staging->contributor_board_id : $contributor?->institution?->board_id;
 
         $question = Question::create([
+            'institution_id' => $contributor?->institution_id,
+            'submitted_by' => $contributor?->id,
+            'contributor_board_id' => $contributorBoardId,
             'chapter_id' => $staging->chapter_id,
             'topic_id' => $staging->topic_id,
             'type' => $staging->type,
@@ -184,6 +190,9 @@ class QuestionImportService
             }
 
             Question::create([
+                'institution_id' => $question->institution_id,
+                'submitted_by' => $question->submitted_by,
+                'contributor_board_id' => $question->contributor_board_id,
                 'chapter_id' => $question->chapter_id,
                 'topic_id' => $question->topic_id,
                 'type' => $question->type,

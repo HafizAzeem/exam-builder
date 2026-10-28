@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckLicenceExpiry;
+use App\Http\Middleware\EnsureSchoolAccess;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\LogActivity;
 use App\Http\Middleware\ScopeTeacherPermissions;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            EnsureSchoolAccess::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogActivity::class,
@@ -35,6 +37,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || ($request->is('questions', 'diagrams', 'diagrams/*') && $request->expectsJson()),
+            fn (Request $request) => $request->is('api/*') || ($request->is('questions', 'questions/*', 'diagrams', 'diagrams/*') && $request->expectsJson()),
         );
     })->create();

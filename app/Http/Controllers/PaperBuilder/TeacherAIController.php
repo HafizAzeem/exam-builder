@@ -245,6 +245,9 @@ class TeacherAIController extends Controller
         abort_unless(in_array((int) $data['chapter_id'], $allowedChapters, true), 422, 'Invalid chapter.');
 
         $staging = AIImportQuestion::query()->create([
+            'submitted_by' => $request->user()->id,
+            'contributor_board_id' => $request->user()->institution?->board_id,
+            'contributed_at' => now(),
             'ai_import_id' => $import->id,
             'chapter_id' => (int) $data['chapter_id'],
             'match_status' => 'manual',

@@ -7,7 +7,9 @@ import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
 import { applyPrintStyles, clearPrintStyles, measurePrintFitScale, waitForPrintAssets } from '@/utils/printStyles';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, provide } from 'vue';
+const imageUploads = ref(0);
+provide('paperDiagramUpload', active => { imageUploads.value = Math.max(0, imageUploads.value + (active ? 1 : -1)); });
 const props = defineProps({
     savedPaper: Object,
     preview: Object,
@@ -311,11 +313,13 @@ const startEditPaper = () => {
 };
 
 const cancelEditPaper = () => {
+    if (imageUploads.value) return;
     editDraft.value = null;
     editingPaper.value = false;
 };
 
 const applyTextEdits = () => {
+    if (imageUploads.value) return;
     if (!editDraft.value) return;
     paperContent.value = clonePaperContent(editDraft.value);
     layout.value.paper_content = paperContent.value;
@@ -324,6 +328,7 @@ const applyTextEdits = () => {
 };
 
 const openSaveModal = () => {
+    if (imageUploads.value) return;
     const header = paperContent.value.header ?? {};
     saveForm.title = props.savedPaper.title;
     saveForm.paper_type = header.paper_type || examMeta.paper_type || props.savedPaper.title;
@@ -334,6 +339,7 @@ const openSaveModal = () => {
 };
 
 const submitSavePaper = () => {
+    if (imageUploads.value) return;
     const content = clonePaperContent(editingPaper.value ? editDraft.value : paperContent.value);
     content.header = {
         ...content.header,
@@ -457,14 +463,16 @@ onUnmounted(() => {
                         <button
                             type="button"
                             class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-800"
-                            @click="applyTextEdits"
+                            :disabled="imageUploads > 0"
+                        @click="applyTextEdits"
                         >
                             Apply text
                         </button>
                         <button
                             type="button"
                             class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                            @click="cancelEditPaper"
+                            :disabled="imageUploads > 0"
+                        @click="cancelEditPaper"
                         >
                             Cancel edit
                         </button>
@@ -472,6 +480,7 @@ onUnmounted(() => {
                     <button
                         type="button"
                         class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
+                        :disabled="imageUploads > 0"
                         @click="openSaveModal"
                     >
                         Save paper
@@ -479,6 +488,7 @@ onUnmounted(() => {
                     <button
                         type="button"
                         class="rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+                        :disabled="imageUploads > 0"
                         @click="printPaper"
                     >
                         Print
@@ -491,6 +501,7 @@ onUnmounted(() => {
         </template>
 
         <p v-if="editingPaper" class="mx-auto max-w-7xl px-4 pt-4 text-sm text-green-700">
+            <span v-if="imageUploads" role="status" class="font-semibold">Preparing uploaded images… Please wait before applying or saving.</span>
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
         </p>
         <div class="no-print grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">

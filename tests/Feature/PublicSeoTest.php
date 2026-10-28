@@ -6,12 +6,22 @@ use Tests\TestCase;
 
 class PublicSeoTest extends TestCase
 {
+    public function test_structured_data_renders_a_valid_schema_context_instead_of_a_blade_directive(): void
+    {
+        $html = $this->get('/')->assertOk()->getContent();
+        preg_match('/<script type="application\/ld\+json">\s*(.*?)\s*<\/script>/s', $html, $matches);
+        $this->assertNotEmpty($matches[1] ?? null);
+        $schema = json_decode($matches[1], true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('https://schema.org', $schema['@context'] ?? null);
+        $this->assertNotEmpty($schema['@graph']);
+    }
+
     public function test_homepage_is_a_public_search_landing_page(): void
     {
         $response = $this->get('/');
 
         $response->assertOk()
-            ->assertSee('<title>Exam Builder Pakistan | Create School Exams and Question Papers</title>', false)
+            ->assertSee('Online Paper Generator Pakistan for Schools &amp; Academies | Exam Builder', false)
             ->assertSee('<link rel="canonical" href="https://exambuilder.algorahub.com/">', false)
             ->assertSee('property="og:image"', false)
             ->assertSee('property="og:image:width" content="1672"', false)

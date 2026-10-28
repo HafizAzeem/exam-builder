@@ -4,6 +4,7 @@ import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import FlashBanner from '@/Components/FlashBanner.vue';
+import SchoolAccessBanner from '@/Components/SchoolAccessBanner.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -22,6 +23,8 @@ const isSuperAdmin = computed(() =>
 const navLinks = computed(() => {
     if (isSuperAdmin.value) {
         return [
+            { href: route('super-admin.plans.index'), label: 'Plans', active: route().current('super-admin.plans.*') },
+            { href: route('super-admin.schools.index'), label: 'Schools', active: route().current('super-admin.schools.*') },
             { href: route('diagrams.index'), label: 'Diagrams', active: route().current('diagrams.*') },
             { href: route('super-admin.ai-import.dashboard'), label: 'AI Dashboard', active: route().current('super-admin.ai-import.dashboard') || route().current('super-admin.ai-import.index') },
             { href: route('super-admin.curriculum.grades.index'), label: 'Curriculum', active: route().current('super-admin.curriculum.*') },
@@ -38,6 +41,7 @@ const navLinks = computed(() => {
     const links = [
         { href: route('diagrams.index'), label: 'Diagrams', active: route().current('diagrams.*') },
         { href: route('dashboard'), label: 'Dashboard', active: route().current('dashboard') },
+        { href: route('questions.index'), label: 'School Question Bank', active: route().current('questions.*') },
         { href: route('builder'), label: 'Generate Paper', active: route().current('builder') || route().current('builder.subjects') || route().current('builder.chapters') || route().current('builder.create') },
         { href: route('saved-papers.index'), label: 'Saved Papers', active: route().current('saved-papers.*') },
         { href: route('past-papers.index'), label: 'Past Papers', active: route().current('past-papers.*') },
@@ -62,30 +66,31 @@ const navLinks = computed(() => {
                         <div class="flex min-w-0 flex-1">
                             <div class="flex shrink-0 items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo class="block h-[3.25rem] w-[3.25rem]" />
+                                    <ApplicationLogo class="block h-14 w-14" />
                                 </Link>
                             </div>
 
-                            <div class="hidden sm:-my-px sm:ms-8 sm:flex sm:space-x-1 sm:overflow-x-auto">
+                            <div v-if="!isSuperAdmin" class="hidden sm:-my-px sm:ms-8 sm:flex sm:space-x-1 sm:overflow-x-auto">
                                 <NavLink
                                     v-for="link in navLinks"
                                     :key="link.label"
                                     :href="link.href"
                                     :active="link.active"
+                                    class="shrink-0 whitespace-nowrap"
                                 >
                                     {{ link.label }}
                                 </NavLink>
                             </div>
                         </div>
 
-                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                        <div class="hidden shrink-0 sm:ms-6 sm:flex sm:items-center">
                             <div class="relative ms-3">
                                 <Dropdown align="right" width="48">
                                     <template #trigger>
                                         <span class="inline-flex rounded-md">
                                             <button
                                                 type="button"
-                                                class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
+                                                class="inline-flex items-center whitespace-nowrap rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none"
                                             >
                                                 {{ $page.props.auth.user.name }}
                                                 <svg class="-me-0.5 ms-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -96,7 +101,8 @@ const navLinks = computed(() => {
                                     </template>
 
                                     <template #content>
-                                        <DropdownLink :href="isSuperAdmin ? route('profile.edit') : (isAdmin ? route('admin.profile') : route('profile.edit'))">
+                                        <DropdownLink v-if="isAdmin && !isSuperAdmin" :href="route('admin.profile')">School Profile</DropdownLink>
+                                        <DropdownLink :href="route('profile.edit')">
                                             Profile Settings
                                         </DropdownLink>
                                         <DropdownLink :href="route('logout')" method="post" as="button">
@@ -109,6 +115,9 @@ const navLinks = computed(() => {
 
                         <div class="-me-2 flex items-center sm:hidden">
                             <button
+                                type="button"
+                                aria-label="Toggle navigation"
+                                :aria-expanded="showingNavigationDropdown"
                                 @click="showingNavigationDropdown = !showingNavigationDropdown"
                                 class="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-500 focus:bg-gray-100 focus:text-gray-500 focus:outline-none"
                             >
@@ -125,6 +134,22 @@ const navLinks = computed(() => {
                                     />
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="isSuperAdmin" class="hidden border-t border-gray-100 sm:block">
+                    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div class="flex gap-1 overflow-x-auto" aria-label="Super admin navigation" tabindex="0">
+                            <NavLink
+                                v-for="link in navLinks"
+                                :key="link.label"
+                                :href="link.href"
+                                :active="link.active"
+                                class="min-h-12 shrink-0 whitespace-nowrap px-3"
+                            >
+                                {{ link.label }}
+                            </NavLink>
                         </div>
                     </div>
                 </div>
@@ -148,7 +173,8 @@ const navLinks = computed(() => {
                         </div>
 
                         <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="isSuperAdmin ? route('profile.edit') : (isAdmin ? route('admin.profile') : route('profile.edit'))">
+                            <ResponsiveNavLink v-if="isAdmin && !isSuperAdmin" :href="route('admin.profile')">School Profile</ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('profile.edit')">
                                 Profile Settings
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('logout')" method="post" as="button">
@@ -166,6 +192,7 @@ const navLinks = computed(() => {
             </header>
 
             <FlashBanner />
+            <SchoolAccessBanner />
 
             <main>
                 <slot />

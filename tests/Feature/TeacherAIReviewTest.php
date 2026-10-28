@@ -4,10 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\AIImport;
 use App\Models\AIImportQuestion;
+use App\Models\Board;
 use App\Models\Chapter;
 use App\Models\Grade;
+use App\Models\Institution;
+use App\Models\Question;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\AIImport\QuestionImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -15,6 +19,27 @@ use Tests\TestCase;
 class TeacherAIReviewTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_manual_question_on_a_shared_past_paper_is_attributed_to_the_actual_contributor(): void
+    {
+        $original = $this->makeTeacher();
+        $data = $this->seedReview($original);
+        $data['import']->update(['book_type' => 'past_paper']);
+        $contributor = $this->makeTeacher();
+        $board = Board::create(['name' => 'Punjab', 'is_active' => true]);
+        $school = Institution::create(['name' => 'Contributor School', 'board_id' => $board->id, 'expiry_date' => now()->addYear(), 'license_type' => 'full']);
+        $contributor->update(['institution_id' => $school->id]);
+        $this->actingAs($contributor)->postJson(route('builder.ai.manual-question', $data['import']), [
+            'chapter_id' => $data['chapterA']->id, 'type' => 'short', 'text_en' => 'Describe the present continuous tense.',
+        ])->assertCreated();
+        $staging = AIImportQuestion::where('text_en', 'Describe the present continuous tense.')->firstOrFail();
+        $result = app(QuestionImportService::class)->importSelected($data['import'], [$staging->id]);
+        $this->assertSame(1, $result['imported']);
+        $question = Question::findOrFail($result['question_ids'][0]);
+        $this->assertSame($contributor->id, $question->submitted_by);
+        $this->assertSame($school->id, $question->institution_id);
+        $this->assertSame($board->id, $question->contributor_board_id);
+    }
 
     protected function makeTeacher(): User
     {

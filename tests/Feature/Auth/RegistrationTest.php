@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Board;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +22,9 @@ class RegistrationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'school_name' => 'Test School',
+            'phone' => '03284177318',
+            'board_id' => Board::create(['name' => 'Punjab', 'is_active' => true])->id,
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);

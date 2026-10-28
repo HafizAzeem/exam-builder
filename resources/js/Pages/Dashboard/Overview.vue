@@ -49,6 +49,11 @@ const profileHref = computed(() =>
                     {{ message }}
                 </div>
 
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <div><h2 class="text-lg font-bold text-slate-900">School Question Bank</h2><p class="mt-1 text-sm text-slate-600">Find your added questions, edit them, or add several new questions with Add row.</p></div>
+                    <div class="flex flex-wrap gap-3"><Link :href="route('questions.index')" class="rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm font-bold text-blue-700">View questions</Link><Link :href="route('questions.create')" class="rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white">+ Add questions</Link></div>
+                </div>
+
                 <div class="flex flex-col gap-8 lg:flex-row">
                     <aside v-if="institution" class="lg:w-72 lg:shrink-0">
                         <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -73,7 +78,7 @@ const profileHref = computed(() =>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-500">Package</span>
-                                    <span class="text-sm font-medium capitalize text-gray-900">{{ institution.license_type }}</span>
+                                    <span class="text-right text-sm font-medium text-gray-900">{{ institution.subscription_label }}</span>
                                 </div>
                                 <div v-if="institution.logo_url" class="flex justify-center pt-2">
                                     <img

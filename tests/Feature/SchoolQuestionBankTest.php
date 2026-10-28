@@ -2,20 +2,81 @@
 
 namespace Tests\Feature;
 
-use App\Models\Chapter;
+use App\Models\AIImport;
+use App\Models\AIImportQuestion;
 use App\Models\Board;
+use App\Models\Chapter;
 use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\User;
+use App\Services\AIImport\QuestionImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class SchoolQuestionBankTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_ai_contribution_keeps_provenance_for_parent_and_parts_and_reuse(): void
+    {
+        $owner = $this->makeSchoolAdmin();
+        $board = Board::create(['name' => 'Sindh', 'is_active' => true]);
+        $owner->institution->update(['board_id' => $board->id]);
+        ['chapter' => $chapter, 'grade' => $grade, 'subject' => $subject] = $this->seedEnglish();
+        $import = AIImport::create([
+            'user_id' => $owner->id, 'grade_id' => $grade->id, 'subject_id' => $subject->id,
+            'book_type' => 'additional_questions', 'original_filename' => 'paste.txt', 'stored_path' => 'paste.txt',
+        ]);
+        $staging = AIImportQuestion::create([
+            'ai_import_id' => $import->id, 'chapter_id' => $chapter->id, 'type' => 'long', 'source' => 'additional',
+            'text_en' => 'Explain the following grammar rules.', 'status' => 'approved',
+            'parts' => [['text_en' => 'Describe the simple present tense.']],
+        ]);
+        $service = app(QuestionImportService::class);
+        $result = $service->importSelected($import, [$staging->id]);
+        $this->assertSame(1, $result['imported']);
+        $question = Question::findOrFail($result['question_ids'][0]);
+        $this->assertSame($owner->id, $question->submitted_by);
+        $this->assertSame($owner->institution_id, $question->institution_id);
+        $this->assertSame($board->id, $question->parts->first()->contributor_board_id);
+        $other = $this->makeSchoolAdmin();
+        $otherImport = $import->replicate();
+        $otherImport->user_id = $other->id;
+        $otherImport->save();
+        $reuse = AIImportQuestion::create([
+            'ai_import_id' => $otherImport->id, 'chapter_id' => $chapter->id, 'type' => 'long', 'source' => 'additional',
+            'text_en' => $question->text_en, 'status' => 'duplicate', 'is_duplicate' => true, 'duplicate_of_question_id' => $question->id,
+        ]);
+        $service->importSelected($otherImport, [$reuse->id]);
+        $this->assertSame($owner->id, $question->fresh()->submitted_by);
+        $this->assertSame(2, Question::count());
+    }
+
+    public function test_contributions_are_attributed_and_shared_only_with_the_same_curriculum_book(): void
+    {
+        $owner = $this->makeSchoolAdmin();
+        $board = Board::create(['name' => 'Punjab', 'is_active' => true]);
+        $owner->institution->update(['board_id' => $board->id]);
+        ['chapter' => $chapter] = $this->seedEnglish();
+        $this->actingAs($owner)->postJson('/questions', [
+            'chapter_id' => $chapter->id, 'type' => 'short', 'text_en' => 'Define a pronoun.',
+            'submitted_by' => 999, 'contributor_board_id' => 999,
+        ])->assertCreated();
+        $question = Question::firstOrFail();
+        $this->assertSame($owner->id, $question->submitted_by);
+        $this->assertSame($board->id, $question->contributor_board_id);
+        $other = $this->makeSchoolAdmin();
+        $this->actingAs($other)->getJson('/api/builder/questions/all?'.http_build_query(['chapter_ids' => [$chapter->id]]))
+            ->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $question->id)->assertJsonMissingPath('0.submitter.email');
+        $differentBook = Subject::create(['grade_id' => $chapter->subject->grade_id, 'name_en' => 'English (other book)', 'is_active' => true]);
+        $otherChapter = Chapter::create(['subject_id' => $differentBook->id, 'number' => 1, 'title_en' => 'Other book', 'is_active' => true]);
+        $this->getJson('/api/builder/questions/all?'.http_build_query(['chapter_ids' => [$otherChapter->id]]))->assertOk()->assertJsonCount(0);
+        $this->assertSame($owner->id, $question->fresh()->submitted_by);
+    }
 
     protected function makeSchoolAdmin(?Institution $institution = null): User
     {
@@ -108,14 +169,10 @@ class SchoolQuestionBankTest extends TestCase
         $this->assertSame('b', $question->mcqOptions?->correct_option);
     }
 
-    public function test_my_questions_page_is_removed(): void
+    public function test_my_questions_management_page_is_available(): void
     {
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('questions.index'));
-
-        $admin = $this->makeSchoolAdmin();
-        $this->actingAs($admin)
-            ->get('/questions')
-            ->assertStatus(405);
+        $this->assertTrue(Route::has('questions.index'));
+        $this->actingAs($this->makeSchoolAdmin())->get('/questions')->assertOk();
     }
 
     public function test_school_can_bulk_create_questions_and_skip_duplicates(): void
@@ -148,6 +205,7 @@ class SchoolQuestionBankTest extends TestCase
 
         $this->assertSame(2, Question::query()->where('institution_id', $admin->institution_id)->count());
     }
+
     public function test_each_question_keeps_its_selected_source_and_can_be_filtered(): void
     {
         $admin = $this->makeSchoolAdmin();
@@ -214,5 +272,4 @@ class SchoolQuestionBankTest extends TestCase
         $this->postJson(route('questions.store'), $question + ['board_name' => 'Inactive Board'])->assertCreated()->assertJsonPath('question.past_paper_tag', null);
         $this->assertDatabaseCount('past_paper_tags', 0);
     }
-
 }

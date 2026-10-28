@@ -9,8 +9,13 @@ class AIImportQuestion extends Model
 {
     protected $table = 'ai_import_questions';
 
+    protected $hidden = ['submitted_by', 'contributor_board_id', 'contributed_at'];
+
     protected $fillable = [
         'ai_import_id',
+        'submitted_by',
+        'contributor_board_id',
+        'contributed_at',
         'ai_paper_source_id',
         'chapter_number',
         'chapter_title',
@@ -54,6 +59,11 @@ class AIImportQuestion extends Model
     public function import(): BelongsTo
     {
         return $this->belongsTo(AIImport::class, 'ai_import_id');
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 
     public function paperSource(): BelongsTo

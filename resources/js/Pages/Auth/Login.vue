@@ -5,7 +5,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 defineProps({
     status: { type: String },
@@ -79,5 +79,6 @@ const submit = () => {
                 Log in
             </PrimaryButton>
         </form>
+        <p class="mt-5 text-center text-sm text-slate-600">New school? <Link :href="route('register')" class="font-semibold text-blue-700 underline">Start your free trial</Link></p>
     </GuestLayout>
 </template>

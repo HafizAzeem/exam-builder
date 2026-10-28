@@ -1,10 +1,13 @@
 <script setup>
 import Modal from '@/Components/Modal.vue';
+import CurriculumDropdowns from '@/Components/CurriculumDropdowns.vue';
+import { selectionForChapter, copySelection } from '@/Support/curriculumSelection.mjs';
 import axios from 'axios';
-import DiagramAttachment from '@/Components/Diagrams/DiagramAttachment.vue';
 import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
+    inline: { type: Boolean, default: false },
+    draftScope: { type: String, default: '' },
     show: { type: Boolean, default: false },
     chapters: { type: Array, default: () => [] },
     selectedChapterIds: { type: Array, default: () => [] },
@@ -25,14 +28,14 @@ const emptyMcq = () => ({
     option_diagrams: {},
 });
 
-const defaultChapterId = () => Number(props.selectedChapterIds?.[0] || props.chapters?.[0]?.id || '') || '';
+const defaultChapterId = () => Number(props.selectedChapterIds?.[0] || (!props.inline && props.chapters?.[0]?.id) || '') || '';
 
 const emptyRow = (from = null) => ({
     key: rowSeq++,
     type: from?.type || 'short',
     source: from?.source || 'additional',
     board_name: from?.source === 'past_paper' ? (from.board_name || '') : '',
-    chapter_id: from?.chapter_id || defaultChapterId(),
+    ...(props.inline ? (from ? copySelection(from) : selectionForChapter(props.chapters, defaultChapterId())) : { chapter_id: from?.chapter_id || defaultChapterId() }),
     includeUrdu: !!from?.includeUrdu,
     text_en: '',
     text_ur: '',
@@ -42,7 +45,7 @@ const emptyRow = (from = null) => ({
 });
 
 const draft = reactive({
-    rows: [emptyRow(), emptyRow(), emptyRow()],
+    rows: props.inline ? [emptyRow()] : [emptyRow(), emptyRow(), emptyRow()],
 });
 
 const saving = ref(false);
@@ -67,7 +70,7 @@ const loadBoards = async () => {
 };
 
 const storageKey = computed(() =>
-    `own-questions:exam:${props.gradeId || 'g'}:${props.subjectId || 's'}`,
+    props.inline ? `own-questions:bank:${props.draftScope}` : `own-questions:exam:${props.gradeId || 'g'}:${props.subjectId || 's'}`,
 );
 
 const rowFromDraft = (row, parsed = {}) => ({
@@ -75,7 +78,7 @@ const rowFromDraft = (row, parsed = {}) => ({
     type: row.type || parsed.type || 'short',
     source: row.source || 'additional',
     board_name: row.board_name || '',
-    chapter_id: Number(row.chapter_id || parsed.chapter_id) || defaultChapterId(),
+    ...(props.inline ? (row.chapter_id ? selectionForChapter(props.chapters, row.chapter_id) : copySelection(row)) : { chapter_id: Number(row.chapter_id || parsed.chapter_id) || defaultChapterId() }),
     includeUrdu: row.includeUrdu ?? !!parsed.includeUrdu,
     text_en: row.text_en || '',
     text_ur: row.text_ur || '',
@@ -105,6 +108,8 @@ const persistDraft = () => {
                 source: row.source,
                 board_name: row.board_name,
                 chapter_id: row.chapter_id,
+                grade_id: row.grade_id,
+                subject_id: row.subject_id,
                 includeUrdu: row.includeUrdu,
                 text_en: row.text_en,
                 text_ur: row.text_ur,
@@ -144,7 +149,7 @@ watch(
             }
         });
         ready.value = true;
-    },
+    }, { immediate: true },
 );
 
 watch(draft, () => {
@@ -152,6 +157,7 @@ watch(draft, () => {
 }, { deep: true });
 
 const addRow = () => {
+    if (draft.rows.length >= 50 || saving.value) return;
     draft.rows.push(emptyRow(draft.rows[draft.rows.length - 1]));
 };
 
@@ -173,11 +179,11 @@ const filledRows = computed(() => {
         const ur = row.includeUrdu ? row.text_ur.trim() : '';
         if (!en && !ur) return;
         const key = `${normalize(en)}|${normalize(ur)}`;
-        if (!row.diagram && !Object.keys(row.mcq.option_diagrams || {}).length && (seen.has(normalize(en)) || seen.has(normalize(ur)) || seen.has(key))) return;
+        if (!props.inline && !row.diagram && !Object.keys(row.mcq.option_diagrams || {}).length && (seen.has(normalize(en)) || seen.has(normalize(ur)) || seen.has(key))) return;
         seen.add(key);
         if (en) seen.add(normalize(en));
         if (ur) seen.add(normalize(ur));
-        if (row.type === 'mcq' && !row.mcq.option_a_en && !row.mcq.option_b_en && !Object.keys(row.mcq.option_diagrams || {}).length) return;
+        if (!props.inline && row.type === 'mcq' && !row.mcq.option_a_en && !row.mcq.option_b_en && !Object.keys(row.mcq.option_diagrams || {}).length) return;
         out.push({
             type: row.type,
             source: row.source,
@@ -231,8 +237,8 @@ const submit = async () => {
         });
         ready.value = false;
         clearDraft();
-        draft.rows = [emptyRow(), emptyRow(), emptyRow()];
-        emit('close');
+        draft.rows = props.inline ? [emptyRow()] : [emptyRow(), emptyRow(), emptyRow()];
+        if (!props.inline) emit('close');
     } catch (e) {
         error.value = e.message || 'Could not save questions.';
     } finally {
@@ -242,19 +248,20 @@ const submit = async () => {
 </script>
 
 <template>
-    <Modal :show="show" max-width="6xl" @close="emit('close')">
-        <div class="flex max-h-[90vh] flex-col" data-own-questions>
-            <div class="border-b px-6 py-4">
-                <h3 class="text-lg font-semibold text-slate-900">Add my questions</h3>
+    <component :is="inline ? 'section' : Modal" v-bind="inline ? {} : { show, maxWidth: '6xl' }" :class="inline ? 'rounded-2xl border border-slate-200 bg-white' : ''" @close="emit('close')">
+        <fieldset :disabled="saving" class="flex min-w-0 flex-col" :class="inline ? '' : 'max-h-[90vh]'" data-own-questions>
+            <div class="border-b px-4 py-3">
+                <h3 class="text-lg font-semibold text-slate-900">{{ inline ? 'Add questions to your school bank' : 'Add my questions' }}</h3>
                 <p class="mt-1 text-sm text-slate-500">
                     Choose a type, source and chapter for each question. Add rows, then submit once.
                 </p>
+                <button v-if="inline" type="button" :disabled="draft.rows.length >= 50" @click="addRow" class="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 disabled:opacity-50">+ Add row</button>
                 <p v-if="error" class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                     {{ error }}
                 </p>
             </div>
 
-            <div class="flex-1 space-y-3 overflow-y-auto px-6 py-4">
+            <div class="flex-1 space-y-3 px-4 py-3" :class="inline ? 'overflow-visible' : 'overflow-y-auto'">
                 <div
                     v-for="(row, index) in draft.rows"
                     :key="row.key"
@@ -267,7 +274,8 @@ const submit = async () => {
                             Remove
                         </button>
                     </div>
-                    <div class="mb-3 grid gap-3 sm:grid-cols-2" :class="row.source === 'past_paper' ? 'lg:grid-cols-7' : 'lg:grid-cols-6'">
+                    <CurriculumDropdowns v-if="inline" :model-value="row" :chapters="chapters" class="mb-4" @update:model-value="Object.assign(row, $event)" />
+                    <div class="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <label class="text-sm">
                             <span class="font-medium text-slate-700">Type</span>
                             <select v-model="row.type" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
@@ -278,7 +286,7 @@ const submit = async () => {
                                 <option value="truefalse">True / False</option>
                             </select>
                         </label>
-                        <label class="text-sm" :class="row.source === 'past_paper' ? 'lg:col-span-1' : 'lg:col-span-2'">
+                        <label class="text-sm">
                             <span class="font-medium text-slate-700">Question source</span>
                             <select v-model="row.source" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                                 <option value="additional">Additional</option>
@@ -286,13 +294,13 @@ const submit = async () => {
                                 <option value="past_paper">Past Paper</option>
                             </select>
                         </label>
-                        <label class="text-sm lg:col-span-2">
+                        <label v-if="!inline" class="text-sm">
                             <span class="font-medium text-slate-700">Chapter</span>
                             <select v-model="row.chapter_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
+                                <option v-for="c in chapters" :key="c.id" :value="c.id">{{ inline ? `${c.subject?.grade?.label_en || ''} · ${c.subject?.name_en || ''} · ` : '' }}{{ c.number }}. {{ c.title_en }}</option>
                             </select>
                         </label>
-                        <div v-if="row.source === 'past_paper'" class="min-w-0 text-sm lg:col-span-2">
+                        <div v-if="row.source === 'past_paper'" class="min-w-0 text-sm">
                             <label class="block text-sm">
                                 <span class="font-medium text-slate-700">Board <span class="text-rose-600" aria-hidden="true">*</span></span>
                                 <select v-model="row.board_name" :disabled="loadingBoards" required class="mt-1 w-full rounded-lg border-slate-300 text-sm">
@@ -308,36 +316,17 @@ const submit = async () => {
                             Add Urdu text
                         </label>
                     </div>
-                    <textarea
-                        v-model="row.text_en"
-                        rows="2"
-                        class="w-full rounded-lg border-slate-300 text-sm"
-                        :placeholder="`English question ${index + 1}`"
-                    />
-                    <textarea
-                        v-if="row.includeUrdu"
-                        v-model="row.text_ur"
-                        rows="2"
-                        class="mt-2 w-full rounded-lg border-slate-300 text-sm"
-                        dir="rtl"
-                        :placeholder="`اردو سوال ${index + 1}`"
-                    />
-                    <DiagramAttachment :diagram="row.diagram" editable @update="row.diagram=$event" />
-                    <div v-if="row.type === 'mcq'" class="mt-2 grid gap-2 sm:grid-cols-2">
-                        <input v-model="row.mcq.option_a_en" class="rounded-lg border-slate-300 text-sm" placeholder="A" />
-                        <input v-model="row.mcq.option_b_en" class="rounded-lg border-slate-300 text-sm" placeholder="B" />
-                        <input v-model="row.mcq.option_c_en" class="rounded-lg border-slate-300 text-sm" placeholder="C" />
-                        <input v-model="row.mcq.option_d_en" class="rounded-lg border-slate-300 text-sm" placeholder="D" />
-                        <div v-for="key in ['A','B','C','D']" :key="key" class="rounded border bg-white p-2">
-                            <span class="text-xs font-medium">Option {{ key }} picture</span>
-                            <DiagramAttachment :diagram="row.mcq.option_diagrams?.[key]" editable @update="row.mcq.option_diagrams={...row.mcq.option_diagrams,[key]:$event}" />
+                    <div class="grid gap-2" :class="row.includeUrdu ? 'sm:grid-cols-2' : ''">
+                        <label class="text-xs font-semibold text-slate-700">English question<textarea v-model="row.text_en" rows="2" class="mt-1 w-full resize-y rounded-lg border-slate-300 text-sm" :placeholder="`English question ${index + 1}`" /></label>
+                        <label v-if="row.includeUrdu" class="text-xs font-semibold text-slate-700">Urdu question<textarea v-model="row.text_ur" rows="2" class="mt-1 w-full resize-y rounded-lg border-slate-300 text-sm" dir="rtl" :placeholder="`اردو سوال ${index + 1}`" /></label>
+                    </div>
+                    <div v-if="row.type === 'mcq'" class="mt-3">
+                        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            <div v-for="key in ['A','B','C','D']" :key="key" class="min-w-0 rounded-lg border bg-white p-2">
+                                <label class="text-xs font-semibold text-slate-700">Option {{ key }}<input v-model="row.mcq[`option_${key.toLowerCase()}_en`]" class="mt-1 w-full rounded-lg border-slate-300 py-1.5 text-sm" :placeholder="`Option ${key}`" /></label>
+                            </div>
                         </div>
-                        <select v-model="row.mcq.correct_option" class="rounded-lg border-slate-300 text-sm sm:col-span-2">
-                            <option value="a">Correct: A</option>
-                            <option value="b">Correct: B</option>
-                            <option value="c">Correct: C</option>
-                            <option value="d">Correct: D</option>
-                        </select>
+                        <label class="mt-2 inline-flex items-center gap-2 text-xs font-semibold">Correct option<select v-model="row.mcq.correct_option" class="rounded-lg border-slate-300 py-1.5 text-sm"><option v-for="key in ['a','b','c','d']" :key="key" :value="key">{{ key.toUpperCase() }}</option></select></label>
                     </div>
                     <select
                         v-if="row.type === 'truefalse'"
@@ -351,9 +340,10 @@ const submit = async () => {
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2 border-t px-6 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3">
                 <button
                     type="button"
+                    :disabled="draft.rows.length >= 50"
                     class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                     @click="addRow"
                 >
@@ -367,10 +357,10 @@ const submit = async () => {
                         :disabled="saving"
                         @click="submit"
                     >
-                        {{ saving ? 'Adding…' : `Add all to paper (${filledRows.length})` }}
+                        {{ saving ? 'Saving…' : inline ? `Save questions (${filledRows.length})` : `Add all to paper (${filledRows.length})` }}
                     </button>
                 </div>
             </div>
-        </div>
-    </Modal>
+        </fieldset>
+    </component>
 </template>
