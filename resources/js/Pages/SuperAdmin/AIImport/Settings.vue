@@ -109,7 +109,7 @@ const submit = () => {
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <InputLabel value="Primary provider" />
-                                <select v-model="form.preferred_text_provider" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <select v-searchable v-model="form.preferred_text_provider" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                     <option value="groq">Groq (default)</option>
                                     <option value="gemini">Gemini</option>
                                 </select>
@@ -117,7 +117,7 @@ const submit = () => {
                             </div>
                             <div>
                                 <InputLabel value="Fallback provider" />
-                                <select v-model="form.fallback_text_provider" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                                <select v-searchable v-model="form.fallback_text_provider" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                     <option v-for="opt in fallbackOptions" :key="opt.id" :value="opt.id">{{ opt.label }}</option>
                                 </select>
                                 <InputError :message="form.errors.fallback_text_provider" class="mt-1" />

@@ -78,6 +78,34 @@ class SchoolQuestionBankTest extends TestCase
         $this->assertSame($owner->id, $question->fresh()->submitted_by);
     }
 
+    public function test_teacher_batch_questions_keep_the_school_board_hidden_and_ignore_submitted_board_ids(): void
+    {
+        $teacher = $this->makeSchoolAdmin();
+        $teacher->syncRoles(Role::findOrCreate('teacher', 'web'));
+        $board = Board::create(['name' => 'Peshawar Board', 'is_active' => true]);
+        $otherBoard = Board::firstOrCreate(['name' => 'Lahore Board'], ['is_active' => true]);
+        $teacher->institution->update(['board_id' => $board->id]);
+        ['chapter' => $chapter] = $this->seedEnglish();
+
+        $response = $this->actingAs($teacher)->postJson('/questions', [
+            'board_id' => $otherBoard->id,
+            'contributor_board_id' => $otherBoard->id,
+            'questions' => array_map(fn ($text) => [
+                'chapter_id' => $chapter->id, 'type' => 'short', 'text_en' => $text,
+                'board_id' => $otherBoard->id, 'contributor_board_id' => $otherBoard->id,
+            ], ['Define a noun.', 'Define a verb.']),
+        ])->assertCreated()->assertJsonCount(2, 'questions');
+
+        foreach ($response->json('questions') as $index => $saved) {
+            $response->assertJsonMissingPath("questions.$index.contributor_board_id")
+                ->assertJsonMissingPath("questions.$index.submitted_by");
+            $question = Question::findOrFail($saved['id']);
+            $this->assertSame($board->id, $question->contributor_board_id);
+            $this->assertSame($teacher->id, $question->submitted_by);
+            $this->assertSame($teacher->institution_id, $question->institution_id);
+        }
+    }
+
     protected function makeSchoolAdmin(?Institution $institution = null): User
     {
         Role::findOrCreate('institution_admin', 'web');

@@ -19,7 +19,7 @@ class InstituteProfileController extends Controller
 
         return Inertia::render('Admin/Profile', [
             'institution' => $institution,
-            'boards' => Board::active()->orderBy('name')->get(['id', 'name']),
+            'boards' => Board::active()->dropdownOrder()->get(['id', 'name']),
             'logoUrl' => $institution->logo_path
                 ? Storage::disk('public')->url($institution->logo_path)
                 : null,

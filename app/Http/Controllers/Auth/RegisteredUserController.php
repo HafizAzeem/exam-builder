@@ -30,7 +30,7 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Auth/Register', ['trialDays' => SubscriptionCatalog::trialDays(), 'boards' => Board::active()->orderBy('sort_order')->orderBy('name')->get(['id', 'name'])]);
+        return Inertia::render('Auth/Register', ['trialDays' => SubscriptionCatalog::trialDays(), 'boards' => Board::active()->dropdownOrder()->get(['id', 'name'])]);
     }
 
     /**
@@ -49,6 +49,9 @@ class RegisteredUserController extends Controller
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'board_id.required' => 'Please select your education board.',
+            'board_id.exists' => 'Please select an available education board.',
         ]);
 
         $logoPath = null;

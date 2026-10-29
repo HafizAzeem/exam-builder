@@ -1,5 +1,7 @@
 <script setup>
 import { computed } from 'vue';
+import PaperTemplateHeader from './PaperTemplateHeader.vue';
+import { normalizePaperTemplate } from '@/utils/paperTemplates';
 import DiagramAttachment from '@/Components/Diagrams/DiagramAttachment.vue';
 import {
     buildPaperContentFromPreview,
@@ -37,7 +39,8 @@ const SECTION_COPY = {
     truefalse: { en: 'Mark True or False.', ur: 'درست یا غلط نشان لگائیں۔', marksPer: 1 },
 };
 
-const headerTemplate = () => Number(props.layout?.header_template ?? 1);
+const headerTemplate = () => normalizePaperTemplate(props.layout?.header_template);
+const showDualMedium = computed(() => props.dualMedium || headerTemplate() === 'urdu');
 const isTemplate1 = computed(() => headerTemplate() === 1);
 
 const logoSrc = computed(() => {
@@ -117,7 +120,7 @@ const content = computed(() => {
         ? clonePaperContent(props.paperContent)
         : buildPaperContentFromPreview(previewPayload, props.title);
 
-    if (props.dualMedium) {
+    if (showDualMedium.value) {
         base = hydratePaperContentUrdu(base, previewPayload);
     }
 
@@ -266,9 +269,15 @@ const teacherAnswerFor = (question) => {
 <template>
     <div
         class="paper-preview"
+        :data-paper-template="headerTemplate()"
         :class="{
-            'paper-preview--tpl1': isTemplate1,
-            'paper-preview--editing': editable && isTemplate1,
+            'paper-preview--tpl1': true,
+            'paper-preview--board': headerTemplate() === 'board',
+            'paper-preview--federal': headerTemplate() === 'federal',
+            'paper-preview--urdu': headerTemplate() === 'urdu',
+            'paper-preview--entry': headerTemplate() === 'entry',
+            'paper-preview--alternate': !isTemplate1,
+            'paper-preview--editing': editable,
             'paper-preview--fill': fillWidth,
         }"
         :style="{
@@ -405,84 +414,13 @@ const teacherAnswerFor = (question) => {
                 </div>
             </template>
 
-            <template v-else-if="headerTemplate() === 2">
-                <div class="flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <img v-if="logoSrc" :src="logoSrc" alt="Logo" class="h-16 w-16 object-contain" />
-                        <div>
-                            <h1 class="text-lg font-bold leading-tight">{{ institution?.name || 'Institution Name' }}</h1>
-                            <p class="text-xs text-gray-600">{{ institution?.city || '' }}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <h2 class="text-base font-semibold leading-tight">{{ title }}</h2>
-                        <p class="text-xs text-gray-600">Generated: {{ new Date().toLocaleDateString() }}</p>
-                    </div>
-                </div>
-            </template>
-
-            <template v-else-if="headerTemplate() === 3">
-                <div class="grid grid-cols-3 items-center gap-4">
-                    <div>
-                        <p class="text-xs text-gray-600">Institute</p>
-                        <p class="font-bold">{{ institution?.name || 'Institution Name' }}</p>
-                        <p class="text-xs text-gray-600">{{ institution?.phone || '' }}</p>
-                    </div>
-                    <div class="text-center">
-                        <img v-if="logoSrc" :src="logoSrc" alt="Logo" class="mx-auto h-14 object-contain" />
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-gray-600">Exam</p>
-                        <p class="text-base font-semibold">{{ title }}</p>
-                    </div>
-                </div>
-            </template>
-
-            <template v-else-if="headerTemplate() === 4">
-                <div class="text-center">
-                    <h1 class="text-lg font-extrabold tracking-wide uppercase">{{ institution?.name || 'Institution Name' }}</h1>
-                    <div class="mt-2 flex items-center justify-center gap-3">
-                        <span class="h-px w-16 bg-gray-300" />
-                        <h2 class="text-base font-semibold">{{ title }}</h2>
-                        <span class="h-px w-16 bg-gray-300" />
-                    </div>
-                </div>
-            </template>
-
-            <template v-else-if="headerTemplate() === 5">
-                <div class="flex items-center gap-4">
-                    <img v-if="logoSrc" :src="logoSrc" alt="Logo" class="h-20 w-20 object-contain" />
-                    <div class="flex-1">
-                        <h1 class="text-lg font-bold">{{ institution?.name || 'Institution Name' }}</h1>
-                        <h2 class="mt-1 text-base font-semibold">{{ title }}</h2>
-                        <p class="mt-1 text-xs text-gray-600">Address: {{ institution?.city || '' }}</p>
-                    </div>
-                </div>
-            </template>
-
-            <template v-else-if="headerTemplate() === 6">
-                <div class="flex items-center justify-between">
-                    <div class="text-left">
-                        <h1 class="text-base font-bold">{{ institution?.name || 'Institution Name' }}</h1>
-                        <p class="text-xs text-gray-600">{{ institution?.city || '' }}</p>
-                    </div>
-                    <div class="text-center">
-                        <h2 class="text-lg font-semibold">{{ title }}</h2>
-                    </div>
-                    <div class="text-right text-xs text-gray-600">
-                        <div>Phone: {{ institution?.phone || '-' }}</div>
-                        <div>Date: {{ new Date().toLocaleDateString() }}</div>
-                    </div>
-                </div>
-            </template>
-
-            <template v-else>
-                <div class="text-center">
-                    <h1 class="text-lg font-bold">{{ institution?.name || 'Institution Name' }}</h1>
-                    <h2 class="mt-2 text-base font-semibold">{{ title }}</h2>
-                    <p class="mt-1 text-xs text-gray-600">Official Exam Paper</p>
-                </div>
-            </template>
+            <PaperTemplateHeader
+                v-else
+                :template="headerTemplate()"
+                :name="instituteName" :address="instituteAddress" :logo="logoSrc"
+                :meta="meta" :details="layout?.template_meta ?? {}" :editable="editable"
+                @edit="(key, text) => patchContent(d => { d.header[key] = text; })"
+            />
 
             <div
                 v-if="showTextWatermark"
@@ -535,7 +473,7 @@ const teacherAnswerFor = (question) => {
         </header>
 
         <!-- Template 1 body -->
-        <template v-if="isTemplate1 && displaySections.length">
+        <template v-if="displaySections.length">
             <div class="tpl1-body" :class="{ 'tpl1-body--edit': editable }">
                 <section v-for="section in displaySections" :key="section.type" class="tpl1-section">
                     <div class="tpl1-section-heading">
@@ -553,7 +491,7 @@ const teacherAnswerFor = (question) => {
                             <span class="tpl1-section-marks">{{ section.marks }}</span>
                         </div>
                         <div
-                            v-if="dualMedium && (editable || section.heading_ur)"
+                            v-if="showDualMedium && (editable || section.heading_ur)"
                             class="tpl1-section-heading-ur question-ur"
                             :contenteditable="editable"
                             suppresscontenteditablewarning
@@ -568,7 +506,7 @@ const teacherAnswerFor = (question) => {
 
                     <div
                         :class="[
-                            layout?.dual_column ? 'questions-container dual-col' : '',
+                            (layout?.dual_column || (headerTemplate() === 'entry' && layout?.dual_column !== false)) ? 'questions-container dual-col' : '',
                             questionsPerLineFor(section.type) === 2 ? 'tpl1-questions--two-col' : '',
                         ]"
                     >
@@ -604,7 +542,7 @@ const teacherAnswerFor = (question) => {
                                 </p>
                             </div>
                             <div
-                                v-if="dualMedium && (editable || q.text_ur)"
+                                v-if="showDualMedium && (editable || q.text_ur)"
                                 class="tpl1-question-ur question-ur"
                             >
                                 <span
@@ -644,7 +582,7 @@ const teacherAnswerFor = (question) => {
                                     >{{ opt.en }}</span>
                                 </span>
                                 <span
-                                    v-if="dualMedium && (editable || opt.ur)"
+                                    v-if="showDualMedium && (editable || opt.ur)"
                                     class="question-ur tpl1-mcq-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -665,6 +603,9 @@ const teacherAnswerFor = (question) => {
                                 <span class="teacher-answer-badge-label">{{ teacherAnswerFor(q).number }}.Answer:</span>
                                 <span class="teacher-answer-badge-value">{{ teacherAnswerFor(q).answer }}</span>
                             </div>
+                            <div v-if="headerTemplate() === 'federal'" class="federal-response" aria-label="Mark one answer">
+                                <span>Response:</span><span v-for="opt in mcqOptionCells(q)" :key="opt.key" class="response-bubble">{{ opt.key }}</span>
+                            </div>
                         </div>
 
                         <div v-else-if="q.type === 'long' && q.parts?.length && showPartsFor('long')" class="tpl1-parts">
@@ -684,7 +625,7 @@ const teacherAnswerFor = (question) => {
                                     <DiagramAttachment :diagram="p.diagram" :image-path="p.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event, null, pIdx)" />
                                 </div>
                                 <div
-                                    v-if="dualMedium && (editable || p.text_ur)"
+                                    v-if="showDualMedium && (editable || p.text_ur)"
                                     class="tpl1-question-ur question-ur"
                                     :contenteditable="editable"
                                     suppresscontenteditablewarning
@@ -706,7 +647,7 @@ const teacherAnswerFor = (question) => {
                                     <span class="tpl1-q-num">({{ String.fromCharCode(97 + pIdx) }})</span>
                                     <span>{{ p.text_en }}</span>
                                 </div>
-                                <div v-if="dualMedium && p.text_ur" class="tpl1-question-ur question-ur">{{ p.text_ur }}</div>
+                                <div v-if="showDualMedium && p.text_ur" class="tpl1-question-ur question-ur">{{ p.text_ur }}</div>
                             </div>
                         </div>
 
@@ -726,54 +667,28 @@ const teacherAnswerFor = (question) => {
             </div>
         </template>
 
-        <!-- Legacy body -->
-        <template v-else-if="displaySections.length">
-            <div
-                v-for="section in displaySections"
-                :key="section.type"
-                class="mb-6"
-                :class="layout?.dual_column ? 'questions-container dual-col' : ''"
-            >
-                <h3 class="mb-3 font-bold">{{ section.title || section.heading_en }}</h3>
-                <div v-for="(q, idx) in section.questions" :key="q.id" class="question-block mb-4">
-                    <p>
-                        <strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}
-                    </p>
-                    <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
-                    <DiagramAttachment :diagram="q.diagram" :image-path="q.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event)" />
-                    <div v-if="q.type === 'mcq' && mcqOptionCells(q).length" class="ms-6 mt-1">
-                        <div class="grid grid-cols-2 gap-1">
-                            <span v-for="opt in mcqOptionCells(q)" :key="opt.key">{{ opt.key }}) {{ opt.en }}<DiagramAttachment :diagram="opt.diagram" :editable="editable" @update="updateDiagram(section.type, q.id, $event, opt.key)" /></span>
-                        </div>
-                        <div
-                            v-if="teacherAnswerFor(q)"
-                            class="teacher-answer-badge teacher-answer-badge--inline"
-                            aria-hidden="true"
-                        >
-                            <span class="teacher-answer-badge-label">{{ teacherAnswerFor(q).number }}.Answer:</span>
-                            <span class="teacher-answer-badge-value">{{ teacherAnswerFor(q).answer }}</span>
-                        </div>
-                    </div>
-                    <div v-else-if="settings?.blank_lines" :style="{ height: settings.blank_lines * 24 + 'px' }" />
-                    <div v-for="(part, pIdx) in q.parts || []" :key="part.id" class="mt-2 ms-5">
-                        <span>({{ part.label || String.fromCharCode(97+pIdx) }}) {{ part.text_en }}</span>
-                        <DiagramAttachment :diagram="part.diagram" :image-path="part.image_path" :editable="editable" @update="updateDiagram(section.type, q.id, $event, null, pIdx)" />
-                    </div>
-                </div>
-            </div>
-        </template>
-
         <template v-else>
             <div v-for="(q, idx) in questions" :key="q.id" class="question-block mb-4">
                 <p><strong>Q{{ idx + 1 }}.</strong> {{ q.text_en }}</p>
                 <DiagramAttachment :diagram="q.diagram" :image-path="q.image_path" />
-                <p v-if="dualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
+                <p v-if="showDualMedium && q.text_ur" class="question-ur">{{ q.text_ur }}</p>
             </div>
         </template>
     </div>
 </template>
 
 <style scoped>
+.paper-preview--alternate { border: 1px solid #d1d5db; }
+.paper-preview--board .tpl1-section-heading,
+.paper-preview--federal .tpl1-section-heading { border-block: 1px solid currentColor; background: #f3f4f6; padding: 5px; }
+.paper-preview--entry .tpl1-mcq-options { display: grid; grid-template-columns: 1fr; }
+.paper-preview--entry .tpl1-question { break-inside: avoid; }
+.questions-container.dual-col { column-count: 2; column-gap: 24px; }
+.questions-container.dual-col > .tpl1-question { break-inside: avoid; }
+.paper-preview--urdu .tpl1-question-ur { font-size: 1.1em; line-height: 2; }
+.federal-response { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: .85em; }
+.response-bubble { border: 1px solid currentColor; border-radius: 50%; width: 1.5em; height: 1.5em; display: inline-flex; align-items: center; justify-content: center; }
+
 .paper-preview {
     position: relative;
     overflow: hidden;

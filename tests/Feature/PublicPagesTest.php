@@ -65,7 +65,7 @@ class PublicPagesTest extends TestCase
         $app = collect($schema['@graph'])->firstWhere('@type', 'SoftwareApplication');
         $this->assertSame([0, 500, 1350, 4500], array_column($app['offers'], 'price'));
         $this->assertSame(['PKR'], array_values(array_unique(array_column($app['offers'], 'priceCurrency'))));
-        $this->assertStringContainsString('03080440058', $html);
+        $this->assertStringNotContainsString('Renew manually with JazzCash or Easypaisa', $html);
         $this->assertStringContainsString('923284177318', $html);
         $this->assertStringContainsString('500', $html);
         $this->assertArrayNotHasKey('aggregateRating', $app);

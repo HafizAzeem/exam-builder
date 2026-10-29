@@ -24,10 +24,6 @@
             <section class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7"><h3 class="text-xl font-bold">{{ $copy['pricing_ui']['features_heading'] }}</h3><ul class="mt-5 space-y-3 text-slate-700">@foreach($copy['pricing_ui']['features'] as $feature)<li class="flex gap-3"><span class="text-emerald-700" aria-hidden="true">✓</span><span>{{ $feature }}</span></li>@endforeach</ul></section>
             <section class="rounded-2xl border border-blue-100 bg-blue-50 p-6 sm:p-7"><h3 class="text-xl font-bold">{{ $copy['pricing_ui']['own_heading'] }}</h3><p class="mt-4 leading-8 text-slate-700">{{ $copy['pricing_ui']['own_text'] }}</p><p class="mt-5 text-sm leading-7 text-slate-600">{{ $copy['pricing_ui']['no_charges'] }}</p></section>
         </div>
-        <section class="mt-8 rounded-2xl border border-emerald-200 bg-white p-6 sm:p-7">
-            <h3 class="text-xl font-bold">{{ $copy['payment_heading'] }}</h3>
-            <div class="mt-4 flex flex-wrap items-start justify-between gap-5"><div><p class="text-lg font-bold" dir="ltr">JazzCash / Easypaisa: {{ config('subscriptions.payment_number') }}</p><p class="mt-1 text-slate-600">{{ config('subscriptions.account_name') }}</p></div><a href="https://wa.me/{{ config('subscriptions.whatsapp') }}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-emerald-600 px-5 py-3 font-bold text-white">{{ $copy['whatsapp'] }}</a></div>
-            <p class="mt-5 max-w-4xl text-sm leading-7 text-slate-600">{{ $copy['payment_instructions'] }}</p>
-        </section>
+
     </div>
 </section>

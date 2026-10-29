@@ -106,7 +106,7 @@ const answerBadge = (row) => {
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel value="Grade (fallback if missing in JSON)" />
-                        <select
+                        <select v-searchable
                             v-model="gradeId"
                             class="mt-1 w-full rounded-md border-gray-300 shadow-sm"
                             @change="subjectId = ''"
@@ -117,7 +117,7 @@ const answerBadge = (row) => {
                     </div>
                     <div>
                         <InputLabel value="Subject (fallback if missing in JSON)" />
-                        <select v-model="subjectId" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                        <select v-searchable v-model="subjectId" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                             <option value="">—</option>
                             <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                         </select>

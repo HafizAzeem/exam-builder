@@ -108,14 +108,14 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Subject *" />
-                            <select v-model.number="form.subject_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                            <select v-searchable v-model.number="form.subject_id" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
                                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                             </select>
                             <InputError :message="form.errors.subject_id" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel value="Board *" />
-                            <select v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                            <select v-searchable v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
                                 <option value="">Select board</option>
                                 <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                             </select>
@@ -123,14 +123,14 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Year *" />
-                            <select v-model.number="form.year" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
+                            <select v-searchable v-model.number="form.year" class="mt-1 w-full rounded-md border-gray-300 shadow-sm" required>
                                 <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
                             </select>
                             <InputError :message="form.errors.year" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel value="Session" />
-                            <select v-model="form.session" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <select v-searchable v-model="form.session" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">Any / not specified</option>
                                 <option value="morning">Morning</option>
                                 <option value="evening">Evening</option>
@@ -139,7 +139,7 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Paper type" />
-                            <select v-model="form.paper_type" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <select v-searchable v-model="form.paper_type" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="complete">Complete</option>
                                 <option value="objective">Objective</option>
                                 <option value="subjective">Subjective</option>
@@ -147,7 +147,7 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Language" />
-                            <select v-model="form.language" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <select v-searchable v-model="form.language" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="english">English</option>
                                 <option value="urdu">Urdu</option>
                                 <option value="both">Both</option>

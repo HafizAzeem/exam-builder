@@ -1,3 +1,4 @@
+import { sectionTotalMarks } from './paperSectionSettings.js';
 const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv'];
 
 export const DEFAULT_PAPER_NOTE =
@@ -44,14 +45,17 @@ const sectionMarks = (section, layout = {}) => {
     const cfg = typeSettings(layout, section.type);
     const per = Number(cfg.marks) || SECTION_COPY[section.type]?.marksPer || 1;
     const n = section.question_count ?? section.questions?.length ?? 0;
-    return `(${n}X${per}=${n * per})`;
+    const total = sectionTotalMarks(n, { ...cfg, marks: per });
+    const attempted = total / per;
+    return `(${attempted}X${per}=${total})`;
 };
 
 const sectionNote = (section, layout = {}) => {
     const cfg = typeSettings(layout, section.type);
     const choice = Number(cfg.choice_questions) || 0;
     if (choice > 0 && (section.type === 'short' || section.type === 'long')) {
-        return `(Answer any ${choice})`;
+        const available = section.question_count ?? section.questions?.length ?? 0;
+        return `(Answer any ${Math.min(choice, available)})`;
     }
     return SECTION_COPY[section.type]?.note ?? '';
 };

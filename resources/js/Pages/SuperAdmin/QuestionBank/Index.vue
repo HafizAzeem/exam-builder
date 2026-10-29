@@ -263,11 +263,11 @@ const currentImageUrl = computed(() => {
 
         <div class="mx-auto max-w-7xl px-4 py-6">
             <div class="mb-6 grid gap-3 rounded-lg bg-white p-4 shadow md:grid-cols-7">
-                <select v-model="filters.grade_id" class="rounded border-gray-300" @change="onFilterGradeChange">
+                <select v-searchable v-model="filters.grade_id" class="rounded border-gray-300" @change="onFilterGradeChange">
                     <option value="">All grades</option>
                     <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                 </select>
-                <select
+                <select v-searchable
                     v-model="filters.subject_id"
                     class="rounded border-gray-300"
                     :disabled="!filters.grade_id"
@@ -276,11 +276,11 @@ const currentImageUrl = computed(() => {
                     <option value="">All subjects</option>
                     <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                 </select>
-                <select v-model="filters.chapter_id" class="rounded border-gray-300" :disabled="!filters.subject_id">
+                <select v-searchable v-model="filters.chapter_id" class="rounded border-gray-300" :disabled="!filters.subject_id">
                     <option value="">All chapters</option>
                     <option v-for="c in filteredChapters" :key="c.id" :value="c.id">Ch {{ c.number }}: {{ c.title_en }}</option>
                 </select>
-                <select v-model="filters.type" class="rounded border-gray-300">
+                <select v-searchable v-model="filters.type" class="rounded border-gray-300">
                     <option value="">All types</option>
                     <option value="mcq">MCQ</option>
                     <option value="short">Short</option>
@@ -288,10 +288,10 @@ const currentImageUrl = computed(() => {
                     <option value="fill">Fill</option>
                     <option value="truefalse">True/False</option>
                 </select>
-                <select v-model="filters.institution_id" aria-label="Contributor school" class="rounded border-gray-300"><option value="">All contributor schools</option><option v-for="school in institutions" :key="school.id" :value="school.id">{{ school.name }}</option></select>
-                <select v-model="filters.submitted_by" aria-label="Contributor" class="rounded border-gray-300"><option value="">All contributors</option><option v-for="user in contributors" :key="user.id" :value="user.id">{{ user.name }}</option></select>
-                <select v-model="filters.contributor_board_id" aria-label="Contributor board" class="rounded border-gray-300"><option value="">All contributor boards</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
-                <select v-model="filters.source" class="rounded border-gray-300">
+                <select v-searchable v-model="filters.institution_id" aria-label="Contributor school" class="rounded border-gray-300"><option value="">All contributor schools</option><option v-for="school in institutions" :key="school.id" :value="school.id">{{ school.name }}</option></select>
+                <select v-searchable v-model="filters.submitted_by" aria-label="Contributor" class="rounded border-gray-300"><option value="">All contributors</option><option v-for="user in contributors" :key="user.id" :value="user.id">{{ user.name }}</option></select>
+                <select v-searchable v-model="filters.contributor_board_id" aria-label="Contributor board" class="rounded border-gray-300"><option value="">All contributor boards</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
+                <select v-searchable v-model="filters.source" class="rounded border-gray-300">
                     <option value="">All sources</option>
                     <option value="exercise">Exercise</option>
                     <option value="additional">Additional</option>
@@ -310,11 +310,11 @@ const currentImageUrl = computed(() => {
             <div class="mb-8 rounded-lg bg-white p-4 shadow">
                 <h3 class="font-semibold">Create Question</h3>
                 <div class="mt-3 grid gap-3 md:grid-cols-3">
-                    <select v-model="createGradeId" class="rounded border-gray-300" @change="onCreateGradeChange">
+                    <select v-searchable v-model="createGradeId" class="rounded border-gray-300" @change="onCreateGradeChange">
                         <option value="">Select class</option>
                         <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                     </select>
-                    <select
+                    <select v-searchable
                         v-model="createSubjectId"
                         class="rounded border-gray-300"
                         :disabled="!createGradeId"
@@ -323,7 +323,7 @@ const currentImageUrl = computed(() => {
                         <option value="">Select subject</option>
                         <option v-for="s in createSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                     </select>
-                    <select v-model="createForm.chapter_id" class="rounded border-gray-300" required :disabled="!createSubjectId">
+                    <select v-searchable v-model="createForm.chapter_id" class="rounded border-gray-300" required :disabled="!createSubjectId">
                         <option value="">Select chapter</option>
                         <option v-for="c in createChapters" :key="c.id" :value="c.id">
                             Ch {{ c.number }}: {{ c.title_en }}
@@ -331,14 +331,14 @@ const currentImageUrl = computed(() => {
                     </select>
                 </div>
                 <div class="mt-3 grid gap-3 md:grid-cols-2">
-                    <select v-model="createForm.type" class="rounded border-gray-300">
+                    <select v-searchable v-model="createForm.type" class="rounded border-gray-300">
                         <option value="mcq">MCQ</option>
                         <option value="short">Short</option>
                         <option value="long">Long</option>
                         <option value="fill">Fill</option>
                         <option value="truefalse">True/False</option>
                     </select>
-                    <select v-model="createForm.source" class="rounded border-gray-300">
+                    <select v-searchable v-model="createForm.source" class="rounded border-gray-300">
                         <option value="exercise">Exercise</option>
                         <option value="additional">Additional</option>
                         <option value="past_paper">Past Paper</option>
@@ -352,7 +352,7 @@ const currentImageUrl = computed(() => {
                         <input v-model="createForm.mcq.option_b_en" class="rounded border-gray-300" placeholder="Option B" />
                         <input v-model="createForm.mcq.option_c_en" class="rounded border-gray-300" placeholder="Option C" />
                         <input v-model="createForm.mcq.option_d_en" class="rounded border-gray-300" placeholder="Option D" />
-                        <select v-model="createForm.mcq.correct_option" class="rounded border-gray-300">
+                        <select v-searchable v-model="createForm.mcq.correct_option" class="rounded border-gray-300">
                             <option value="a">Correct: A</option>
                             <option value="b">Correct: B</option>
                             <option value="c">Correct: C</option>
@@ -360,22 +360,22 @@ const currentImageUrl = computed(() => {
                         </select>
                     </div>
                     <div v-if="createForm.type === 'truefalse'" class="md:col-span-2">
-                        <select v-model="createForm.correct_answer" class="rounded border-gray-300">
+                        <select v-searchable v-model="createForm.correct_answer" class="rounded border-gray-300">
                             <option value="">Correct answer (optional)</option>
                             <option value="true">True</option>
                             <option value="false">False</option>
                         </select>
                     </div>
                     <div v-if="createForm.source === 'past_paper'" class="md:col-span-2 grid gap-2 md:grid-cols-3">
-                        <select v-model="createForm.past.board_name" class="rounded border-gray-300">
+                        <select v-searchable v-model="createForm.past.board_name" class="rounded border-gray-300">
                             <option value="">Board</option>
                             <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                         </select>
-                        <select v-model.number="createForm.past.year" class="rounded border-gray-300">
+                        <select v-searchable v-model.number="createForm.past.year" class="rounded border-gray-300">
                             <option value="">Year</option>
                             <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
                         </select>
-                        <select v-model="createForm.past.session" class="rounded border-gray-300">
+                        <select v-searchable v-model="createForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
                             <option value="morning">Morning</option>
                             <option value="evening">Evening</option>
@@ -463,14 +463,14 @@ const currentImageUrl = computed(() => {
                     <div class="md:col-span-2 grid gap-3 md:grid-cols-3">
                         <div>
                             <InputLabel value="Class" />
-                            <select v-model="editGradeId" class="mt-1 w-full rounded-md border-gray-300" @change="onEditGradeChange">
+                            <select v-searchable v-model="editGradeId" class="mt-1 w-full rounded-md border-gray-300" @change="onEditGradeChange">
                                 <option value="">Select class</option>
                                 <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                             </select>
                         </div>
                         <div>
                             <InputLabel value="Subject" />
-                            <select
+                            <select v-searchable
                                 v-model="editSubjectId"
                                 class="mt-1 w-full rounded-md border-gray-300"
                                 :disabled="!editGradeId"
@@ -482,7 +482,7 @@ const currentImageUrl = computed(() => {
                         </div>
                         <div>
                             <InputLabel value="Chapter" />
-                            <select v-model="editForm.chapter_id" class="mt-1 w-full rounded-md border-gray-300" :disabled="!editSubjectId">
+                            <select v-searchable v-model="editForm.chapter_id" class="mt-1 w-full rounded-md border-gray-300" :disabled="!editSubjectId">
                                 <option value="">Select chapter</option>
                                 <option v-for="c in editChapters" :key="c.id" :value="c.id">
                                     Ch {{ c.number }}: {{ c.title_en }}
@@ -493,7 +493,7 @@ const currentImageUrl = computed(() => {
                     <div class="grid grid-cols-2 gap-3 md:col-span-2">
                         <div>
                             <InputLabel value="Type" />
-                            <select v-model="editForm.type" class="mt-1 w-full rounded-md border-gray-300">
+                            <select v-searchable v-model="editForm.type" class="mt-1 w-full rounded-md border-gray-300">
                                 <option value="mcq">MCQ</option>
                                 <option value="short">Short</option>
                                 <option value="long">Long</option>
@@ -503,7 +503,7 @@ const currentImageUrl = computed(() => {
                         </div>
                         <div>
                             <InputLabel value="Source" />
-                            <select v-model="editForm.source" class="mt-1 w-full rounded-md border-gray-300">
+                            <select v-searchable v-model="editForm.source" class="mt-1 w-full rounded-md border-gray-300">
                                 <option value="exercise">Exercise</option>
                                 <option value="additional">Additional</option>
                                 <option value="past_paper">Past Paper</option>
@@ -530,7 +530,7 @@ const currentImageUrl = computed(() => {
                         <input v-model="editForm.mcq.option_b_en" class="rounded border-gray-300" placeholder="Option B" />
                         <input v-model="editForm.mcq.option_c_en" class="rounded border-gray-300" placeholder="Option C" />
                         <input v-model="editForm.mcq.option_d_en" class="rounded border-gray-300" placeholder="Option D" />
-                        <select v-model="editForm.mcq.correct_option" class="rounded border-gray-300">
+                        <select v-searchable v-model="editForm.mcq.correct_option" class="rounded border-gray-300">
                             <option value="a">Correct: A</option>
                             <option value="b">Correct: B</option>
                             <option value="c">Correct: C</option>
@@ -540,7 +540,7 @@ const currentImageUrl = computed(() => {
 
                     <div v-if="editForm.type === 'truefalse'" class="md:col-span-2">
                         <InputLabel value="Correct Answer" />
-                        <select v-model="editForm.correct_answer" class="mt-1 rounded border-gray-300">
+                        <select v-searchable v-model="editForm.correct_answer" class="mt-1 rounded border-gray-300">
                             <option value="">—</option>
                             <option value="true">True</option>
                             <option value="false">False</option>
@@ -548,15 +548,15 @@ const currentImageUrl = computed(() => {
                     </div>
 
                     <div v-if="editForm.source === 'past_paper'" class="md:col-span-2 grid gap-2 md:grid-cols-3">
-                        <select v-model="editForm.past.board_name" class="rounded border-gray-300">
+                        <select v-searchable v-model="editForm.past.board_name" class="rounded border-gray-300">
                             <option value="">Board</option>
                             <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                         </select>
-                        <select v-model.number="editForm.past.year" class="rounded border-gray-300">
+                        <select v-searchable v-model.number="editForm.past.year" class="rounded border-gray-300">
                             <option value="">Year</option>
                             <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
                         </select>
-                        <select v-model="editForm.past.session" class="rounded border-gray-300">
+                        <select v-searchable v-model="editForm.past.session" class="rounded border-gray-300">
                             <option value="">Session</option>
                             <option value="morning">Morning</option>
                             <option value="evening">Evening</option>

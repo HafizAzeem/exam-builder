@@ -4,20 +4,7 @@
     @include('public.head')
 </head>
 <body class="min-h-screen bg-white font-sans text-slate-900 antialiased">
-    <header class="border-b border-slate-100 bg-white">
-        <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-4 lg:px-8" aria-label="Main navigation">
-            <a href="/" class="flex items-center gap-3" aria-label="Exam Builder home">
-                <img src="/logo.png?v=3" width="56" height="56" alt="" class="h-14 w-14 shrink-0 object-contain">
-                <span class="text-xl font-extrabold tracking-tight text-slate-900">Exam Builder</span>
-            </a>
-            <div class="flex items-center gap-3">
-                <a href="/ur" lang="ur" class="rounded-lg px-3 py-2 text-sm font-semibold text-blue-700">اردو</a>
-                <a href="/pricing" class="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 sm:block">Pricing</a>
-                <a href="/login" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Log in</a>
-                <a href="/register" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Start free</a>
-            </div>
-        </nav>
-    </header>
+    @include('public.header')
 
     <main>
         <section class="overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">

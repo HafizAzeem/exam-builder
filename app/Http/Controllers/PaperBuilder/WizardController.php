@@ -345,7 +345,7 @@ class WizardController extends Controller
             }
 
             $config['layout']['paper_content']['header'] = $header;
-            $config['layout']['header_template'] = 1;
+            $config['layout']['header_template'] = \App\Support\PaperTemplates::normalize($config['layout']['header_template'] ?? 1);
         }
 
         return $config;

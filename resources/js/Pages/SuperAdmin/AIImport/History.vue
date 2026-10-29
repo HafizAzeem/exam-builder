@@ -23,7 +23,7 @@ const applyStatus = (status) => {
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center gap-3">
-                    <select
+                    <select v-searchable
                         class="rounded-md border-gray-300 text-sm"
                         :value="filters.status || ''"
                         @change="applyStatus($event.target.value)"

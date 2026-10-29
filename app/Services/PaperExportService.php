@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\Question;
 use App\Models\SavedPaper;
 use App\Models\Subject;
+use App\Support\PaperTemplates;
 use Illuminate\Support\Collection;
 
 class PaperExportService
@@ -26,6 +27,7 @@ class PaperExportService
         );
 
         $questionIds = $config['question_ids'] ?? [];
+        $layout['header_template'] = PaperTemplates::normalize($layout['header_template'] ?? 1);
 
         $questions = array_key_exists('question_records', $config)
             ? SavedQuestionSnapshot::questions($config['question_records'])

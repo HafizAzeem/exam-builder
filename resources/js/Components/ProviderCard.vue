@@ -109,7 +109,7 @@ const statusClass = computed(() => {
 
         <div v-if="modelPresets.length">
             <InputLabel :value="modelLabel + ' preset'" />
-            <select v-model="modelPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+            <select v-searchable v-model="modelPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                 <option v-for="preset in modelPresets" :key="preset.id" :value="preset.id">
                     {{ preset.label }}
                 </option>
@@ -125,7 +125,7 @@ const statusClass = computed(() => {
 
         <div v-if="extraModelLabel">
             <InputLabel :value="extraModelLabel + ' preset'" />
-            <select v-model="extraPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+            <select v-searchable v-model="extraPreset" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                 <option v-for="preset in extraModelPresets" :key="preset.id" :value="preset.id">
                     {{ preset.label }}
                 </option>

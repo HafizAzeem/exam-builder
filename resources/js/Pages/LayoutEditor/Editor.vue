@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperSettingsSidebar from '@/Components/LayoutEditor/PaperSettingsSidebar.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
+import { normalizePaperTemplate } from '@/utils/paperTemplates';
 import Modal from '@/Components/Modal.vue';
 import { buildPaperContentFromPreview, clonePaperContent, DEFAULT_PAPER_NOTE, hydratePaperContentUrdu } from '@/utils/paperContent';
 import { applyPrintStyles, clearPrintStyles, measurePrintFitScale, waitForPrintAssets } from '@/utils/printStyles';
@@ -45,7 +46,8 @@ const editorSettings = ref({
 });
 
 const layout = ref({
-    header_template: 1,
+    header_template: normalizePaperTemplate(props.preview.layout?.header_template),
+    template_meta: { ...(props.preview.layout?.template_meta ?? {}) },
     font_family: props.preview.layout?.font_family ?? 'Arial',
     font_size: props.preview.layout?.font_size ?? 11,
     heading_font_size: props.preview.layout?.heading_font_size ?? 12,

@@ -64,7 +64,7 @@ class SchoolQuestionBankController extends Controller
             'filters' => $filters,
             'schoolWide' => $request->user()->hasRole('institution_admin'),
             'chapters' => Chapter::whereIn('id', $chapterIds)->with('subject.grade')->orderBy('subject_id')->orderBy('number')->get(),
-            'boards' => Board::where('is_active', true)->orderBy('name')->pluck('name'),
+            'boards' => Board::active()->dropdownOrder()->pluck('name'),
             'entryChapters' => $entryChapters->get(),
             'initialMode' => $request->routeIs('questions.create') ? 'add' : 'list',
             'draftScope' => $user->institution_id.':'.$user->id,

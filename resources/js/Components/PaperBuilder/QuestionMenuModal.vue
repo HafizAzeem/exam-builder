@@ -19,17 +19,13 @@ const emit = defineEmits(['close', 'add']);
 const questionType = ref('mcq');
 const sources = ref(['exercise', 'additional']);
 const requiredCount = ref(15);
-const marksPerQuestion = ref(1);
-const dualMedium = ref(true);
-const choiceQuestions = ref(0);
-const blankLines = ref(0);
-const tabularMcqs = ref(true);
-const showBoardYears = ref(true);
-const showParts = ref(true);
-const questionsPerLine = ref(1);
 const boardName = ref('');
 const boardYear = ref('');
 const boardOptions = ref([]);
+const filterError = ref('');
+const previewDualMedium = ref(true);
+const initializing = ref(false);
+let searchVersion = 0;
 const yearOptions = ref([]);
 const searching = ref(false);
 const randomizing = ref(false);
@@ -92,8 +88,10 @@ const selectedCount = computed(() => selectedIds.value.length);
 
 watch(
     () => props.show,
-    (open) => {
-        if (!open) return;
+    async (open) => {
+        ++searchVersion;
+        if (!open) { searching.value = false; return; }
+        initializing.value = true;
         sources.value = props.allowedSources.includes('exercise')
             ? props.allowedSources.filter((s) => s !== 'past_paper').slice(0, 2)
             : [...props.allowedSources];
@@ -104,13 +102,11 @@ watch(
         sourceMenuOpen.value = false;
         lastAddedCount.value = 0;
         chapterFilterId.value = '';
-        boardName.value = '';
         boardYear.value = '';
         applyTypeDefaults(questionType.value);
-        if (sources.value.includes('past_paper')) {
-            loadPastPaperFilters();
-        }
-        searchQuestions();
+        const loaded = await loadPastPaperFilters(true);
+        initializing.value = false;
+        if (props.show && loaded) searchQuestions();
     },
 );
 
@@ -119,61 +115,31 @@ watch(questionType, (type) => {
     results.value = [];
     selectedIds.value = [];
     lastAddedCount.value = 0;
+    if (props.show && !initializing.value) searchQuestions();
 });
 
-watch(sources, (vals) => {
-    if (vals.includes('past_paper')) {
-        showBoardYears.value = true;
-        loadPastPaperFilters();
-    } else {
-        showBoardYears.value = false;
-        boardName.value = '';
-        boardYear.value = '';
-    }
+watch(sources, vals => {
+    if (!vals.includes('past_paper')) boardYear.value = '';
+    if (props.show && !initializing.value) searchQuestions();
 }, { deep: true });
 
-const loadPastPaperFilters = async () => {
-    if (boardOptions.value.length && yearOptions.value.length) return;
+const loadPastPaperFilters = async (useDefault = false) => {
+    filterError.value = '';
     try {
         const { data } = await axios.get('/api/builder/past-paper-filters');
         boardOptions.value = data.boards ?? [];
         yearOptions.value = data.years ?? [];
+        if (useDefault) boardName.value = data.default_board ?? '';
+        if (boardName.value && !boardOptions.value.includes(boardName.value)) boardOptions.value.unshift(boardName.value);
+        return true;
     } catch {
-        boardOptions.value = [];
-        yearOptions.value = [];
+        filterError.value = 'Could not load board filters. Close and reopen Question Bank to retry.';
+        return false;
     }
 };
 
-const applyTypeDefaults = (type) => {
-    if (type === 'mcq') {
-        requiredCount.value = 15;
-        marksPerQuestion.value = 1;
-        tabularMcqs.value = true;
-        choiceQuestions.value = 0;
-        blankLines.value = 0;
-        questionsPerLine.value = 1;
-    } else if (type === 'short') {
-        requiredCount.value = 10;
-        marksPerQuestion.value = 2;
-        choiceQuestions.value = 5;
-        // Default single-line short questions; teacher can raise to 2 if needed.
-        blankLines.value = 0;
-        questionsPerLine.value = 1;
-        showParts.value = true;
-    } else if (type === 'long') {
-        requiredCount.value = 4;
-        marksPerQuestion.value = 5;
-        choiceQuestions.value = 0;
-        blankLines.value = 0;
-        questionsPerLine.value = 1;
-        showParts.value = true;
-    } else {
-        requiredCount.value = 10;
-        marksPerQuestion.value = 1;
-        choiceQuestions.value = 0;
-        blankLines.value = 0;
-        questionsPerLine.value = 1;
-    }
+const applyTypeDefaults = type => {
+    requiredCount.value = ({mcq:15, short:10, long:4})[type] ?? 10;
 };
 
 const normalizeQuestion = (q) => ({
@@ -187,8 +153,12 @@ const getMcqOptions = (q) => q?.mcq_options ?? q?.mcqOptions ?? null;
 const getPastPaperTag = (q) => q?.past_paper_tag ?? q?.pastPaperTag ?? null;
 
 const searchQuestions = async () => {
-    if (!effectiveChapterIds.value.length) return;
+    if (!effectiveChapterIds.value.length || initializing.value) return;
+    filterError.value = '';
+    const version = ++searchVersion;
     searching.value = true;
+    results.value = [];
+    selectedIds.value = [];
     try {
         const { data } = await axios.get('/api/builder/questions/all', {
             params: {
@@ -197,15 +167,18 @@ const searchQuestions = async () => {
                 topic_ids: undefined,
                 sources: sources.value,
                 type: questionType.value || undefined,
-                board_name: pastPapersSelected.value && boardName.value ? boardName.value : undefined,
+                board_name: boardName.value || undefined,
                 year: pastPapersSelected.value && boardYear.value ? boardYear.value : undefined,
             },
         });
+        if (version !== searchVersion || !props.show) return;
         results.value = (data ?? []).map(normalizeQuestion);
         selectedIds.value = [];
         listFilter.value = 'all';
+    } catch {
+        if (version === searchVersion) { results.value = []; selectedIds.value = []; filterError.value = 'Could not load questions. Please search again.'; }
     } finally {
-        searching.value = false;
+        if (version === searchVersion) searching.value = false;
     }
 };
 
@@ -236,17 +209,7 @@ const addQuestions = () => {
 
     emit('add', {
         questions: picked,
-        options: {
-            type: questionType.value,
-            marks: Number(marksPerQuestion.value) || 1,
-            dualMedium: dualMedium.value,
-            choiceQuestions: Number(choiceQuestions.value) || 0,
-            blankLines: Number(blankLines.value) || 0,
-            tabularMcqs: tabularMcqs.value,
-            showBoardYears: showBoardYears.value,
-            showParts: showParts.value,
-            questionsPerLine: Number(questionsPerLine.value) || 1,
-        },
+        options: { type: questionType.value },
     });
 
     // Keep modal open for repeat adds; clear current selection.
@@ -288,10 +251,10 @@ const selectAllSources = (checked) => {
                 <!-- Filters -->
                 <div class="bank-filters">
                     <div class="bank-section-title"><div><h4>Find the right questions</h4><p>Choose a type and source, then select questions for your paper.</p></div></div>
-                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" :class="pastPapersSelected ? 'xl:grid-cols-6' : 'xl:grid-cols-5'">
                         <label class="block">
                             <span class="bank-label">Question type</span>
-                            <select v-model="questionType" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                            <select v-searchable v-model="questionType" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
                                 <option v-for="t in questionTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
                             </select>
                         </label>
@@ -339,7 +302,7 @@ const selectAllSources = (checked) => {
 
                         <label class="block">
                             <span class="bank-label">Chapter</span>
-                            <select
+                            <select v-searchable
                                 v-model="chapterFilterId"
                                 class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500"
                                 @change="searchQuestions"
@@ -355,72 +318,21 @@ const selectAllSources = (checked) => {
                         </label>
 
                         <label class="block">
-                            <span class="bank-label">Marks per question</span>
-                            <input v-model.number="marksPerQuestion" type="number" min="1" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500" />
-                        </label>
-                        <label class="block">
-                            <span class="bank-label">Medium</span>
-                            <select v-model="dualMedium" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
-                                <option :value="true">English + Urdu</option>
-                                <option :value="false">English only</option>
-                            </select>
-                        </label>
-
-                    </div>
-
-                    <div v-if="isShortOrLong || pastPapersSelected" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <!-- Short / Long dependent -->
-                        <label v-if="isShortOrLong" class="block">
-                            <span class="bank-label">Questions to attempt</span>
-                            <input v-model.number="choiceQuestions" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" placeholder="e.g. Attempt any 5" />
-                            <span class="mt-1 block text-[11px] text-slate-500">Shows as “Answer any X” on the paper</span>
-                        </label>
-
-                        <label v-if="isShortOrLong" class="block">
-                            <span class="bank-label">Answer lines</span>
-                            <input v-model.number="blankLines" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" />
-                            <span class="mt-1 block text-[11px] text-slate-500">Answer space under each question</span>
-                        </label>
-
-                        <!-- Past Papers dependent filters -->
-                        <label v-if="pastPapersSelected" class="block">
                             <span class="bank-label">Board</span>
-                            <select v-model="boardName" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
+                            <select id="bank-board" v-searchable v-model="boardName" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" @change="searchQuestions">
                                 <option value="">All boards</option>
-                                <option v-for="b in boardOptions" :key="b" :value="b">{{ b }}</option>
+                                <option v-for="board in boardOptions" :key="board" :value="board">{{ board }}</option>
                             </select>
                         </label>
-
                         <label v-if="pastPapersSelected" class="block">
-                            <span class="bank-label">Year</span>
-                            <select v-model="boardYear" class="w-full rounded-lg border-slate-300 text-sm shadow-sm">
+                            <span class="bank-label">Past-paper year</span>
+                            <select v-searchable v-model="boardYear" class="w-full rounded-lg border-slate-300 text-sm shadow-sm" @change="searchQuestions">
                                 <option value="">All years</option>
-                                <option v-for="y in yearOptions" :key="y" :value="y">{{ y }}</option>
+                                <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
                             </select>
                         </label>
                     </div>
-
-                    <div class="bank-options flex flex-wrap items-center gap-x-5 gap-y-3">
-                        <label v-if="isMcq" class="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <input v-model="tabularMcqs" type="checkbox" class="rounded text-teal-600" />
-                            MCQ options in a table
-                        </label>
-                        <label v-if="isShort" class="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <input v-model="questionsPerLine" type="checkbox" :true-value="2" :false-value="1" class="rounded text-teal-600" />
-                            Two questions per line
-                        </label>
-                        <label v-if="isLong" class="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <input v-model="showParts" type="checkbox" class="rounded text-teal-600" />
-                            Show question parts
-                        </label>
-                        <label v-if="pastPapersSelected" class="flex items-center gap-2 text-sm font-medium text-slate-700">
-                            <input v-model="showBoardYears" type="checkbox" class="rounded text-teal-600" />
-                            Show board and year
-                        </label>
-                        <p v-if="!isMcq && !isShortOrLong && !pastPapersSelected" class="text-xs text-slate-400">
-                            Extra layout options appear for MCQ / Short / Long, and when Past Papers is selected.
-                        </p>
-                    </div>
+                    <p v-if="filterError" role="alert" class="text-sm text-red-600">{{ filterError }}</p>
 
                     <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <button
@@ -465,12 +377,12 @@ const selectAllSources = (checked) => {
                                         <span class="mr-2 font-bold text-teal-700">{{ index + 1 }}.</span>
                                         {{ q.text_en }}
                                     </p>
-                                    <p v-if="dualMedium && q.text_ur" class="text-sm text-slate-700" dir="rtl">
+                                    <p v-if="previewDualMedium && q.text_ur" class="text-sm text-slate-700" dir="rtl">
                                         {{ q.text_ur }}
                                     </p>
                                 </div>
                                 <p
-                                    v-if="showBoardYears && getPastPaperTag(q)"
+                                    v-if="getPastPaperTag(q)"
                                     class="mt-1 text-[11px] font-normal italic leading-tight text-slate-400"
                                 >
                                     <template v-if="getPastPaperTag(q).year">Appeared in {{ getPastPaperTag(q).year }} · </template>{{ getPastPaperTag(q).board_name }}
@@ -478,8 +390,7 @@ const selectAllSources = (checked) => {
 
                                 <div
                                     v-if="q.type === 'mcq' && getMcqOptions(q)"
-                                    class="mt-2 grid gap-1"
-                                    :class="tabularMcqs ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-1'"
+                                    class="mt-2 grid grid-cols-2 gap-1 md:grid-cols-4"
                                 >
                                     <div
                                         v-for="letter in ['a', 'b', 'c', 'd']"
@@ -489,7 +400,7 @@ const selectAllSources = (checked) => {
                                         <span class="font-semibold">({{ letter.toUpperCase() }})</span>
                                         {{ getMcqOptions(q)[`option_${letter}_en`] }}
                                         <span
-                                            v-if="dualMedium && getMcqOptions(q)[`option_${letter}_ur`]"
+                                            v-if="previewDualMedium && getMcqOptions(q)[`option_${letter}_ur`]"
                                             class="mt-0.5 block text-slate-600"
                                             dir="rtl"
                                         >
@@ -548,7 +459,7 @@ const selectAllSources = (checked) => {
                     <button
                         type="button"
                         class="bank-button bank-button-secondary"
-                        :disabled="!results.length || randomizing"
+                        :disabled="!results.length || randomizing || searching || initializing"
                         @click="randomSelect"
                     >
                         Select randomly
@@ -556,7 +467,7 @@ const selectAllSources = (checked) => {
                     <button
                         type="button"
                         class="bank-button bank-button-primary"
-                        :disabled="!selectedCount"
+                        :disabled="!selectedCount || searching || initializing"
                         @click="addQuestions"
                     >
                         {{ selectedCount ? `Add ${selectedCount} question${selectedCount === 1 ? '' : 's'} to paper` : 'Add to paper' }}

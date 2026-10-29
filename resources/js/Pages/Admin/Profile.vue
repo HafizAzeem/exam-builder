@@ -25,7 +25,7 @@ const form = useForm({
                 <img v-if="logoUrl" :src="logoUrl" class="h-20 object-contain" alt="Logo" />
                 <input type="file" accept="image/png,image/jpeg,image/webp" aria-label="School logo" @change="form.logo = $event.target.files[0]" />
                 <label for="school-board" class="block text-sm font-semibold">Education board</label>
-                <select id="school-board" v-model="form.board_id" class="w-full rounded border-gray-300"><option value="">Select board</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
+                <select v-searchable id="school-board" v-model="form.board_id" class="w-full rounded border-gray-300"><option value="">Select board</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
                 <input v-model="form.name" class="w-full rounded border-gray-300" placeholder="Institute name" />
                 <input v-model="form.owner_name" class="w-full rounded border-gray-300" placeholder="Owner name" />
                 <input v-model="form.phone" class="w-full rounded border-gray-300" placeholder="Phone" />

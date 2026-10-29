@@ -374,7 +374,7 @@ const submit = () => {
                         <div class="min-w-0 flex-1">
                             <div class="mb-1 flex flex-wrap items-center gap-2 text-xs font-medium">
                                 <span class="rounded bg-slate-100 px-2 py-0.5 text-slate-700">{{ typeLabel(q.type) }}</span>
-                                <select
+                                <select v-searchable
                                     class="rounded-md border-slate-300 py-0.5 text-xs text-slate-700"
                                     :value="q.chapter_id ?? ''"
                                     @change="changeChapter(q, $event.target.value)"
@@ -420,11 +420,11 @@ const submit = () => {
                 <h3 class="text-lg font-semibold text-slate-900">Search existing questions</h3>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <input v-model="searchQ" type="search" placeholder="Filter by text…" class="min-w-[12rem] flex-1 rounded-lg border-slate-300 text-sm" @keyup.enter="runSearch" />
-                    <select v-model="searchChapterId" class="rounded-lg border-slate-300 text-sm">
+                    <select v-searchable v-model="searchChapterId" class="rounded-lg border-slate-300 text-sm">
                         <option value="">All chapters</option>
                         <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
                     </select>
-                    <select v-model="searchType" class="rounded-lg border-slate-300 text-sm">
+                    <select v-searchable v-model="searchType" class="rounded-lg border-slate-300 text-sm">
                         <option value="">All types</option>
                         <option value="mcq">MCQ</option>
                         <option value="short">Short</option>
@@ -463,7 +463,7 @@ const submit = () => {
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                     <label class="text-sm">
                         <span class="font-medium text-slate-700">Type</span>
-                        <select v-model="manual.type" class="mt-1 w-full rounded-lg border-slate-300">
+                        <select v-searchable v-model="manual.type" class="mt-1 w-full rounded-lg border-slate-300">
                             <option value="mcq">MCQ</option>
                             <option value="short">Short</option>
                             <option value="long">Long</option>
@@ -473,7 +473,7 @@ const submit = () => {
                     </label>
                     <label class="text-sm">
                         <span class="font-medium text-slate-700">Chapter</span>
-                        <select v-model="manual.chapter_id" class="mt-1 w-full rounded-lg border-slate-300">
+                        <select v-searchable v-model="manual.chapter_id" class="mt-1 w-full rounded-lg border-slate-300">
                             <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
                         </select>
                     </label>
@@ -492,7 +492,7 @@ const submit = () => {
                         </label>
                         <label class="text-sm sm:col-span-2">
                             <span class="font-medium text-slate-700">Correct option</span>
-                            <select v-model="manual.mcq_options.correct_option" class="mt-1 w-full rounded-lg border-slate-300">
+                            <select v-searchable v-model="manual.mcq_options.correct_option" class="mt-1 w-full rounded-lg border-slate-300">
                                 <option value="a">A</option>
                                 <option value="b">B</option>
                                 <option value="c">C</option>

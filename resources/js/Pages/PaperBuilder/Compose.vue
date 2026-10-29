@@ -2,6 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import QuestionMenuModal from '@/Components/PaperBuilder/QuestionMenuModal.vue';
+import SectionSettings from '@/Components/PaperBuilder/SectionSettings.vue';
+import { applySectionOptions, sectionTotalMarks } from '@/utils/paperSectionSettings';
 import OwnQuestionsModal from '@/Components/PaperBuilder/OwnQuestionsModal.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import Modal from '@/Components/Modal.vue';
@@ -268,7 +270,7 @@ const mergePaperContentEdits = (fresh, previous) => {
 
         if (prevSection.heading_en) section.heading_en = prevSection.heading_en;
         if (prevSection.heading_ur) section.heading_ur = prevSection.heading_ur;
-        if (prevSection.note !== undefined) section.note = prevSection.note;
+
 
         for (const question of section.questions ?? []) {
             const prevQ = prevSection.questions?.find((q) => q.id === question.id);
@@ -297,6 +299,30 @@ const mergePaperContentEdits = (fresh, previous) => {
 };
 
 const activePaperContent = computed(() => (editingPaper.value ? editDraft.value : paperContent.value));
+
+const sectionCounts = computed(() => selectedQuestions.value.reduce((counts, question) => {
+    counts[question.type] = (counts[question.type] || 0) + 1;
+    return counts;
+}, {}));
+const calculatedMarks = computed(() => Object.entries(sectionCounts.value)
+    .reduce((sum, [type, count]) => sum + sectionTotalMarks(count, sectionSettings.value[type]), 0));
+watch(calculatedMarks, total => { examMeta.value.marks = String(total); });
+function refreshPaperContent(headerKeys = []) {
+    const previous = activePaperContent.value;
+    if (!previous) return;
+    const fresh = buildCurrentPaperContent();
+    const next = mergePaperContentEdits(fresh, previous);
+    for (const key of headerKeys) next.header[key] = fresh.header[key];
+    if (editingPaper.value) editDraft.value = next;
+    else paperContent.value = next;
+}
+watch([sectionSettings, dualMedium, settings, paperTitle], () => refreshPaperContent(), { deep: true });
+watch(() => JSON.stringify(examMeta.value), (value, previous) => {
+    const meta = JSON.parse(value);
+    const old = JSON.parse(previous);
+    const fields = { paper_type: 'paper_type', time: 'paper_time', class: 'class', subject: 'subject', marks: 'marks' };
+    refreshPaperContent(Object.entries(fields).filter(([key]) => meta[key] !== old[key]).map(([, headerKey]) => headerKey));
+});
 
 // Keep saved paper_content header in sync when Class/Subject resolve.
 watch([resolvedClass, resolvedSubject], ([cls, sub]) => {
@@ -383,43 +409,13 @@ const onAddQuestions = ({ questions, options, silent = false }) => {
     }
 
     const type = options?.type || toAdd[0]?.type || 'mcq';
-    const nextType = {
-        ...(sectionSettings.value[type] ?? {}),
-        marks: Number(options?.marks) || sectionSettings.value[type]?.marks || 1,
-    };
-
-    if (type === 'mcq') {
-        nextType.tabular_mcqs = options?.tabularMcqs ?? true;
-        settings.value.tabular_mcqs = nextType.tabular_mcqs;
-    }
-    if (type === 'short' || type === 'long') {
-        nextType.blank_lines = Number(options?.blankLines) || 0;
-        nextType.choice_questions = Number(options?.choiceQuestions) || 0;
-        nextType.questions_per_line = Number(options?.questionsPerLine) || 1;
-        if (type === 'long') {
-            nextType.show_parts = options?.showParts !== false;
-        }
-        if (type === 'short') {
-            settings.value.blank_lines = nextType.blank_lines;
-            settings.value.questions_per_line = nextType.questions_per_line;
-        }
-    }
+    const nextType = applySectionOptions(sectionSettings.value[type] ?? { marks: 1 }, options);
 
     sectionSettings.value = {
         ...sectionSettings.value,
         [type]: nextType,
     };
 
-    const marks = Object.entries(
-        selectedQuestions.value.reduce((acc, q) => {
-            acc[q.type] = (acc[q.type] || 0) + 1;
-            return acc;
-        }, {}),
-    ).reduce((sum, [t, count]) => {
-        const per = Number(sectionSettings.value[t]?.marks) || 1;
-        return sum + (count * per);
-    }, 0);
-    examMeta.value.marks = String(marks);
 
     // Always rebuild paper content so the preview matches the Layout Editor.
     const previous = editingPaper.value ? editDraft.value : paperContent.value;
@@ -913,10 +909,10 @@ const cancelPaper = () => {
             @submit="savePaper"
         />
 
-        <Modal :show="showEditMeta" max-width="lg" @close="showEditMeta = false">
+        <Modal :show="showEditMeta" max-width="2xl" @close="showEditMeta = false">
             <div class="p-6">
-                <h3 class="text-lg font-semibold text-slate-900">Edit paper details</h3>
-                <p class="mt-1 text-sm text-slate-500">These appear on the paper header.</p>
+                <h3 class="text-lg font-semibold text-slate-900">Paper details & settings</h3>
+                <p class="mt-1 text-sm text-slate-500">Edit the header, language and section layout. Changes appear on the preview.</p>
                 <div class="mt-4 space-y-3">
                     <label class="block text-sm">
                         <span class="font-medium text-slate-700">Paper title</span>
@@ -978,7 +974,7 @@ const cancelPaper = () => {
                         </label>
                         <label class="block text-sm sm:col-span-2">
                             <span class="font-medium text-slate-700">Language on paper</span>
-                            <select
+                            <select v-searchable
                                 class="mt-1 w-full rounded-lg border-slate-300"
                                 :value="dualMedium ? 'both' : 'english'"
                                 @change="dualMedium = $event.target.value === 'both'"
@@ -986,24 +982,10 @@ const cancelPaper = () => {
                                 <option value="english">English only (default)</option>
                                 <option value="both">English + Urdu (dual medium)</option>
                             </select>
-                            <span class="mt-1 block text-xs text-slate-500">Urdu-only display uses Urdu text when present on each question.</span>
-                        </label>
-                        <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
-                            <input
-                                v-model="settings.questions_per_line"
-                                type="checkbox"
-                                class="mt-0.5 rounded text-teal-600"
-                                :true-value="2"
-                                :false-value="1"
-                            />
-                            <span>
-                                <span class="block text-sm font-medium text-slate-800">Two short questions per line</span>
-                                <span class="mt-0.5 block text-xs text-slate-500">
-                                    Off = one question per line. On = two short questions side by side when layout allows.
-                                </span>
-                            </span>
+                            <span class="mt-1 block text-xs text-slate-500">Applies to the whole paper. Urdu appears where translations are available.</span>
                         </label>
                     </div>
+                    <SectionSettings v-model="sectionSettings" :counts="sectionCounts" />
                     <div class="flex justify-end gap-2 pt-2">
                         <button type="button" class="rounded-lg border px-4 py-2 text-sm" @click="showEditMeta = false">Done</button>
                     </div>

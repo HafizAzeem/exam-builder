@@ -278,7 +278,7 @@ const submit = async () => {
                     <div class="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <label class="text-sm">
                             <span class="font-medium text-slate-700">Type</span>
-                            <select v-model="row.type" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                            <select v-searchable v-model="row.type" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                                 <option value="mcq">MCQ</option>
                                 <option value="short">Short</option>
                                 <option value="long">Long</option>
@@ -288,7 +288,7 @@ const submit = async () => {
                         </label>
                         <label class="text-sm">
                             <span class="font-medium text-slate-700">Question source</span>
-                            <select v-model="row.source" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                            <select v-searchable v-model="row.source" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                                 <option value="additional">Additional</option>
                                 <option value="exercise">Exercise</option>
                                 <option value="past_paper">Past Paper</option>
@@ -296,14 +296,14 @@ const submit = async () => {
                         </label>
                         <label v-if="!inline" class="text-sm">
                             <span class="font-medium text-slate-700">Chapter</span>
-                            <select v-model="row.chapter_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                            <select v-searchable v-model="row.chapter_id" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                                 <option v-for="c in chapters" :key="c.id" :value="c.id">{{ inline ? `${c.subject?.grade?.label_en || ''} · ${c.subject?.name_en || ''} · ` : '' }}{{ c.number }}. {{ c.title_en }}</option>
                             </select>
                         </label>
                         <div v-if="row.source === 'past_paper'" class="min-w-0 text-sm">
                             <label class="block text-sm">
                                 <span class="font-medium text-slate-700">Board <span class="text-rose-600" aria-hidden="true">*</span></span>
-                                <select v-model="row.board_name" :disabled="loadingBoards" required class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                                <select v-searchable v-model="row.board_name" :disabled="loadingBoards" required class="mt-1 w-full rounded-lg border-slate-300 text-sm">
                                     <option value="">{{ loadingBoards ? 'Loading boards…' : 'Select a board' }}</option>
                                     <option v-for="board in boards" :key="board" :value="board">{{ board }}</option>
                                 </select>
@@ -326,9 +326,9 @@ const submit = async () => {
                                 <label class="text-xs font-semibold text-slate-700">Option {{ key }}<input v-model="row.mcq[`option_${key.toLowerCase()}_en`]" class="mt-1 w-full rounded-lg border-slate-300 py-1.5 text-sm" :placeholder="`Option ${key}`" /></label>
                             </div>
                         </div>
-                        <label class="mt-2 inline-flex items-center gap-2 text-xs font-semibold">Correct option<select v-model="row.mcq.correct_option" class="rounded-lg border-slate-300 py-1.5 text-sm"><option v-for="key in ['a','b','c','d']" :key="key" :value="key">{{ key.toUpperCase() }}</option></select></label>
+                        <label class="mt-2 inline-flex items-center gap-2 text-xs font-semibold">Correct option<select v-searchable v-model="row.mcq.correct_option" class="rounded-lg border-slate-300 py-1.5 text-sm"><option v-for="key in ['a','b','c','d']" :key="key" :value="key">{{ key.toUpperCase() }}</option></select></label>
                     </div>
-                    <select
+                    <select v-searchable
                         v-if="row.type === 'truefalse'"
                         v-model="row.correct_answer"
                         class="mt-2 rounded-lg border-slate-300 text-sm"

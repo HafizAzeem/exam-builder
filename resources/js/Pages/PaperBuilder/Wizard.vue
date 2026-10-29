@@ -510,7 +510,7 @@ const savePaper = () => {
                             placeholder="Search questions..."
                             @keyup.enter="loadQuestions"
                         />
-                        <select v-model="manualType" class="rounded border-gray-300">
+                        <select v-searchable v-model="manualType" class="rounded border-gray-300">
                             <option value="">All types</option>
                             <option value="mcq">MCQ</option>
                             <option value="short">Short</option>
@@ -518,7 +518,7 @@ const savePaper = () => {
                             <option value="fill">Fill</option>
                             <option value="truefalse">True/False</option>
                         </select>
-                        <select v-model.number="perPage" class="rounded border-gray-300">
+                        <select v-searchable v-model.number="perPage" class="rounded border-gray-300">
                             <option :value="10">10 / page</option>
                             <option :value="15">15 / page</option>
                             <option :value="20">20 / page</option>

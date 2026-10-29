@@ -32,7 +32,14 @@ const link = computed(() => {
                 <h2 class="text-xl font-bold text-slate-950">Activate in three steps</h2>
                 <ol class="mt-6 space-y-5 text-slate-700">
                     <li><strong>1. Send Rs {{ plans[selected].amount.toLocaleString() }}</strong> through JazzCash or Easypaisa.
-                        <div class="mt-3 rounded-xl bg-slate-50 p-4"><p class="text-2xl font-bold tracking-wide text-slate-950">{{ payment.number }}</p><p class="mt-1 font-medium">{{ payment.name }}</p><p class="mt-1 text-sm">Same number for JazzCash and Easypaisa.</p></div>
+                        <div class="mt-3 rounded-xl bg-slate-50 p-4"><p class="text-2xl font-bold tracking-wide text-slate-950">{{ payment.number }}</p><p class="mt-1 font-medium">{{ payment.name }}</p></div>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <a v-for="provider in ['JazzCash', 'Easypaisa']" :key="provider" :href="`/images/payments/${provider.toLowerCase()}-qr.png`" target="_blank" rel="noopener noreferrer" class="rounded-2xl border border-slate-200 bg-white p-4 text-center transition hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="font-bold text-slate-950">{{ provider }}</p>
+                                <img :src="`/images/payments/${provider.toLowerCase()}-qr.png`" :alt="`${provider} payment QR code for Hafiz Muhammad Azeem`" class="mx-auto mt-3 h-72 w-full object-contain" />
+                                <span class="mt-3 inline-block text-sm font-semibold text-blue-700">Open full-size QR code &nearr;</span>
+                            </a>
+                        </div>
                     </li>
                     <li><strong>2. Share the screenshot on WhatsApp.</strong> Include your school reference <strong>EB-{{ school.id }}</strong>, account email, and chosen plan.</li>
                     <li><strong>3. Wait for manual activation.</strong> Sending a message does not automatically renew your subscription. Your updated expiry will appear here after approval.</li>

@@ -47,8 +47,8 @@ const fields = [
                         </div>
                     </div>
                     <div>
-                        <label for="board_id" class="block text-sm font-semibold text-slate-700">Education board</label>
-                        <select id="board_id" v-model="form.board_id" required class="mt-2 w-full rounded-xl border-slate-300 text-sm"><option value="" disabled>Select your board</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
+                        <label for="board_id" class="block text-sm font-semibold text-slate-700">Education board <span class="text-xs font-normal text-slate-500">(required)</span></label>
+                        <select v-searchable id="board_id" v-model="form.board_id" required class="mt-2 w-full rounded-xl border-slate-300 text-sm"><option value="" disabled>Select your education board</option><option v-for="board in boards" :key="board.id" :value="board.id">{{ board.name }}</option></select>
                         <p class="mt-1 text-xs text-slate-500">Used to track your school’s contributions to the question bank.</p>
                         <InputError :message="form.errors.board_id" class="mt-1" />
                     </div>

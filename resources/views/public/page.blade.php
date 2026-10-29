@@ -3,13 +3,7 @@
 <head>@include('public.head')</head>
 <body class="bg-white font-sans text-slate-900 antialiased">
     <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4">{{ $copy['skip'] }}</a>
-    <header class="border-b border-slate-100 bg-white">
-        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-            <a href="{{ $site->path('home', $locale) }}" class="flex items-center gap-3"><img src="/logo.png?v=3" width="56" height="56" alt="Exam Builder" class="h-14 w-14 shrink-0 object-contain"><span class="text-lg font-extrabold" dir="ltr">Exam Builder</span></a>
-            <div class="flex flex-wrap items-center gap-4 text-sm font-semibold"><a href="{{ $site->path($pageKey, $locale === 'en' ? 'ur' : 'en') }}" lang="{{ $locale === 'en' ? 'ur' : 'en' }}" class="text-blue-700">{{ $locale === 'en' ? 'اردو' : 'English' }}</a><a href="/login" class="text-slate-600">{{ $copy['login'] }}</a><a href="/register" class="rounded-xl bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">{{ $copy['trial_short'] }}</a></div>
-        </div>
-        <div class="mx-auto max-w-6xl px-5 pb-5">@include('public.links')</div>
-    </header>
+    @include('public.header')
     <main id="main-content">
         <section class="border-b border-blue-100 bg-gradient-to-br from-blue-50 via-slate-50 to-white px-5 py-12 sm:py-16">
             <div class="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-3">

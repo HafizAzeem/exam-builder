@@ -15,7 +15,7 @@ class BoardController extends Controller
 {
     public function index(): Response
     {
-        $boards = Board::query()->orderBy('sort_order')->orderBy('name')->get();
+        $boards = Board::query()->dropdownOrder()->get();
 
         return Inertia::render('SuperAdmin/Curriculum/Boards', [
             'boards' => $boards,

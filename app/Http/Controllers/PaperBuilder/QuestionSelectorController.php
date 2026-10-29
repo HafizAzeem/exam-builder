@@ -133,10 +133,11 @@ class QuestionSelectorController extends Controller
         );
     }
 
-    public function pastPaperFilters()
+    public function pastPaperFilters(Request $request)
     {
         return [
             'boards' => CurriculumLookup::boards()->pluck('name')->values(),
+            'default_board' => $request->user()->institution?->board?->name,
             'years' => PastPaperTag::query()
                 ->whereNotNull('year')
                 ->distinct()

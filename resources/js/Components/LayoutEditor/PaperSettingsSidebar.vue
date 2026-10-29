@@ -1,16 +1,29 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { PAPER_TEMPLATES, TEMPLATE_FIELDS, normalizePaperTemplate } from '@/utils/paperTemplates';
 
 const layout = defineModel('layout', { type: Object, required: true });
 const settings = defineModel('settings', { type: Object, required: true });
 
 const props = defineProps({
-    headerTemplates: { type: Array, default: () => [1, 2, 3, 4, 5, 6, 7] },
+    headerTemplates: { type: Array, default: () => PAPER_TEMPLATES.map(t => t.id) },
     paperId: { type: [Number, String], required: true },
 });
 
 const emit = defineEmits(['watermark-uploaded']);
+const selectedTemplate = computed(() => normalizePaperTemplate(layout.value.header_template));
+const availableTemplates = computed(() => PAPER_TEMPLATES.filter(t => props.headerTemplates.includes(t.id)));
+const templateFields = computed(() => TEMPLATE_FIELDS.filter(f => f.templates.includes(selectedTemplate.value)));
+const templateDescription = computed(() => PAPER_TEMPLATES.find(t => t.id === selectedTemplate.value)?.description);
+function changeTemplate() {
+    layout.value.header_template = normalizePaperTemplate(layout.value.header_template);
+    if (selectedTemplate.value === 'urdu') layout.value.dual_medium = true;
+    if (selectedTemplate.value === 'entry') layout.value.dual_column = true;
+}
+function setTemplateDetail(key, value) {
+    layout.value.template_meta = { ...layout.value.template_meta, [key]: value };
+}
 
 const watermarkUploading = ref(false);
 const watermarkUploadError = ref('');
@@ -94,22 +107,28 @@ const removeWatermarkImage = () => {
         <h3 class="font-semibold text-gray-800">Paper settings</h3>
 
         <div>
-            <label class="text-sm text-gray-700">Header template</label>
-            <select
-                v-model.number="layout.header_template"
+            <label class="text-sm text-gray-700" for="paper-template">Paper template</label>
+            <select v-searchable
+                id="paper-template"
+                v-model="layout.header_template"
+                @change="changeTemplate"
                 class="mt-1 w-full rounded-md border-gray-300 text-sm"
-                :disabled="headerTemplates.length <= 1"
             >
-                <option v-for="t in headerTemplates" :key="t" :value="t">Template {{ t }}</option>
+                <option v-for="t in availableTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
             </select>
-            <p v-if="headerTemplates.length <= 1" class="mt-1 text-xs text-gray-500">
-                Only Template 1 is available for now.
-            </p>
+            <p class="mt-1 text-xs text-gray-500">{{ templateDescription }}</p>
+        </div>
+
+        <div v-for="field in templateFields" :key="field.key">
+            <label :for="`template-${field.key}`" class="text-sm text-gray-700">{{ field.label }}</label>
+            <input :id="`template-${field.key}`" :value="layout.template_meta?.[field.key] ?? ''"
+                maxlength="200" class="mt-1 w-full rounded-md border-gray-300 text-sm"
+                @input="setTemplateDetail(field.key, $event.target.value)" />
         </div>
 
         <div>
             <label class="text-sm text-gray-700">Font family</label>
-            <select v-model="layout.font_family" class="mt-1 w-full rounded-md border-gray-300 text-sm">
+            <select v-searchable v-model="layout.font_family" class="mt-1 w-full rounded-md border-gray-300 text-sm">
                 <option value="Arial">Arial</option>
                 <option value="Times New Roman">Times New Roman</option>
                 <option value="Jameel Noori Nastaleeq">Jameel Noori Nastaleeq</option>
@@ -150,7 +169,7 @@ const removeWatermarkImage = () => {
 
         <div>
             <label class="text-sm text-gray-700">Text weight</label>
-            <select v-model="layout.font_weight" class="mt-1 w-full rounded-md border-gray-300 text-sm">
+            <select v-searchable v-model="layout.font_weight" class="mt-1 w-full rounded-md border-gray-300 text-sm">
                 <option value="normal">Normal</option>
                 <option value="bold">Bold</option>
             </select>
@@ -219,7 +238,7 @@ const removeWatermarkImage = () => {
 
         <div>
             <label class="text-sm text-gray-700">Watermark</label>
-            <select
+            <select v-searchable
                 v-model="layout.watermark_type"
                 class="mt-1 w-full rounded-md border-gray-300 text-sm"
                 @change="onWatermarkTypeChange"

@@ -57,24 +57,24 @@ const paperHref = (paper) =>
                 Each card is one board paper (class, subject, year). Add papers by pasting the text in Compose → Paste text → Past paper.
             </p>
             <div class="mb-6 grid gap-3 rounded-lg bg-white p-4 shadow md:grid-cols-6">
-                <select v-model="form.board" class="rounded border-gray-300 md:col-span-2">
+                <select v-searchable v-model="form.board" class="rounded border-gray-300 md:col-span-2">
                     <option value="">All boards</option>
                     <option v-for="b in boards" :key="b" :value="b">{{ b }}</option>
                 </select>
-                <select v-model="form.year" class="rounded border-gray-300">
+                <select v-searchable v-model="form.year" class="rounded border-gray-300">
                     <option value="">All years</option>
                     <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
                 </select>
-                <select v-model="form.session" class="rounded border-gray-300">
+                <select v-searchable v-model="form.session" class="rounded border-gray-300">
                     <option value="">Any session</option>
                     <option value="morning">Morning</option>
                     <option value="evening">Evening</option>
                 </select>
-                <select v-model="form.grade_id" class="rounded border-gray-300" @change="onGradeChange">
+                <select v-searchable v-model="form.grade_id" class="rounded border-gray-300" @change="onGradeChange">
                     <option value="">All grades</option>
                     <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.label_en }}</option>
                 </select>
-                <select v-model="form.subject_id" class="rounded border-gray-300" :disabled="!form.grade_id">
+                <select v-searchable v-model="form.subject_id" class="rounded border-gray-300" :disabled="!form.grade_id">
                     <option value="">All subjects</option>
                     <option v-for="s in filteredSubjects" :key="s.id" :value="s.id">{{ s.name_en }}</option>
                 </select>
