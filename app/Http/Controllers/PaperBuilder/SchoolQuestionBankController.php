@@ -22,8 +22,10 @@ class SchoolQuestionBankController extends Controller
     {
         abort_unless($user?->institution_id && $user->hasAnyRole(['institution_admin', 'teacher']), 403);
 
-        return Question::where('institution_id', $user->institution_id)
+        $query = Question::where('institution_id', $user->institution_id)
             ->when(! $user->hasRole('institution_admin'), fn ($query) => $query->where('submitted_by', $user->id));
+        if (!$user->hasRole('institution_admin')) $user->teacherPermission?->scopeQuestions($query);
+        return $query;
     }
 
     public function index(Request $request)
@@ -40,6 +42,7 @@ class SchoolQuestionBankController extends Controller
         $user = $request->user();
         $query = Question::where('institution_id', $user->institution_id)->whereNull('parent_question_id')
             ->when($request->input('scope') === 'mine', fn ($q) => $q->where('submitted_by', $user->id));
+        if (!$user->hasRole('institution_admin')) $user->teacherPermission?->scopeQuestions($query);
         $chapterIds = (clone $query)->distinct()->pluck('chapter_id');
         $entryChapters = CurriculumLookup::chapters()->with('subject.grade');
         if (! $user->hasRole('institution_admin') && $user->hasRole('teacher')) {
@@ -76,6 +79,7 @@ class SchoolQuestionBankController extends Controller
         abort_unless($this->managedQuestions($request->user())->whereKey($question->id)->exists(), 403);
         $data = $request->validated('questions')[0];
         $this->assertChapterAllowed($request->user(), (int) $data['chapter_id']);
+        $this->assertSourceAllowed($request->user(), $data['source'] ?? $question->source);
 
         DB::transaction(function () use ($question, $data) {
             $question = Question::whereKey($question->id)->lockForUpdate()->firstOrFail();
@@ -130,6 +134,7 @@ class SchoolQuestionBankController extends Controller
         DB::transaction(function () use ($request, $institutionId, $rows, &$created, &$seen) {
             foreach ($rows as $data) {
                 $this->assertChapterAllowed($request->user(), (int) $data['chapter_id']);
+                $this->assertSourceAllowed($request->user(), $data['source'] ?? 'additional');
 
                 $key = hash('sha256', json_encode([
                     (int) $data['chapter_id'], $data['type'],
@@ -200,6 +205,17 @@ class SchoolQuestionBankController extends Controller
     /**
      * @param  array<string, mixed>  $data
      */
+    protected function assertSourceAllowed($user, string $source): void
+    {
+        if ($user->hasRole('institution_admin') || ! $user->hasRole('teacher')) {
+            return;
+        }
+        $allowed = $user->teacherPermission?->allowed_categories;
+        if (is_array($allowed)) {
+            abort_unless(in_array($source, $allowed, true), 403);
+        }
+    }
+
     protected function syncMcq(Question $question, array $data): void
     {
         if ($question->type === 'mcq') {

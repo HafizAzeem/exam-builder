@@ -49,6 +49,7 @@ const navLinks = computed(() => {
 
     if (isAdmin.value) {
         links.push(
+            { href: route('admin.teachers'), label: 'Teachers & permissions', active: route().current('admin.teachers*') },
             { href: route('admin.logs'), label: 'Activity Logs', active: route().current('admin.logs') },
         );
     }

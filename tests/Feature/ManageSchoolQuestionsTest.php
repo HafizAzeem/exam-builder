@@ -216,8 +216,9 @@ class ManageSchoolQuestionsTest extends TestCase
         $this->question($this->user(), ['chapter_id' => $chapter->id]);
         $teacher->teacherPermission()->create(['allowed_grades' => [9], 'allowed_subjects' => [$mine->chapter->subject_id]]);
         $this->actingAs($teacher)->get('/questions?grade_id='.$grade->id)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->has('questions.data', 1)->where('questions.data.0.id', $second->id)->has('entryChapters', 1)->where('entryChapters.0.id', $mine->chapter_id));
-        $this->get('/questions?subject_id='.$subject->id)->assertOk()->assertInertia(fn (Assert $page) => $page->has('questions.data', 1));
+            ->has('questions.data', 0)->has('entryChapters', 1)->where('entryChapters.0.id', $mine->chapter_id));
+        $this->get('/questions?subject_id='.$subject->id)->assertOk()->assertInertia(fn (Assert $page) => $page->has('questions.data', 0));
+        $this->get('/questions')->assertOk()->assertInertia(fn (Assert $page) => $page->has('questions.data', 1)->where('questions.data.0.id', $mine->id));
         $this->get('/questions?grade_id='.$grade->id.'&chapter_id='.$mine->chapter_id)->assertOk()->assertInertia(fn (Assert $page) => $page->has('questions.data', 0));
     }
 }

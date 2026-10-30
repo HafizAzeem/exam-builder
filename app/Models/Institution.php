@@ -10,6 +10,9 @@ use Illuminate\Support\Carbon;
 class Institution extends Model
 {
     protected $fillable = [
+        'assistant_request_limit',
+        'assistant_daily_limit',
+        'assistant_budget_started_at',
         'name',
         'logo_path',
         'address',
@@ -25,6 +28,9 @@ class Institution extends Model
     ];
 
     protected $casts = [
+        'assistant_request_limit' => 'integer',
+        'assistant_daily_limit' => 'integer',
+        'assistant_budget_started_at' => 'datetime',
         'expiry_date' => 'date',
         'trial_started_at' => 'datetime',
         'access_expires_at' => 'datetime',

@@ -440,7 +440,7 @@ const composeQuery = computed(() => ({
 }));
 
 const aiPasteUrl = computed(() => route('builder.ai.paste', composeQuery.value));
-const aiGenerateUrl = computed(() => route('builder.ai.generate', composeQuery.value));
+
 
 const loadPendingQuestions = async () => {
     const ids = (props.pendingQuestionIds || []).map((id) => Number(id)).filter(Boolean);
@@ -667,13 +667,13 @@ const cancelPaper = () => {
                     <span class="hidden text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:inline">Add</span>
                     <Link
                         v-if="aiToolsAllowed"
-                        :href="aiGenerateUrl"
+                        :href="aiPasteUrl"
                         class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
                     >
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Smart Generate
+                        Question Assistant
                     </Link>
                     <button
                         type="button"
@@ -695,13 +695,6 @@ const cancelPaper = () => {
                         </svg>
                         Add my questions
                     </button>
-                    <Link
-                        v-if="aiToolsAllowed"
-                        :href="aiPasteUrl"
-                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                        Paste text
-                    </Link>
                 </div>
 
                 <div class="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden="true" />
@@ -778,7 +771,7 @@ const cancelPaper = () => {
                     <p class="text-lg font-semibold text-slate-800">Your paper header is ready</p>
                     <p class="mt-2 text-sm text-slate-600">
                         <template v-if="aiToolsAllowed">
-                            Use <strong>Add my questions</strong> to type your own paper, <strong>From question bank</strong> for saved ones, <strong>Smart Generate</strong> for AI, or <strong>Paste text</strong> for a board past paper.
+                            Use <strong>Add my questions</strong> to type your own paper, <strong>From question bank</strong> for saved ones, <strong>Question Assistant</strong> to format your questions or find questions online.
                         </template>
                         <template v-else>
                             Use <strong>Add my questions</strong> to type your own paper, or <strong>From question bank</strong> for saved ones.
@@ -801,17 +794,10 @@ const cancelPaper = () => {
                         </button>
                         <Link
                             v-if="aiToolsAllowed"
-                            :href="aiGenerateUrl"
+                            :href="aiPasteUrl"
                             class="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-emerald-700"
                         >
-                            Smart Generate
-                        </Link>
-                        <Link
-                            v-if="aiToolsAllowed"
-                            :href="aiPasteUrl"
-                            class="rounded-xl border border-emerald-600 px-5 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
-                        >
-                            Paste text
+                            Question Assistant
                         </Link>
                     </div>
                 </div>

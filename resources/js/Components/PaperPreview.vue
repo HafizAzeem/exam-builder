@@ -214,7 +214,8 @@ const pastPaperRefLegacy = (q) => {
 };
 
 const tabularMcqs = computed(() =>
-    props.settings?.tabular_mcqs
+    props.layout?.section_settings?.mcq?.tabular_mcqs
+        ?? props.settings?.tabular_mcqs
         ?? props.layout?.tabular_mcqs
         ?? true,
 );

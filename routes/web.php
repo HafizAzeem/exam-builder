@@ -105,6 +105,8 @@ Route::middleware(['auth', 'tenant', 'teacher.scope'])->group(function () {
     Route::middleware('role:institution_admin')->prefix('admin')->group(function () {
         Route::get('/teachers', [TeacherController::class, 'index'])->name('admin.teachers');
         Route::post('/teachers', [TeacherController::class, 'store'])->name('admin.teachers.store');
+        Route::patch('/teachers/{teacher}', [TeacherController::class, 'update'])->name('admin.teachers.update');
+        Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('admin.teachers.destroy');
         Route::get('/profile', [InstituteProfileController::class, 'edit'])->name('admin.profile');
         Route::post('/profile', [InstituteProfileController::class, 'update'])->name('admin.profile.update');
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs');
@@ -116,6 +118,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
     Route::put('/plans', [PlanController::class, 'update'])->name('plans.update');
     Route::get('/schools', [SchoolController::class, 'index'])->name('schools.index');
+    Route::post('/schools/{institution}/assistant-budget', [SchoolController::class, 'assistantBudget'])->name('schools.assistant-budget');
     Route::post('/schools/{institution}/adjust', [SchoolController::class, 'adjust'])->name('schools.adjust');
     Route::post('/schools/{institution}/verify-owner', [SchoolController::class, 'verifyOwner'])->name('schools.verify-owner');
     Route::get('/', [AIImportController::class, 'dashboard'])->name('ai-import.dashboard');

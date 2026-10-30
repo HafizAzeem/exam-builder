@@ -32,7 +32,7 @@ try {
         if(url.pathname==='/api/builder/questions/all'){
             searches.push(url.searchParams.get('board_name'));
             const type=url.searchParams.get('type');
-            return request.respond({status:200,contentType:'application/json',body:JSON.stringify(Array.from({length:4},(_,i)=>({id:batch*10+i+1,type,source:'exercise',text_en:'Question '+(batch*10+i+1),text_ur:'سوال',mcq_options:type==='mcq'?{option_a_en:'A',option_b_en:'B',option_c_en:'C',option_d_en:'D'}:null}))) });
+            return request.respond({status:200,contentType:'application/json',body:JSON.stringify(Array.from({length:4},(_,i)=>({id:batch*10+i+1,type,parts:type==='long'?[{id:100+batch*10+i,text_en:'Original part',text_ur:''}]:[],source:'exercise',text_en:'Question '+(batch*10+i+1),text_ur:'سوال',mcq_options:type==='mcq'?{option_a_en:'A',option_b_en:'B',option_c_en:'C',option_d_en:'D'}:null}))) });
         }
         return request.respond({status:200,contentType:'text/html',body:'<html><head></head><body><div id="app"></div></body></html>'});
     });
@@ -43,6 +43,15 @@ try {
     await page.waitForFunction(()=>document.querySelectorAll('.bank-result').length===4);
     assert.equal(await page.$eval('#bank-board',el=>el.value),'BISE Lahore');
     assert.equal(searches[0],'BISE Lahore','First search must use school board');
+    const searchAlignment=await page.evaluate(()=>{
+        const board=document.querySelector('#bank-board').getBoundingClientRect();
+        const button=[...document.querySelectorAll('[data-question-bank] button')].find(el=>el.innerText.trim()==='Search Questions').getBoundingClientRect();
+        return Math.abs(board.bottom-button.bottom);
+    });
+    assert.ok(searchAlignment<3,'Search button should align with the desktop filter row');
+    await page.setViewport({width:390,height:844});
+    assert.equal(await page.$eval('[data-question-bank]',el=>el.scrollWidth>el.clientWidth+2),false,'Mobile filters should fit without horizontal overflow');
+    await page.setViewport({width:1440,height:1050});
     const text=await page.$eval('[data-question-bank]',el=>el.innerText);
     for(const label of ['Marks per question','Questions to attempt','Answer lines','Two questions per line','Medium'])assert.ok(!text.includes(label),label+' should live in Details');
     await page.select('#bank-board','');await page.waitForFunction(()=>document.querySelectorAll('.bank-result').length===4);
@@ -69,6 +78,24 @@ try {
     assert.equal(await page.$eval('[aria-label="Short questions: marks per question"]',el=>el.value),'3');
     assert.equal(await page.$eval('[aria-label="Short questions: answer lines"]',el=>el.value),'4');
     assert.equal(await page.$eval('[aria-label="Short questions: questions to attempt"]',el=>el.value),'1');
+    await clickText('Done');
+    batch=2;
+    await clickText('From question bank');await page.waitForSelector('#bank-board');
+    await (await page.$('[data-question-bank] select')).select('long');
+    await page.waitForFunction(()=>document.querySelectorAll('.bank-result').length===4);
+    await page.click('.bank-result');await clickText('Add 1 question to paper');
+    await page.waitForFunction(()=>!document.querySelector('[data-question-bank]'));
+    await clickText('Edit');
+    const partSelector='#compose-paper-preview .tpl1-part-row .tpl1-question-en span[contenteditable="true"]';
+    await page.waitForSelector(partSelector);
+    await page.$eval(partSelector,el=>{el.innerText='Edited part survives hiding';el.dispatchEvent(new Event('blur'));});
+    await clickText('Apply edits');
+    await clickText('Details');
+    const toggleParts=async()=>page.evaluate(()=>{const label=[...document.querySelectorAll('label')].find(el=>el.innerText.trim()==='Show question parts');label.querySelector('input').click();});
+    await toggleParts();await clickText('Done');
+    assert.equal(await page.$('#compose-paper-preview .tpl1-part-row'),null);
+    await clickText('Details');await toggleParts();await clickText('Done');
+    await page.waitForFunction(()=>document.querySelector('#compose-paper-preview').innerText.includes('Edited part survives hiding'));
     assert.deepEqual(errors,[]);
-    console.log('Question Bank defaults to school board, supports All boards, and has no paper settings; Details updates preview and survives repeat adds.');
+    console.log('Question Bank defaults to school board, supports All boards, and has no paper settings; Details updates preview, survives repeat adds, and retains edited parts when hidden and shown.');
 }finally{await browser.close();}

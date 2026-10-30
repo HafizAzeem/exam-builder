@@ -28,5 +28,13 @@ test('all paper layouts retain edited questions and expose their specific header
             if (template.id === 'academy') assert.ok(html.includes('Evening'));
             if (template.id === 'urdu') assert.ok(html.includes('سوال'));
         }
+        const mcqApp = createSSRApp(Preview, {
+            settings: { tabular_mcqs: true },
+            layout: { tabular_mcqs: true, section_settings: { mcq: { tabular_mcqs: false } } },
+            questions: [{id:1,type:'mcq',text_en:'MCQ',mcq_options:{option_a_en:'A',option_b_en:'B',option_c_en:'C',option_d_en:'D'}}],
+        });
+        mcqApp.directive('searchable', {});
+        const mcqHtml = await renderToString(mcqApp);
+        assert.ok(mcqHtml.includes('tpl1-mcq-options--stacked'), 'Section MCQ layout must override legacy global settings');
     } finally { await server.close(); }
 });

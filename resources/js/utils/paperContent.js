@@ -77,9 +77,6 @@ const mcqOptionsContent = (q) => {
 export function buildPaperContentFromPreview(preview, title = '') {
     const layout = preview?.layout ?? {};
     const sections = (preview?.sections ?? []).map((section) => {
-        const cfg = typeSettings(layout, section.type);
-        const showParts = cfg.show_parts !== false;
-
         return {
             type: section.type,
             number: section.number,
@@ -97,16 +94,15 @@ export function buildPaperContentFromPreview(preview, title = '') {
                 diagram: q.diagram ?? null,
                 past_ref: pastPaperRef(q, layout),
                 options: q.type === 'mcq' ? mcqOptionsContent(q) : null,
-                parts: showParts
-                    ? (q.parts ?? []).map((p, pIdx) => ({
-                        id: p.id,
-                        label: String.fromCharCode(97 + pIdx),
-                        text_en: p.text_en ?? '',
-                        text_ur: p.text_ur ?? '',
-                        image_path: p.image_path ?? null,
-                        diagram: p.diagram ?? null,
-                    }))
-                    : [],
+                // Visibility is handled by the renderer; never discard editable parts.
+                parts: (q.parts ?? []).map((p, pIdx) => ({
+                    id: p.id,
+                    label: String.fromCharCode(97 + pIdx),
+                    text_en: p.text_en ?? '',
+                    text_ur: p.text_ur ?? '',
+                    image_path: p.image_path ?? null,
+                    diagram: p.diagram ?? null,
+                })),
             })),
         };
     });

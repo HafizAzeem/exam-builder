@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
 use App\Models\User;
+use App\Services\QuestionAssistant\AssistantBudgetService;
 use App\Support\SubscriptionCatalog;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
@@ -39,6 +40,8 @@ class SchoolController extends Controller
             'logo_url' => $school->logo_path ? Storage::disk('public')->url($school->logo_path) : null,
             'plan' => $school->subscription_plan, 'expires_at' => $school->accessExpiry()?->toIso8601String(),
             'expired' => ! $school->hasAccess(), 'owners' => $school->users,
+            'assistantUsage' => app(AssistantBudgetService::class)->summary($school),
+            'assistantHistory' => DB::table('assistant_budget_events')->where('institution_id', $school->id)->latest('id')->limit(10)->get(),
             'history' => DB::table('school_account_events')->leftJoin('users', 'administrator_id', '=', 'users.id')
                 ->where('school_account_events.institution_id', $school->id)->latest('school_account_events.id')->limit(10)
                 ->get(['school_account_events.*', 'users.name as administrator_name'])
@@ -113,6 +116,44 @@ class SchoolController extends Controller
         });
 
         return back()->with('success', 'Owner email verified.');
+    }
+
+    public function assistantBudget(Request $request, Institution $institution)
+    {
+        $data = $request->validate([
+            'action' => ['required', Rule::in(['override', 'reset'])],
+            'request_id' => ['required', 'uuid'], 'confirmed' => ['required', 'accepted'],
+            'assistant_request_limit' => ['required_if:action,override', 'integer', 'min:0', 'max:100000'],
+            'assistant_daily_limit' => ['required_if:action,override', 'integer', 'min:0', 'max:10000'],
+            'note' => ['required', 'string', 'max:2000'],
+        ]);
+        DB::transaction(function () use ($request, $institution, $data) {
+            $school = Institution::whereKey($institution->id)->lockForUpdate()->firstOrFail();
+            $existing = DB::table('assistant_budget_events')->where('request_id', $data['request_id'])->first();
+            if ($existing) {
+                abort_unless((int) $existing->institution_id === (int) $school->id && $existing->action === $data['action'], 422);
+                return;
+            }
+            $fields = ['assistant_request_limit', 'assistant_daily_limit', 'assistant_budget_started_at'];
+            $previous = $school->only($fields);
+            if ($data['action'] === 'reset') {
+                // Old workers cannot publish into a freshly reset budget.
+                \App\Models\AssistantRequest::where('institution_id', $school->id)->whereIn('status', ['reserved', 'processing'])->update(['status' => 'canceled', 'finished_at' => now(), 'error_message' => 'School budget reset by platform administrator.']);
+                // Requests and daily attempts remain in the ledger; reset only request usage.
+                $school->assistant_budget_started_at = now()->addSecond();
+            } else {
+                $school->assistant_request_limit = $data['assistant_request_limit'];
+                $school->assistant_daily_limit = $data['assistant_daily_limit'];
+            }
+            $school->save();
+            DB::table('assistant_budget_events')->insert([
+                'institution_id' => $school->id, 'administrator_id' => $request->user()->id,
+                'request_id' => $data['request_id'], 'action' => $data['action'],
+                'previous_values' => json_encode($previous), 'new_values' => json_encode($school->only($fields)),
+                'note' => $data['note'], 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        });
+        return back()->with('success', 'Assistant budget updated and recorded in the audit history.');
     }
 
     private function alreadyApplied(string $requestId, int $schoolId, string $action): bool

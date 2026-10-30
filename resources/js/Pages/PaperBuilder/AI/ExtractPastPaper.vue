@@ -74,10 +74,10 @@ const submit = () => {
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <Link
-                        :href="route('builder.ai.generate', composeQuery)"
+                        :href="route('builder.ai.paste', composeQuery)"
                         class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                        Smart Generate
+                        Question Assistant
                     </Link>
                     <Link
                         :href="route('builder.create', composeQuery)"

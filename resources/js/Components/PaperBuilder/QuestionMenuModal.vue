@@ -251,7 +251,7 @@ const selectAllSources = (checked) => {
                 <!-- Filters -->
                 <div class="bank-filters">
                     <div class="bank-section-title"><div><h4>Find the right questions</h4><p>Choose a type and source, then select questions for your paper.</p></div></div>
-                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" :class="pastPapersSelected ? 'xl:grid-cols-6' : 'xl:grid-cols-5'">
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" :class="pastPapersSelected ? 'xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]' : 'xl:grid-cols-[repeat(5,minmax(0,1fr))_auto]'">
                         <label class="block">
                             <span class="bank-label">Question type</span>
                             <select v-searchable v-model="questionType" class="w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-teal-500 focus:ring-teal-500">
@@ -331,14 +331,11 @@ const selectAllSources = (checked) => {
                                 <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
                             </select>
                         </label>
-                    </div>
-                    <p v-if="filterError" role="alert" class="text-sm text-red-600">{{ filterError }}</p>
-
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <div class="flex items-end self-end">
                         <button
                             type="button"
-                            class="bank-button bank-button-primary"
-                            :disabled="searching || !chapterIds.length"
+                            class="bank-button bank-button-primary w-full whitespace-nowrap"
+                            :disabled="searching || initializing || !chapterIds.length"
                             @click="searchQuestions"
                         >
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,6 +343,11 @@ const selectAllSources = (checked) => {
                             </svg>
                             {{ searching ? 'Searching…' : 'Search Questions' }}
                         </button>
+                        </div>
+                    </div>
+                    <p v-if="filterError" role="alert" class="text-sm text-red-600">{{ filterError }}</p>
+
+                    <div class="pt-1">
                         <p class="bank-results-summary" role="status" aria-live="polite"><strong>{{ results.length }}</strong> questions available<span v-if="lastAddedCount" class="bank-added">{{ lastAddedCount }} added to paper</span></p>
                     </div>
                 </div>
