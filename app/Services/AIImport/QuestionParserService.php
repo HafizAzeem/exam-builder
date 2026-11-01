@@ -31,6 +31,10 @@ class QuestionParserService
             $textEn = $prepared['text_en'];
             $textUr = $prepared['text_ur'];
             $raw = $prepared['raw'];
+            if ($import->meta['assistant'] ?? false) {
+                if (is_array($prepared['mcq_options'])) unset($prepared['mcq_options']['correct_option']);
+                if (is_array($raw['mcq_options'] ?? null)) unset($raw['mcq_options']['correct_option']);
+            }
 
             $chapterNumber = isset($raw['chapter_number']) ? (int) $raw['chapter_number'] : null;
             $chapterTitle = $this->nullableString($raw['chapter_title'] ?? null);
@@ -64,6 +68,7 @@ class QuestionParserService
                 'difficulty' => $this->normalizeDifficulty($raw['difficulty'] ?? null),
                 'estimated_marks' => isset($raw['estimated_marks']) ? (int) $raw['estimated_marks'] : null,
                 'source_url' => $defaults['source_url'] ?? ($raw['source_url'] ?? null),
+                'source_published_at' => ($import->meta['assistant'] ?? false) ? ($raw['source_published_at'] ?? null) : null,
                 'source_excerpt' => $defaults['source_excerpt'] ?? null,
             ]);
         }

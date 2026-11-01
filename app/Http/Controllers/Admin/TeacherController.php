@@ -57,6 +57,7 @@ class TeacherController extends Controller
             $teacher->assignRole('teacher');
 
             TeacherPermission::create([
+                ...collect($validated)->only(TeacherPermission::ACTIONS)->all(),
                 'user_id' => $teacher->id,
                 'can_use_assistant' => $validated['can_use_assistant'] ?? true,
                 'allowed_grades' => $validated['allowed_grades'] ?? null,
@@ -78,7 +79,7 @@ class TeacherController extends Controller
                 $teacher->password = $data['password'];
             }
             $teacher->save();
-            $teacher->teacherPermission()->updateOrCreate([], collect($data)->only(['allowed_grades', 'allowed_subjects', 'allowed_categories', 'can_use_assistant'])->all());
+            $teacher->teacherPermission()->updateOrCreate([], collect($data)->only(['allowed_grades', 'allowed_subjects', 'allowed_categories', 'can_use_assistant', ...TeacherPermission::ACTIONS])->all());
         });
 
         return back()->with('success', 'Teacher and permissions updated.');
@@ -111,6 +112,7 @@ class TeacherController extends Controller
             $request->merge(['phone' => Phone::normalize($request->string('phone')->toString()) ?? $request->input('phone')]);
         }
         $data = $request->validate([
+            ...array_fill_keys(TeacherPermission::ACTIONS, ['sometimes', 'boolean']),
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($teacher?->id)],
             'phone' => ['nullable', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($teacher?->id)],

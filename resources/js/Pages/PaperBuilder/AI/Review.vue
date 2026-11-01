@@ -1,4 +1,6 @@
 <script setup>
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -339,7 +341,7 @@ const submit = () => {
                     </button>
                     <span class="text-slate-500">{{ selectedCount }} selected</span>
                 </div>
-                <PrimaryButton type="button" :disabled="form.processing || selectedCount < 1" @click="submit">
+                <PrimaryButton v-if="can('can_generate_paper') && can('can_add_question')" type="button" :disabled="form.processing || selectedCount < 1" @click="submit">
                     {{ form.processing ? 'Adding…' : `Add ${selectedCount} to paper` }}
                 </PrimaryButton>
             </div>

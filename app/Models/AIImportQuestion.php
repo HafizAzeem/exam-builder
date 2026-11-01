@@ -39,12 +39,14 @@ class AIImportQuestion extends Model
         'difficulty',
         'estimated_marks',
         'source_url',
+        'source_published_at',
         'source_excerpt',
         'duplicate_score',
         'duplicate_diff',
     ];
 
     protected $casts = [
+        'source_published_at' => 'datetime',
         'chapter_number' => 'integer',
         'mcq_options' => 'array',
         'parts' => 'array',

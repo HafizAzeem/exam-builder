@@ -4,13 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('institutions', function (Blueprint $table) {
             $table->unsignedInteger('assistant_request_limit')->default(20);
             $table->unsignedInteger('assistant_daily_limit')->default(10);
             $table->timestamp('assistant_budget_started_at')->nullable();
+            $table->unsignedBigInteger('assistant_budget_after_request_id')->default(0);
         });
         Schema::table('teacher_permissions', fn (Blueprint $table) => $table->boolean('can_use_assistant')->default(true));
         Schema::create('assistant_requests', function (Blueprint $table) {
@@ -43,11 +45,12 @@ return new class extends Migration {
             $table->timestamps();
         });
     }
+
     public function down(): void
     {
         Schema::dropIfExists('assistant_budget_events');
         Schema::dropIfExists('assistant_requests');
         Schema::table('teacher_permissions', fn (Blueprint $table) => $table->dropColumn('can_use_assistant'));
-        Schema::table('institutions', fn (Blueprint $table) => $table->dropColumn(['assistant_request_limit', 'assistant_daily_limit', 'assistant_budget_started_at']));
+        Schema::table('institutions', fn (Blueprint $table) => $table->dropColumn(['assistant_request_limit', 'assistant_daily_limit', 'assistant_budget_started_at', 'assistant_budget_after_request_id']));
     }
 };

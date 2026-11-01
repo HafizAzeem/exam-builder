@@ -1,9 +1,37 @@
 <?php
 
+use App\Models\AssistantRequest;
+use App\Models\Institution;
+use App\Services\AIImport\AIImportService;
+use App\Services\QuestionAssistant\AssistantBudgetService;
 use App\Support\PublicSite;
 use App\Support\SchoolAccess;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
+
+Artisan::command('assistant:reconcile', function () {
+    $budgets = app(AssistantBudgetService::class);
+    Institution::whereHas('users')->whereIn('id', AssistantRequest::whereIn('status', ['reserved', 'processing'])->select('institution_id'))
+        ->eachById(fn ($school) => $budgets->summary($school));
+    AssistantRequest::whereIn('status', ['completed', 'failed', 'canceled'])->whereNotNull('ai_import_id')->with('aiImport')->eachById(function ($row) {
+        $import = $row->aiImport;
+        if (! $import) {
+            return;
+        }
+        if ($import->stored_path) {
+            Storage::disk(app(AIImportService::class)->disk())->delete($import->stored_path);
+        }
+        if (isset($import->meta['extracted_text'])) {
+            $meta = $import->meta;
+            unset($meta['extracted_text']);
+            $import->update(['meta' => $meta]);
+        }
+    });
+    $this->info('Expired assistant reservations reconciled and temporary sources removed.');
+})->purpose('Refund expired assistant reservations and clean temporary source files');
+Schedule::command('assistant:reconcile')->everyMinute()->withoutOverlapping();
 
 Artisan::command('seo:build-public', function () {
     $site = app(PublicSite::class);

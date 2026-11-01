@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeacherPermission extends Model
 {
+    public const ACTIONS = ['can_generate_paper', 'can_edit_paper', 'can_delete_paper', 'can_add_question', 'can_edit_question', 'can_delete_question'];
+
     protected $fillable = [
         'user_id',
         'can_use_assistant',
+        ...self::ACTIONS,
         'allowed_grades',
         'allowed_subjects',
         'allowed_categories',
@@ -17,6 +20,12 @@ class TeacherPermission extends Model
 
     protected $casts = [
         'can_use_assistant' => 'boolean',
+        'can_generate_paper' => 'boolean',
+        'can_edit_paper' => 'boolean',
+        'can_delete_paper' => 'boolean',
+        'can_add_question' => 'boolean',
+        'can_edit_question' => 'boolean',
+        'can_delete_question' => 'boolean',
         'allowed_grades' => 'array',
         'allowed_subjects' => 'array',
         'allowed_categories' => 'array',

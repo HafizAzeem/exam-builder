@@ -90,7 +90,7 @@ class QuestionImportService
                 }
 
                 // Already in bank: attach existing question to the paper only (no re-insert).
-                if ($staging->is_duplicate && $staging->duplicate_of_question_id) {
+                if (!($import->meta['assistant'] ?? false) && $staging->is_duplicate && $staging->duplicate_of_question_id) {
                     $stats['question_ids'][] = (int) $staging->duplicate_of_question_id;
                     $stats['duplicates']++;
                     $staging->update([
@@ -101,7 +101,7 @@ class QuestionImportService
                     continue;
                 }
 
-                if ($this->duplicates->markIfDuplicate($staging->fresh())) {
+                if (!($import->meta['assistant'] ?? false) && $this->duplicates->markIfDuplicate($staging->fresh())) {
                     $fresh = $staging->fresh();
                     if ($fresh?->duplicate_of_question_id) {
                         $stats['question_ids'][] = (int) $fresh->duplicate_of_question_id;
@@ -157,6 +157,8 @@ class QuestionImportService
             'is_active' => true,
             'difficulty' => $staging->difficulty,
             'estimated_marks' => $staging->estimated_marks,
+            'source_url' => $staging->source_url,
+            'source_published_at' => $staging->source_published_at,
         ]);
 
         if ($question->type === 'mcq' && is_array($staging->mcq_options)) {
@@ -171,7 +173,7 @@ class QuestionImportService
                 'option_c_ur' => $mcq['option_c_ur'] ?? null,
                 'option_d_en' => $mcq['option_d_en'] ?? '',
                 'option_d_ur' => $mcq['option_d_ur'] ?? null,
-                'correct_option' => $mcq['correct_option'] ?? 'a',
+                'correct_option' => ($import->meta['assistant'] ?? false) ? null : ($mcq['correct_option'] ?? 'a'),
             ]);
         }
 
@@ -179,7 +181,7 @@ class QuestionImportService
             PastPaperTag::create([
                 'question_id' => $question->id,
                 'board_name' => $import->board ?: 'Unknown Board',
-                'year' => $import->year ?: (int) date('Y'),
+                'year' => ($import->meta['assistant'] ?? false) ? $import->year : ($import->year ?: (int) date('Y')),
                 'session' => $import->session,
             ]);
         }

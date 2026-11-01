@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\TeacherPermission;
 use App\Support\SchoolAccess;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -38,6 +39,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? [
                     ...$request->user()->toArray(),
                     'roles' => $request->user()->getRoleNames()->values()->all(),
+                    'teacher_actions' => collect(TeacherPermission::ACTIONS)->mapWithKeys(fn ($action) => [$action => ! $request->user()->hasRole('teacher') || $request->user()->hasRole('institution_admin') || ($request->user()->teacherPermission?->$action ?? true)])->all(),
                 ] : null,
             ],
             'flash' => [

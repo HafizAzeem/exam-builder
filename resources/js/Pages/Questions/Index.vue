@@ -1,5 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 import { Head, Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
@@ -90,12 +92,12 @@ async function remove() {
         <div class="mx-auto max-w-6xl px-4 py-5 sm:px-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div><h1 class="text-3xl font-bold text-slate-950">{{ title }}</h1><p class="mt-2 max-w-2xl leading-7 text-slate-600">Browse all questions added within your school, or choose My questions to find your own. {{ schoolWide ? 'You can manage every school question.' : 'You can edit and delete only your own additions.' }}</p></div>
-                <Link :href="route('questions.create')" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white">+ Add questions</Link>
+                <Link v-if="can('can_add_question')" :href="route('questions.create')" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white">+ Add questions</Link>
             </div>
             <nav class="mt-4 flex flex-wrap gap-2 border-b border-slate-200 pb-3" aria-label="Question bank sections">
                 <button @click="browse('all')" class="rounded-xl px-5 py-3 text-sm font-bold" :class="initialMode !== 'add' && !selected && filters.scope === 'all' ? 'bg-blue-600 text-white' : 'border bg-white text-slate-700'">All school questions</button>
                 <button @click="browse('mine')" class="rounded-xl px-5 py-3 text-sm font-bold" :class="initialMode !== 'add' && !selected && filters.scope === 'mine' ? 'bg-blue-600 text-white' : 'border bg-white text-slate-700'">My questions</button>
-                <Link :href="route('questions.create')" class="rounded-xl px-5 py-3 text-sm font-bold" :class="initialMode === 'add' ? 'bg-blue-600 text-white' : 'border bg-white text-slate-700'">Add questions</Link>
+                <Link v-if="can('can_add_question')" :href="route('questions.create')" class="rounded-xl px-5 py-3 text-sm font-bold" :class="initialMode === 'add' ? 'bg-blue-600 text-white' : 'border bg-white text-slate-700'">Add questions</Link>
             </nav>
             <div v-if="initialMode === 'add' && !selected" class="mt-6">
                 <p v-if="!entryChapters.length" class="mb-4 rounded-xl bg-amber-50 p-4 text-amber-800">No permitted active chapters are available. Ask your school administrator to check curriculum access.</p>
@@ -123,8 +125,8 @@ async function remove() {
                             </div>
                         </div>
                         <div v-if="question.can_manage" class="flex shrink-0 gap-1.5">
-                            <button :disabled="busy" @click="edit(question)" class="rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100">Edit</button>
-                            <button :disabled="busy" @click="deleting = question; errors = {}" class="rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100">Delete</button>
+                            <button v-if="can('can_edit_question')" :disabled="busy" @click="edit(question)" class="rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-100">Edit</button>
+                            <button v-if="can('can_delete_question')" :disabled="busy" @click="deleting = question; errors = {}" class="rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100">Delete</button>
                         </div>
                         <span v-else class="shrink-0 rounded bg-slate-100 px-2 py-1 text-xs text-slate-500">View only</span>
                     </div>

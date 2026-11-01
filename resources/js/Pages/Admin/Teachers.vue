@@ -7,14 +7,16 @@ const props = defineProps({teachers:Array,grades:Array,subjects:Array,categories
 const editing = ref(null);
 const deleting = ref(null);
 const all = ref({grades:false,subjects:true,categories:false});
-const form = useForm({name:'',email:'',phone:'',password:'',is_active:true,can_use_assistant:true,allowed_grades:[],allowed_subjects:null,allowed_categories:['exercise']});
+const actionLabels = {can_generate_paper:'Generate paper',can_edit_paper:'Edit paper',can_delete_paper:'Delete paper',can_add_question:'Add questions',can_edit_question:'Edit questions',can_delete_question:'Delete questions'};
+const actionDefaults = Object.fromEntries(Object.keys(actionLabels).map(key=>[key,true]));
+const form = useForm({...actionDefaults,name:'',email:'',phone:'',password:'',is_active:true,can_use_assistant:true,allowed_grades:[],allowed_subjects:null,allowed_categories:['exercise']});
 const visibleSubjects = computed(()=>props.subjects.filter(s=>all.value.grades || form.allowed_grades.includes(s.grade?.number)));
 const labels = {exercise:'Textbook exercises',additional:'Additional questions',past_paper:'Past papers'};
-function reset(){editing.value=null;all.value={grades:false,subjects:true,categories:false};form.defaults({name:'',email:'',phone:'',password:'',is_active:true,can_use_assistant:true,allowed_grades:[],allowed_subjects:null,allowed_categories:['exercise']});form.reset();form.clearErrors();}
+function reset(){editing.value=null;all.value={grades:false,subjects:true,categories:false};form.defaults({...actionDefaults,name:'',email:'',phone:'',password:'',is_active:true,can_use_assistant:true,allowed_grades:[],allowed_subjects:null,allowed_categories:['exercise']});form.reset();form.clearErrors();}
 function edit(teacher){
     editing.value=teacher.id;
     const permissions=teacher.teacher_permission ?? {};
-    form.defaults({name:teacher.name,email:teacher.email ?? '',phone:teacher.phone ?? '',password:'',is_active:teacher.is_active,can_use_assistant:permissions.can_use_assistant ?? true,
+    form.defaults({...Object.fromEntries(Object.keys(actionLabels).map(key=>[key,permissions[key] ?? true])),name:teacher.name,email:teacher.email ?? '',phone:teacher.phone ?? '',password:'',is_active:teacher.is_active,can_use_assistant:permissions.can_use_assistant ?? true,
         allowed_grades:permissions.allowed_grades ?? null,allowed_subjects:permissions.allowed_subjects ?? null,allowed_categories:permissions.allowed_categories ?? null});
     form.reset();form.clearErrors();
     all.value={grades:permissions.allowed_grades==null,subjects:permissions.allowed_subjects==null,categories:permissions.allowed_categories==null};
@@ -66,7 +68,8 @@ function summary(values,kind){
                         <InputError :message="form.errors.allowed_categories || form.errors['allowed_categories.0']" />
                     </fieldset>
                 </div>
-                <div><label class="flex items-center gap-2 text-sm"><input v-model="form.can_use_assistant" type="checkbox" />Question Assistant access</label><p class="mt-1 text-xs text-slate-500">Uses the school’s shared request budget. Class, subject and source permissions still apply.</p><InputError :message="form.errors.can_use_assistant" /></div>
+                <fieldset class="rounded-lg border p-4"><legend class="px-1 font-semibold">Allowed actions</legend><p class="mb-3 text-xs text-slate-500">Uncheck an action to revoke access. Teachers can only change their own papers and questions.</p><div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><div v-for="(label,key) in actionLabels" :key="key"><label class="flex items-center gap-2 text-sm"><input v-model="form[key]" type="checkbox" />{{ label }}</label><InputError :message="form.errors[key]" /></div></div></fieldset>
+                <div><label class="flex items-center gap-2 text-sm"><input v-model="form.can_use_assistant" type="checkbox" />Question Assistant access</label><p class="mt-1 text-xs text-slate-500">Uses the school’s shared request budget. Inserting results also requires Generate paper and Add questions. Class, subject and source permissions still apply.</p><InputError :message="form.errors.can_use_assistant" /></div>
                 <label class="flex items-center gap-2 text-sm"><input v-model="form.is_active" type="checkbox" />Account active — turn off to revoke access immediately</label>
                 <div class="flex gap-3"><button :disabled="form.processing" class="rounded-lg bg-indigo-600 px-5 py-2 text-white disabled:opacity-50">{{ form.processing ? 'Saving…' : editing ? 'Save teacher & permissions' : 'Create teacher' }}</button><button v-if="editing" type="button" class="rounded-lg border px-4 py-2" @click="reset">Cancel editing</button></div>
             </form>
@@ -75,7 +78,7 @@ function summary(values,kind){
                 <div v-for="teacher in teachers" :key="teacher.id" class="flex flex-wrap justify-between gap-4 p-5">
                     <div class="min-w-0 flex-1"><p class="font-semibold">{{ teacher.name }} <span :class="teacher.is_active ? 'text-green-700' : 'text-red-700'" class="ml-2 text-xs">{{ teacher.is_active ? 'Active' : 'Inactive' }}</span></p><p class="text-sm text-slate-500">{{ teacher.email || teacher.phone }}</p>
                         <p class="mt-2 text-xs text-slate-600">{{ summary(teacher.teacher_permission?.allowed_grades,'classes') }}</p><p class="mt-1 text-xs text-slate-600">{{ summary(teacher.teacher_permission?.allowed_subjects,'subjects') }}</p><p class="mt-1 text-xs text-slate-600">{{ summary(teacher.teacher_permission?.allowed_categories,'sources') }}</p>
-                    <p class="mt-1 text-xs text-slate-600">Question Assistant: {{ teacher.teacher_permission?.can_use_assistant === false ? 'No access' : 'Allowed' }}</p></div>
+                    <p class="mt-1 text-xs text-slate-600">Question Assistant: {{ teacher.teacher_permission?.can_use_assistant === false ? 'No access' : 'Allowed' }}</p><div class="mt-2 flex flex-wrap gap-1"><span v-for="(label,key) in actionLabels" :key="key" class="rounded px-2 py-1 text-xs" :class="teacher.teacher_permission?.[key] === false ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'">{{ label }}: {{ teacher.teacher_permission?.[key] === false ? 'No access' : 'Allowed' }}</span></div></div>
                     <div class="flex items-start gap-2"><button class="rounded-lg border px-3 py-2 text-sm" @click="edit(teacher)">Edit / permissions</button><button class="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700" @click="deleting=teacher">Delete</button></div>
                 </div><p v-if="!teachers.length" class="p-6 text-sm text-slate-500">No teachers yet. Create the first teacher above.</p>
             </div>

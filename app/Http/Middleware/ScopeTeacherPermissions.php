@@ -15,8 +15,21 @@ class ScopeTeacherPermissions
     {
         $user = $request->user();
 
-        if ($user && $user->hasRole('teacher')) {
+        if ($user && $user->hasRole('teacher') && ! $user->hasRole('institution_admin')) {
             abort_if($user->is_active === false, 403, 'Your teacher account has been deactivated. Contact your school administrator.');
+            $actions = match ($request->route()?->getName()) {
+                'builder', 'builder.subjects', 'builder.chapters', 'builder.create', 'builder.store', 'papers.duplicate' => ['can_generate_paper'],
+                'editor.update', 'editor.watermark-image' => ['can_edit_paper'],
+                'papers.destroy' => ['can_delete_paper'],
+                'questions.create', 'questions.store', 'builder.ai.manual-question' => ['can_add_question'],
+                'questions.update', 'builder.ai.questions.update' => ['can_edit_question'],
+                'questions.destroy' => ['can_delete_question'],
+                'builder.ai.add-to-paper' => ['can_generate_paper', 'can_add_question'],
+                default => [],
+            };
+            foreach ($actions as $action) {
+                abort_if($user->teacherPermission?->$action === false, 403, 'Your school administrator has disabled this action for your account.');
+            }
             $request->attributes->set('teacher_permissions', $user->teacherPermission);
             if ($request->is('builder', 'builder/*', 'api/builder/*', 'questions', 'questions/*')) {
                 foreach (['allowed_grades', 'allowed_subjects', 'allowed_categories'] as $field) {

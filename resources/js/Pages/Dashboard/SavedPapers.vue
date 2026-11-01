@@ -2,6 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 
 const props = defineProps({
     papers: Object,
@@ -23,6 +25,7 @@ const applySearch = () => {
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Saved Papers</h2>
                 <Link
+                    v-if="can('can_generate_paper')"
                     :href="route('builder')"
                     class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                 >
@@ -67,10 +70,11 @@ const applySearch = () => {
                                     {{ new Date(paper.created_at).toLocaleString() }}
                                 </td>
                                 <td class="space-x-2 px-4 py-3 text-right text-sm">
-                                    <Link :href="route('editor.show', paper.id)" class="text-indigo-600 hover:underline">Edit</Link>
+                                    <Link :href="route('editor.show', paper.id)" class="text-indigo-600 hover:underline">{{ can('can_edit_paper') ? 'Edit' : 'View' }}</Link>
                                     <Link :href="`${route('editor.show', paper.id)}?print=1`" class="text-green-600 hover:underline">Print</Link>
                                     <Link
                                         :href="route('papers.duplicate', paper.id)"
+                                        v-if="can('can_generate_paper')"
                                         method="post"
                                         as="button"
                                         class="text-gray-600 hover:underline"
@@ -79,6 +83,7 @@ const applySearch = () => {
                                     </Link>
                                     <Link
                                         :href="route('papers.destroy', paper.id)"
+                                        v-if="can('can_delete_paper')"
                                         method="delete"
                                         as="button"
                                         class="text-red-600 hover:underline"

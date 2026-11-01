@@ -20,6 +20,41 @@ class TeacherManagementTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_action_permissions_can_be_saved_and_block_direct_requests_independently(): void
+    {
+        $owner = $this->owner();
+        $fields = ['can_generate_paper', 'can_edit_paper', 'can_delete_paper', 'can_add_question', 'can_edit_question', 'can_delete_question'];
+        $payload = ['name' => 'Restricted teacher', 'email' => 'restricted@example.test', 'password' => 'password123', 'allowed_grades' => null, 'allowed_subjects' => null, 'allowed_categories' => null] + array_fill_keys($fields, false);
+        $this->actingAs($owner)->post('/admin/teachers', $payload)->assertSessionHasNoErrors();
+        $teacher = User::where('email', 'restricted@example.test')->firstOrFail();
+        foreach ($fields as $field) {
+            $this->assertFalse($teacher->teacherPermission->$field);
+        }
+        $paper = SavedPaper::create(['institution_id' => $owner->institution_id, 'user_id' => $teacher->id, 'title' => 'My paper', 'config_snapshot' => []]);
+        $this->actingAs($teacher)->post('/builder', [])->assertForbidden();
+        $this->patch('/editor/'.$paper->id, [])->assertForbidden();
+        $this->delete('/papers/'.$paper->id)->assertForbidden();
+        $this->post('/papers/'.$paper->id.'/duplicate')->assertForbidden();
+        $this->get('/questions/create')->assertForbidden();
+        $this->post('/questions', [])->assertForbidden();
+        $grade = Grade::create(['number' => 9, 'label_en' => 'Class 9', 'is_active' => true]);
+        $subject = Subject::create(['grade_id' => $grade->id, 'name_en' => 'English', 'is_active' => true]);
+        $chapter = Chapter::create(['subject_id' => $subject->id, 'number' => 1, 'title_en' => 'Grammar', 'is_active' => true]);
+        $question = Question::create(['institution_id' => $owner->institution_id, 'submitted_by' => $teacher->id, 'chapter_id' => $chapter->id, 'type' => 'short', 'source' => 'additional', 'text_en' => 'Original', 'is_active' => true]);
+        $this->patchJson('/questions/'.$question->id, ['chapter_id' => $chapter->id, 'type' => 'short', 'text_en' => 'Changed'])->assertForbidden();
+        $this->deleteJson('/questions/'.$question->id, ['confirmed' => true])->assertForbidden();
+        $this->get('/saved-papers')->assertOk();
+        $this->get('/questions')->assertOk();
+        $this->actingAs($owner)->patch('/admin/teachers/'.$teacher->id, array_replace($payload, array_fill_keys($fields, true)))->assertSessionHasNoErrors();
+        foreach ($fields as $field) {
+            $this->assertTrue($teacher->fresh()->teacherPermission->$field);
+        }
+        $this->actingAs($owner)->patch('/admin/teachers/'.$teacher->id, array_replace($payload, array_fill_keys($fields, true), ['can_generate_paper' => false, 'can_delete_question' => false]))->assertSessionHasNoErrors();
+        $this->actingAs($teacher->fresh())->patchJson('/questions/'.$question->id, ['chapter_id' => $chapter->id, 'type' => 'short', 'source' => 'additional', 'text_en' => 'Allowed edit'])->assertOk();
+        $this->deleteJson('/questions/'.$question->id, ['confirmed' => true])->assertForbidden();
+        $this->post('/builder', [])->assertForbidden();
+    }
+
     private function owner(): User
     {
         $school = Institution::create(['name' => 'School', 'expiry_date' => now()->addYear(), 'access_expires_at' => now()->addYear()]);
@@ -79,8 +114,8 @@ class TeacherManagementTest extends TestCase
         $this->post('/builder', ['title' => 'Paper', 'config' => ['question_ids' => [$forbidden->id]]])->assertForbidden();
         $this->post('/builder', ['title' => 'Paper', 'config' => ['question_ids' => [$wrongSource->id]]])->assertForbidden();
         $this->get('/questions')->assertInertia(fn (Assert $page) => $page->has('questions.data', 1));
-        $this->postJson('/questions', ['chapter_id'=>$chapters[9]->id,'type'=>'short','source'=>'additional','text_en'=>'Forbidden source'])->assertForbidden();
-        $this->patchJson('/questions/'.$allowed->id, ['chapter_id'=>$chapters[9]->id,'type'=>'short','source'=>'additional','text_en'=>'Changed source'])->assertForbidden();
+        $this->postJson('/questions', ['chapter_id' => $chapters[9]->id, 'type' => 'short', 'source' => 'additional', 'text_en' => 'Forbidden source'])->assertForbidden();
+        $this->patchJson('/questions/'.$allowed->id, ['chapter_id' => $chapters[9]->id, 'type' => 'short', 'source' => 'additional', 'text_en' => 'Changed source'])->assertForbidden();
     }
 
     public function test_deleting_a_teacher_with_saved_papers_keeps_their_work(): void
@@ -91,6 +126,6 @@ class TeacherManagementTest extends TestCase
         $paper = SavedPaper::create(['institution_id' => $owner->institution_id, 'user_id' => $teacher->id, 'title' => 'Saved work', 'config_snapshot' => ['question_ids' => []]]);
         $this->actingAs($owner)->delete("/admin/teachers/{$teacher->id}")->assertSessionHasErrors('teacher');
         $this->assertDatabaseHas('users', ['id' => $teacher->id]);
-        $this->assertDatabaseHas('saved_papers',['id' => $paper->id]);
+        $this->assertDatabaseHas('saved_papers', ['id' => $paper->id]);
     }
 }

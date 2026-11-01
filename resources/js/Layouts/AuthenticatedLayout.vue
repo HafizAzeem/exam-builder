@@ -8,6 +8,8 @@ import SchoolAccessBanner from '@/Components/SchoolAccessBanner.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 
 const showingNavigationDropdown = ref(false);
 const page = usePage();
@@ -47,14 +49,7 @@ const navLinks = computed(() => {
         { href: route('past-papers.index'), label: 'Past Papers', active: route().current('past-papers.*') },
     ];
 
-    if (isAdmin.value) {
-        links.push(
-            { href: route('admin.teachers'), label: 'Teachers & permissions', active: route().current('admin.teachers*') },
-            { href: route('admin.logs'), label: 'Activity Logs', active: route().current('admin.logs') },
-        );
-    }
-
-    return links;
+    return links.filter(link => link.label !== 'Generate Paper' || can('can_generate_paper'));
 });
 </script>
 

@@ -3,15 +3,35 @@ import { ref } from 'vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import InputError from '@/Components/InputError.vue';
+const requestKey = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
 const props = defineProps({ schools: Object, filters: Object, plans: Object });
 const search = ref(props.filters.search ?? '');
 const status = ref(props.filters.status ?? '');
 const selected = ref(null);
 const verifyBusy = ref(false);
+const budgetSchool = ref(null);
+const budgetForm = useForm({ action: 'override', assistant_request_limit: 20, assistant_daily_limit: 10, note: '', request_id: '', confirmed: true });
+function openBudget(school) {
+    budgetSchool.value = school;
+    budgetForm.reset(); budgetForm.clearErrors();
+    budgetForm.assistant_request_limit = school.assistantUsage.limit;
+    budgetForm.assistant_daily_limit = school.assistantUsage.daily_limit;
+    budgetForm.request_id = requestKey();
+}
+function saveBudget() {
+    budgetForm.post(route('super-admin.schools.assistant-budget', budgetSchool.value.id), { preserveScroll: true, onSuccess: () => { budgetSchool.value = null; } });
+}
 const form = useForm({ action: 'renew', plan: 'monthly', weeks: 2, payment_reference: '', note: '', request_id: '', confirmed: true });
 const date = value => value ? new Date(value).toLocaleString('en-PK', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 const apply = () => router.get(route('super-admin.schools.index'), { search: search.value, status: status.value }, { preserveState: true });
-function open(school) { selected.value = school; form.reset(); form.clearErrors(); form.plan = Object.keys(props.plans)[0]; form.request_id = crypto.randomUUID(); }
+function open(school) { selected.value = school; form.reset(); form.clearErrors(); form.plan = Object.keys(props.plans)[0]; form.request_id = requestKey(); }
 function save() {
     const adjustment = form.action === 'renew' ? `${props.plans[form.plan].label} (${props.plans[form.plan].months} calendar months) for Rs ${props.plans[form.plan].amount.toLocaleString()}` : form.weeks + ' additional trial weeks';
     if (!confirm('Apply ' + adjustment + ' to ' + selected.value.name + '? Confirm payment has been checked for a paid renewal.')) return;
@@ -20,7 +40,7 @@ function save() {
 function verify(school, owner) {
     if (verifyBusy.value || !confirm('Mark ' + owner.email + ' as verified for ' + school.name + '?')) return;
     verifyBusy.value = true;
-    router.post(route('super-admin.schools.verify-owner', school.id), { user_id: owner.id, request_id: crypto.randomUUID(), confirmed: true }, { preserveScroll: true, onFinish: () => { verifyBusy.value = false; } });
+    router.post(route('super-admin.schools.verify-owner', school.id), { user_id: owner.id, request_id: requestKey(), confirmed: true }, { preserveScroll: true, onFinish: () => { verifyBusy.value = false; } });
 }
 </script>
 <template>
@@ -64,6 +84,7 @@ function verify(school, owner) {
                                     <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="school.expired ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'">{{ school.expired ? 'Expired' : school.plan === 'trial' ? 'Trial' : 'Active' }}</span>
                                     <p class="mt-2 font-medium capitalize text-slate-700">{{ school.plan }}</p>
                                     <p class="mt-1 whitespace-nowrap text-xs text-slate-500">Until {{ date(school.expires_at) }}</p>
+                                    <div class="mt-3 text-xs text-slate-600"><p>Assistant: {{ school.assistantUsage.remaining }} / {{ school.assistantUsage.limit }} remaining</p><p>{{ school.assistantUsage.used }} used · {{ school.assistantUsage.reserved }} reserved · {{ school.assistantUsage.refunded }} refunded</p><p>Daily attempts: {{ school.assistantUsage.daily_used }} / {{ school.assistantUsage.daily_limit }}</p><button @click="openBudget(school)" class="mt-2 font-semibold text-blue-700 underline">Manage assistant budget</button></div>
                                 </td>
                                 <td class="px-5 py-4 text-right"><button @click="open(school)" class="whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Manage access</button></td>
                             </tr>
@@ -94,6 +115,24 @@ function verify(school, owner) {
                     <InputError v-for="(error, key) in form.errors" :key="key" :message="error" />
                     <div class="flex justify-end gap-3"><button type="button" :disabled="form.processing" @click="selected = null" class="rounded-lg border px-4 py-2">Cancel</button><button :disabled="form.processing" class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">{{ form.processing ? 'Applying…' : 'Review & apply' }}</button></div>
                 </form>
+            </section>
+        </div>
+        <div v-if="budgetSchool" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 p-4" @click.self="!budgetForm.processing && (budgetSchool = null)">
+            <section role="dialog" aria-modal="true" aria-labelledby="budget-title" class="my-auto max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6">
+                <h2 id="budget-title" class="text-xl font-bold">Assistant budget: {{ budgetSchool.name }}</h2>
+                <form @submit.prevent="saveBudget" class="mt-5 space-y-4">
+                    <div><label for="budget-action" class="block text-sm font-semibold">Action</label><select id="budget-action" v-model="budgetForm.action" class="mt-1 w-full rounded-lg border-slate-300"><option value="override">Change school limits</option><option value="reset">Reset request usage</option></select></div>
+                    <template v-if="budgetForm.action === 'override'">
+                        <div><label for="request-limit" class="block text-sm font-semibold">School request limit</label><input id="request-limit" v-model="budgetForm.assistant_request_limit" type="number" min="0" max="100000" required class="mt-1 w-full rounded-lg border-slate-300" /></div>
+                        <div><label for="daily-limit" class="block text-sm font-semibold">Provider attempts per day</label><input id="daily-limit" v-model="budgetForm.assistant_daily_limit" type="number" min="0" max="10000" required class="mt-1 w-full rounded-lg border-slate-300" /></div>
+                        <p class="text-sm text-slate-600">Changing limits preserves usage. A limit below current usage blocks new requests.</p>
+                    </template>
+                    <p v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">Reset request usage and cancel queued or running requests. Daily provider attempts remain counted. Previous previews and the audit ledger are preserved.</p>
+                    <div><label for="budget-note" class="block text-sm font-semibold">Reason for this change</label><textarea id="budget-note" v-model="budgetForm.note" required maxlength="2000" class="mt-1 w-full rounded-lg border-slate-300" /></div>
+                    <InputError v-for="(error, key) in budgetForm.errors" :key="key" :message="error" />
+                    <div class="flex justify-end gap-3"><button type="button" :disabled="budgetForm.processing" @click="budgetSchool = null" class="rounded-lg border px-4 py-2">Cancel</button><button :disabled="budgetForm.processing" class="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white disabled:opacity-50">{{ budgetForm.processing ? 'Applying…' : 'Apply budget change' }}</button></div>
+                </form>
+                <details class="mt-5 text-sm"><summary class="cursor-pointer font-semibold">Recent budget changes</summary><p v-if="!budgetSchool.assistantHistory.length" class="mt-2 text-slate-500">No changes recorded.</p><div v-for="event in budgetSchool.assistantHistory" :key="event.id" class="mt-2 rounded-lg border p-3"><p>{{ event.action }} · {{ date(event.created_at) }}</p><p>{{ event.note }}</p></div></details>
             </section>
         </div>
     </AuthenticatedLayout>

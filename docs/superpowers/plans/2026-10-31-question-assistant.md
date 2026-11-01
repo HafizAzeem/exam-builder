@@ -17,20 +17,23 @@ Root produces controller POST fields mode=format/search/upload, request_key UUID
 UI module edits Paste.vue, Status.vue, Review.vue, Compose.vue entry links and teacher Assistant checkbox only. Root owns TeacherAIController/routes, extraction/parser/import/provenance services and tests. Budget module owns migration/models/budget service, SuperAdmin SchoolController and school page plus quota route. Only root runs database tests (shared testing DB); others write tests but don't execute PHP suites concurrently.
 
 ## Task 1 — budget/admin module
-- [ ] Test and implement atomic reservation/idempotency, exhausted limits, daily/rate/concurrency guards, exact-once refunds, stale leases and cancellation.
-- [ ] Add school admin quota override/reset with audit, and teacher assistant grant/revoke field validation.
+- [x] Test and implement atomic reservation/idempotency, exhausted limits, daily/rate/concurrency guards, exact-once refunds, stale leases and cancellation.
+- [x] Add school admin quota override/reset with audit, and teacher assistant grant/revoke field validation.
 
 ## Task 2 — bounded processing + integration
-- [ ] Write failing tests for question-only filtering, context validation, upload limits and no generated fallback.
-- [ ] Implement bounded retrieval/extraction job and atomically publish questions through budget service.
-- [ ] Guard old endpoints, review/cancel/insert and preserve source metadata without fabricated answers/dates.
+- [x] Write failing tests for question-only filtering, context validation, upload limits and no generated fallback.
+- [x] Implement bounded retrieval/extraction job and atomically publish questions through budget service.
+- [x] Guard old endpoints, review/cancel/insert and preserve source metadata without fabricated answers/dates.
 
 ## Task 3 — teacher interface
-- [ ] Build one accessible composer, context controls, format/search actions, upload/count/limit controls, meaningful loading/cancel/error states.
-- [ ] Replace dual entry points and show question-only review with source links.
+- [x] Build one accessible composer, context controls, format/search actions, upload/count/limit controls, meaningful loading/cancel/error states.
+- [x] Replace dual entry points and show question-only review with source links.
 
 ## Task 4 — verification
-- [ ] Run focused PHP, all Node tests, browser workflows, production build and independent final review; apply safe migration after checking pending migrations.
+- [x] Run focused PHP, all Node tests, browser workflows, production build and independent final review; apply safe migration after checking pending migrations.
 
 ## Review focus
 Cross-tenant quota use; race between cancellation/publication; stale worker publishing after refund; free retries causing provider cost; answer keys/default-a leaking through legacy import/merge.
+
+
+Completion verification (2026-11-01): 42 focused PHP tests passed (assistant, budgets, question-only payload, free search, parser, legacy review and teacher management); 13 Node tests passed; assistant browser checks passed; production build passed; scoped Pint and git diff whitespace checks passed. Both assistant migrations applied locally and assistant:reconcile executed successfully. Independent pipeline and UI reviews from the implementation session were addressed, including cancellation races, mathematical text fidelity, source attribution, quota reset boundaries and local HTTP UUID support. The full 222-test suite was started but interrupted after slow progress; it is not recorded as passing. Provider calls were mocked; no live provider credits were used. The scheduled cleanup command requires the deployment scheduler to run each minute.

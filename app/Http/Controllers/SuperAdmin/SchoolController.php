@@ -134,13 +134,14 @@ class SchoolController extends Controller
                 abort_unless((int) $existing->institution_id === (int) $school->id && $existing->action === $data['action'], 422);
                 return;
             }
-            $fields = ['assistant_request_limit', 'assistant_daily_limit', 'assistant_budget_started_at'];
+            $fields = ['assistant_request_limit', 'assistant_daily_limit', 'assistant_budget_started_at', 'assistant_budget_after_request_id'];
             $previous = $school->only($fields);
             if ($data['action'] === 'reset') {
                 // Old workers cannot publish into a freshly reset budget.
                 \App\Models\AssistantRequest::where('institution_id', $school->id)->whereIn('status', ['reserved', 'processing'])->update(['status' => 'canceled', 'finished_at' => now(), 'error_message' => 'School budget reset by platform administrator.']);
                 // Requests and daily attempts remain in the ledger; reset only request usage.
-                $school->assistant_budget_started_at = now()->addSecond();
+                $school->assistant_budget_started_at = now();
+                $school->assistant_budget_after_request_id = \App\Models\AssistantRequest::where('institution_id', $school->id)->max('id') ?? 0;
             } else {
                 $school->assistant_request_limit = $data['assistant_request_limit'];
                 $school->assistant_daily_limit = $data['assistant_daily_limit'];

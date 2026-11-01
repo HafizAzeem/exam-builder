@@ -28,6 +28,7 @@ class TeacherAIReviewTest extends TestCase
         $contributor = $this->makeTeacher();
         $board = Board::create(['name' => 'Punjab', 'is_active' => true]);
         $school = Institution::create(['name' => 'Contributor School', 'board_id' => $board->id, 'expiry_date' => now()->addYear(), 'license_type' => 'full']);
+        $original->update(['institution_id' => $school->id]);
         $contributor->update(['institution_id' => $school->id]);
         $this->actingAs($contributor)->postJson(route('builder.ai.manual-question', $data['import']), [
             'chapter_id' => $data['chapterA']->id, 'type' => 'short', 'text_en' => 'Describe the present continuous tense.',

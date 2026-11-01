@@ -1,5 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 import PaperSettingsSidebar from '@/Components/LayoutEditor/PaperSettingsSidebar.vue';
 import SavePaperModal from '@/Components/LayoutEditor/SavePaperModal.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
@@ -454,14 +456,14 @@ onUnmounted(() => {
                 <h2 class="text-xl font-semibold text-gray-800">{{ savedPaper.title }}</h2>
                 <div class="flex flex-wrap gap-2">
                     <button
-                        v-if="!editingPaper"
+                        v-if="!editingPaper && can('can_edit_paper')"
                         type="button"
                         class="rounded-md bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700"
                         @click="startEditPaper"
                     >
                         Edit paper
                     </button>
-                    <template v-else>
+                    <template v-else-if="editingPaper && can('can_edit_paper')">
                         <button
                             type="button"
                             class="rounded-md bg-gray-700 px-4 py-2 text-sm text-white hover:bg-gray-800"
@@ -484,6 +486,7 @@ onUnmounted(() => {
                         class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700"
                         :disabled="imageUploads > 0"
                         @click="openSaveModal"
+                        v-if="can('can_edit_paper')"
                     >
                         Save paper
                     </button>
@@ -506,8 +509,8 @@ onUnmounted(() => {
             <span v-if="imageUploads" role="status" class="font-semibold">Preparing uploaded images… Please wait before applying or saving.</span>
             Click text on the preview to edit. Use <strong>Apply text</strong> or <strong>Save paper</strong> when done.
         </p>
-        <div class="no-print grid w-full gap-3 px-3 py-6 lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)] lg:px-4">
-            <div class="editor-sidebar-scroll no-print lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
+        <div class="no-print grid w-full gap-3 px-3 py-6 lg:px-4" :class="can('can_edit_paper') ? 'lg:grid-cols-[minmax(220px,260px)_minmax(0,1fr)]' : 'grid-cols-1'">
+            <div v-if="can('can_edit_paper')" class="editor-sidebar-scroll no-print lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                 <PaperSettingsSidebar
                     v-model:layout="layout"
                     v-model:settings="editorSettings"

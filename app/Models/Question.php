@@ -31,9 +31,12 @@ class Question extends Model
         'is_active',
         'difficulty',
         'estimated_marks',
+        'source_url',
+        'source_published_at',
     ];
 
     protected $casts = [
+        'source_published_at' => 'datetime',
         'has_parts' => 'boolean',
         'is_active' => 'boolean',
         'estimated_marks' => 'integer',

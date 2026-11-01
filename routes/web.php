@@ -62,6 +62,7 @@ Route::middleware(['auth', 'tenant', 'teacher.scope'])->group(function () {
     Route::get('/builder/ai/extract-past-paper', [TeacherAIController::class, 'extractPastPaperForm'])->name('builder.ai.extract-past-paper');
     Route::post('/builder/ai/extract-past-paper', [TeacherAIController::class, 'storeExtractPastPaper'])->name('builder.ai.extract-past-paper.store');
     Route::get('/builder/ai/{import}/status', [TeacherAIController::class, 'status'])->name('builder.ai.status');
+    Route::post('/builder/ai/{import}/cancel', [TeacherAIController::class, 'cancel'])->name('builder.ai.cancel');
     Route::get('/builder/ai/{import}/status.json', [TeacherAIController::class, 'statusJson'])->name('builder.ai.status.json');
     Route::get('/builder/ai/{import}/review', [TeacherAIController::class, 'review'])->name('builder.ai.review');
     Route::get('/builder/ai/{import}/search-bank', [TeacherAIController::class, 'searchBank'])->name('builder.ai.search-bank');

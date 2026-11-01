@@ -1,4 +1,6 @@
 <script setup>
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import PaperPreview from '@/Components/PaperPreview.vue';
 import QuestionMenuModal from '@/Components/PaperBuilder/QuestionMenuModal.vue';
@@ -688,7 +690,7 @@ const cancelPaper = () => {
                     <button
                         type="button"
                         class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
-                        @click="showOwnQuestion = true"
+                        v-if="can('can_add_question')" @click="showOwnQuestion = true"
                     >
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -781,7 +783,7 @@ const cancelPaper = () => {
                         <button
                             type="button"
                             class="rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
-                            @click="showOwnQuestion = true"
+                            v-if="can('can_add_question')" @click="showOwnQuestion = true"
                         >
                             Add my questions
                         </button>

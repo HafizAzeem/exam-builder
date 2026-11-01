@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
-const teacherProps={auth:{user:{name:'Owner',email:'owner@example.test',roles:['institution_admin']}},flash:{},errors:{},teachers:[{id:2,name:'Teacher One',email:'one@example.test',is_active:true,teacher_permission:{allowed_grades:[9],allowed_subjects:null,allowed_categories:['exercise']}}],grades:[{id:1,number:9,label_en:'Class 9'},{id:2,number:10,label_en:'Class 10'}],subjects:[{id:1,name_en:'English',grade:{number:9,label_en:'Class 9'}}],categories:['exercise','additional','past_paper']};
+const teacherProps={auth:{user:{name:'Owner',email:'owner@example.test',roles:['institution_admin']}},flash:{},errors:{},teachers:[{id:2,name:'Teacher One',email:'one@example.test',is_active:true,teacher_permission:{can_edit_paper:false,allowed_grades:[9],allowed_subjects:null,allowed_categories:['exercise']}}],grades:[{id:1,number:9,label_en:'Class 9'},{id:2,number:10,label_en:'Class 10'}],subjects:[{id:1,name_en:'English',grade:{number:9,label_en:'Class 9'}}],categories:['exercise','additional','past_paper']};
 const harness = `
 import {createApp,h} from 'vue';
 import {createInertiaApp} from '@inertiajs/vue3';
@@ -29,19 +29,24 @@ try {
     await page.goto('http://exam.test/');await page.addStyleTag({content:css + appCss});await page.addScriptTag({content:js});
     const clickText=async(text)=>{await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(el=>el.innerText.trim()===text);if(!button)throw Error('Missing button '+text);button.click();},text);};
     await page.waitForSelector('#teacher-form');
-    assert.equal(await page.$$eval('fieldset', els=>els.length),3);
+    assert.equal(await page.$$eval('fieldset', els=>els.length),4);
+    for (const label of ['Generate paper','Edit paper','Delete paper','Add questions','Edit questions','Delete questions']) {
+        assert.equal(await page.evaluate(label=>[...document.querySelectorAll('#teacher-form label')].some(el=>el.innerText.trim()===label && el.querySelector('input[type="checkbox"]')),label),true);
+    }
     assert.ok((await page.$eval('body',el=>el.innerText)).includes('Class 9'));
     await clickText('Edit / permissions');
     assert.equal(await page.$eval('#teacher-form input',el=>el.value),'Teacher One');
     assert.equal(await page.$eval('#teacher-form input[type="email"]',el=>el.value),'one@example.test');
+    assert.equal(await page.evaluate(()=>[...document.querySelectorAll('#teacher-form label')].find(el=>el.innerText.trim()==='Edit paper').querySelector('input').checked),false);
     await clickText('Cancel editing');
     assert.equal(await page.$eval('#teacher-form input',el=>el.value),'');
     assert.equal(await page.$eval('#teacher-form input[type="email"]',el=>el.value),'');
+    assert.equal(await page.evaluate(()=>[...document.querySelectorAll('#teacher-form label')].find(el=>el.innerText.trim()==='Edit paper').querySelector('input').checked),true);
     await clickText('Edit / permissions');
     await page.evaluate(()=>{const label=[...document.querySelectorAll('label')].find(el=>el.innerText.trim()==='All classes');label.querySelector('input').click();});
-    assert.equal(await page.$$eval('fieldset:first-of-type input',els=>els.length),1);
+    assert.equal(await page.$eval('fieldset',el=>el.querySelectorAll('input').length),1);
     await clickText('Cancel editing');
-    assert.equal(await page.$$eval('fieldset:first-of-type input',els=>els.length),3);
+    assert.equal(await page.$eval('fieldset',el=>el.querySelectorAll('input').length),3);
     await page.setViewport({width:390,height:844});
     assert.equal(await page.$eval('#teacher-form',el=>el.scrollWidth>el.clientWidth+2),false);
     assert.deepEqual(errors,[]);

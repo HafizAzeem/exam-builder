@@ -251,7 +251,7 @@ class WizardController extends Controller
             'institution' => $institution,
             'useSystemQuestionBank' => (bool) config('exam.use_system_question_bank'),
             'pendingQuestionIds' => session()->pull('builder_pending_question_ids', []),
-            'aiToolsAllowed' => in_array(
+            'aiToolsAllowed' => (!$user->hasRole('teacher') || ($user->teacherPermission?->can_use_assistant ?? true)) && in_array(
                 (int) ($selectedGrade->number ?? 0),
                 config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]),
                 true

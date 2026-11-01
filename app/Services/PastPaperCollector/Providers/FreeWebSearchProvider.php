@@ -48,7 +48,7 @@ class FreeWebSearchProvider implements WebSearchProvider
             try {
                 return $this->searchLangsearch($query, $maxResults, $options, $timeout);
             } catch (\Throwable $e) {
-                if (! $this->shouldFallbackFromLangsearch($e)) {
+                if (($options['assistant'] ?? false) || ! $this->shouldFallbackFromLangsearch($e)) {
                     throw $e;
                 }
                 $lastError = $e;
@@ -83,7 +83,7 @@ class FreeWebSearchProvider implements WebSearchProvider
         $payload = [
             'query' => $query,
             'count' => $maxResults,
-            'freshness' => 'noLimit',
+            'freshness' => in_array($options['freshness'] ?? '', ['oneYear','noLimit'], true) ? $options['freshness'] : 'noLimit',
             'contents' => ['text' => false],
         ];
 
@@ -203,6 +203,7 @@ class FreeWebSearchProvider implements WebSearchProvider
                 'snippet' => isset($item['snippet'])
                     ? (string) $item['snippet']
                     : (isset($item['summary']) ? (string) $item['summary'] : null),
+                ...(!empty($item['datePublished']) ? ['published_at'=>$item['datePublished']] : []),
             ];
         }
 
