@@ -11,6 +11,7 @@ use App\Support\ActivityLogger;
 use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
