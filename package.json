@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+    "guard": "node scripts/guard-repo.js",
+    "prebuild": "node scripts/guard-repo.js",
+    "build": "node init && vite build",
+    "predev": "node scripts/guard-repo.js",
+    "dev": "node init && vite"
   },
   "devDependencies": {
     "@inertiajs/vue3": "^2.0.0",
