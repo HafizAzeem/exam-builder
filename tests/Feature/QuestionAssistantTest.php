@@ -172,6 +172,35 @@ class QuestionAssistantTest extends TestCase
         Http::assertSentCount(2);
     }
 
+    public function test_enough_verified_questions_stop_before_a_second_provider_call(): void
+    {
+        extract($this->context());
+        $sources = [['text' => 'What is force? '.str_repeat('source ', 1300), 'url' => 'https://board.example/one'], ['text' => 'What is motion? '.str_repeat('source ', 1300), 'url' => 'https://board.example/two']];
+        $this->mock(AssistantSourceReader::class)->shouldReceive('sources')->once()->andReturn($sources);
+        $this->mock(AssistantAiExtractor::class)->shouldReceive('extract')->once()->andReturn([['type' => 'short', 'text_en' => 'What is force?']]);
+        $this->post(route('builder.ai.paste.store'), [...$data, 'mode' => 'search', 'question_count' => 1])->assertRedirect();
+        $row = AssistantRequest::firstOrFail();
+        app(QuestionAssistantService::class)->process($row);
+        $this->assertSame('completed', $row->fresh()->status);
+        $this->assertSame(1, AIImport::firstOrFail()->questions()->count());
+    }
+
+    public function test_a_second_source_failure_preserves_verified_questions_with_a_warning(): void
+    {
+        extract($this->context());
+        $sources = [['text' => 'What is force? '.str_repeat('source ', 1300), 'url' => 'https://board.example/one'], ['text' => 'What is motion? '.str_repeat('source ', 1300), 'url' => 'https://board.example/two']];
+        $this->mock(AssistantSourceReader::class)->shouldReceive('sources')->once()->andReturn($sources);
+        $extractor = $this->mock(AssistantAiExtractor::class);
+        $extractor->shouldReceive('extract')->once()->ordered()->andReturn([['type' => 'short', 'text_en' => 'What is force?']]);
+        $extractor->shouldReceive('extract')->once()->ordered()->andThrow(new \RuntimeException('Provider rate limit'));
+        $this->post(route('builder.ai.paste.store'), [...$data, 'mode' => 'search'])->assertRedirect();
+        $row = AssistantRequest::firstOrFail();
+        app(QuestionAssistantService::class)->process($row);
+        $this->assertSame('completed', $row->fresh()->status);
+        $this->assertSame(1, AIImport::firstOrFail()->questions()->count());
+        $this->assertNotEmpty(AIImport::firstOrFail()->meta['assistant_warning']);
+    }
+
     public function test_oversized_image_is_rejected_before_reserving_or_calling_providers(): void
     {
         extract($this->context());
@@ -222,7 +251,7 @@ class QuestionAssistantTest extends TestCase
             app(AssistantAiExtractor::class)->extract($import, 'What is force?');
         } catch (\RuntimeException $e) {
             $failed = true;
-            $this->assertStringContainsString('unavailable', $e->getMessage());
+            $this->assertStringContainsString('rate limit', $e->getMessage());
         }
         $this->assertTrue($failed, 'Rate-limit responses must fail without retrying.');
         Http::assertSentCount(2);

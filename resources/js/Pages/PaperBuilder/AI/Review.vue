@@ -350,6 +350,7 @@ const submit = () => {
         <div class="py-6">
             <div class="mx-auto max-w-4xl space-y-3 px-4 sm:px-6">
                 <p v-if="assistantRequest" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">Question Assistant preview · {{ localQuestions.length }} questions ready. Check wording, chapter matches and source relevance before adding them to your paper.</p>
+                <p v-if="assistantRequest && aiImport.meta?.assistant_warning" role="status" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ aiImport.meta.assistant_warning }}</p>
                 <p v-if="flashError" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ flashError }}</p>
 
                 <div

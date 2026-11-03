@@ -76,6 +76,7 @@ class QuestionAssistantService
                 $groups = [$groups[0], array_merge(...array_slice($groups, 1))];
             }
             $questions = [];
+            $extractedCount = 0;
             foreach (array_slice($groups, 0, 2) as $group) {
                 $check();
                 $text = implode("\n\nSOURCE BREAK\n\n", array_column($group, 'text'));
@@ -83,11 +84,31 @@ class QuestionAssistantService
                 if ($remaining < 3) {
                     throw new \RuntimeException('The request timed out before extraction could finish.');
                 }
-                $raw = $this->extractor->extract($import, $text, $image, min(45, $remaining));
+                try {
+                    $raw = $this->extractor->extract($import, $text, $image, min(45, $remaining));
+                } catch (\RuntimeException $e) {
+                    if (! $questions) {
+                        throw $e;
+                    }
+                    $meta = $import->fresh()->meta ?? [];
+                    $meta['assistant_warning'] = 'Some source material could not be processed. This preview contains only the questions already verified; fewer than your maximum may be shown.';
+                    $import->update(['meta' => $meta]);
+                    break;
+                }
+                $extractedCount += count($raw);
                 $questions = array_merge($questions, $this->payload->filter($raw, $group, (int) $import->meta['question_count']));
+                if (count($questions) >= (int) $import->meta['question_count']) {
+                    break;
+                }
             }
             $questions = $this->payload->filter($questions, $sources, (int) $import->meta['question_count']);
+            $meta = $import->fresh()->meta ?? [];
+            $meta['assistant_diagnostics'] = ['source_count' => count($sources), 'source_characters' => array_sum(array_map(fn ($source) => mb_strlen($source['text']), $sources)), 'extracted_count' => $extractedCount, 'verified_count' => count($questions)];
+            $import->update(['meta' => $meta]);
             if (! $questions) {
+                if ($request->mode === 'search' && $extractedCount === 0) {
+                    throw new \RuntimeException('Web pages were found, but no question text could be extracted. Some sites only list videos or PDF downloads. Try a chapter or exercise and question type, such as "Real Numbers short questions", or upload the question PDF. Your school request has been refunded.');
+                }
                 throw new \RuntimeException('No questions could be verified in the supplied material. Try a clear question list or a more specific search.');
             }
             $check();
