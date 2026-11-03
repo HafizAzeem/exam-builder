@@ -19,6 +19,7 @@ class QuestionMergeService
      */
     public function merge(AIImportQuestion $staging, Question $existing, AIImport $import): Question
     {
+        abort_if($import->meta['assistant'] ?? false, 422, 'Question-only assistant previews cannot overwrite an existing answer key. Insert the reviewed questions instead.');
         return DB::transaction(function () use ($staging, $existing, $import) {
             $existing->update([
                 'chapter_id' => $staging->chapter_id ?: $existing->chapter_id,

@@ -4,23 +4,28 @@ namespace App\Http\Controllers\PaperBuilder;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PaperBuilder\AddTeacherAIQuestionsToPaperRequest;
-use App\Http\Requests\PaperBuilder\StoreTeacherAIGenerateRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIManualQuestionRequest;
 use App\Http\Requests\PaperBuilder\StoreTeacherAIPasteRequest;
 use App\Http\Requests\PaperBuilder\UpdateTeacherAIQuestionRequest;
-use App\Jobs\ProcessGenerateQuestionsJob;
-use App\Jobs\ProcessUploadedDocumentJob;
+use App\Jobs\ProcessQuestionAssistantJob;
 use App\Models\AIImport;
 use App\Models\AIImportQuestion;
 use App\Models\AISetting;
+use App\Models\AssistantRequest;
 use App\Models\Grade;
 use App\Models\Subject;
+use App\Models\SyllabusEdition;
 use App\Services\AIImport\AIImportService;
 use App\Services\AIImport\QuestionImportService;
+use App\Services\QuestionAssistant\AssistantAccess;
+use App\Services\QuestionAssistant\AssistantBudgetService;
+use App\Services\QuestionAssistant\AssistantContextResolver;
+use App\Services\QuestionAssistant\AssistantUploadValidator;
 use App\Services\QuestionBankService;
 use App\Support\CurriculumLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -40,83 +45,111 @@ class TeacherAIController extends Controller
             return $context;
         }
 
+        $sources = $request->user()->hasRole('teacher') ? ($request->user()->teacherPermission?->allowed_categories ?? ['exercise', 'additional', 'past_paper']) : ['exercise', 'additional', 'past_paper'];
+        $bookTypes = array_values(array_intersect(['text_book', 'additional_questions', 'past_paper'], array_map(fn ($s) => ['exercise' => 'text_book', 'additional' => 'additional_questions', 'past_paper' => 'past_paper'][$s], $sources)));
+        $defaultBookType = in_array('additional_questions', $bookTypes, true) ? 'additional_questions' : ($bookTypes[0] ?? 'additional_questions');
+        app(AssistantAccess::class)->assert($request->user(), ['grade_id' => $context['grade']['id'], 'subject_id' => $context['subject']['id'], 'chapter_ids' => $context['selectedChapterIds'], 'book_type' => $defaultBookType]);
+
         return Inertia::render('PaperBuilder/AI/Paste', [
             ...$context,
             'boards' => CurriculumLookup::boards()->get(['id', 'name']),
+            'assistantUsage' => app(AssistantBudgetService::class)->summary($request->user()->institution),
+            'defaultBoard' => $request->user()->institution?->board?->name ?? '',
+            'curriculumYear' => SyllabusEdition::where('subject_id', $context['subject']['id'])->orderByDesc('academic_session')->value('academic_session'),
+            'contextConfirmation' => $request->session()->get('assistant_context_confirmation'),
+            'allowedBookTypes' => $bookTypes,
+            'defaultBookType' => $defaultBookType,
         ]);
     }
 
     public function storePaste(StoreTeacherAIPasteRequest $request): RedirectResponse
     {
-        $this->assertTeacherScope($request, $request->integer('grade_id'), $request->integer('subject_id'));
-
         $data = $request->validated();
-        $data['chapter_ids'] = array_values(array_map('intval', $data['chapter_ids']));
+        app(AssistantAccess::class)->assert($request->user(), $data);
+        $proposal = app(AssistantContextResolver::class)->proposal($data);
+        if ($proposal) {
+            $confirmed = $request->session()->get('assistant_context_confirmation');
+            if (! $request->boolean('confirm_context') || ! $confirmed || ! hash_equals($proposal['text_hash'], $confirmed['text_hash'] ?? '')) {
+                return back()->with('assistant_context_confirmation', $proposal)->withErrors(['raw_text' => 'Confirm the detected curriculum context before submitting.']);
+            }
+            $data['grade_id'] = $proposal['grade']['id'];
+            $data['subject_id'] = $proposal['subject']['id'];
+            $data['chapter_ids'] = $proposal['chapter_ids'];
+            app(AssistantAccess::class)->assert($request->user(), $data);
+        }
+        $text = null;
+        $file = $request->file('file');
+        if ($file) {
+            $text = app(AssistantUploadValidator::class)->validate($file);
+        }
+        $fingerprint = hash('sha256', json_encode(collect($data)->except(['request_key', 'file', 'confirm_context'])->all()).($file ? hash_file('sha256', $file->getRealPath()) : ''));
+        $budget = app(AssistantBudgetService::class);
+        // Identical completed uploads by this teacher reuse their preview without another provider call.
+        if ($file) {
+            $cached = AIImport::where('user_id', $request->user()->id)->where('meta->assistant_fingerprint', $fingerprint)->whereIn('status', ['review', 'completed'])->first();
+            if ($cached && AssistantRequest::where('ai_import_id', $cached->id)->where('status', 'completed')->exists()) {
+                return redirect()->route('builder.ai.review', $cached);
+            }
+        }
+        [$reservation,$import,$created] = DB::transaction(function () use ($request, $data, $budget, $file, $text, $fingerprint) {
+            $reservation = $budget->reserve($request->user(), $data['request_key'], $data['mode']);
+            if ($reservation->ai_import_id) {
+                $import = AIImport::findOrFail($reservation->ai_import_id);
+                abort_unless(hash_equals($import->meta['assistant_fingerprint'] ?? '', $fingerprint), 409, 'This request reference was already used for different content.');
 
-        $import = $this->imports->createFromPastedText($data, $data['raw_text'], $request->user()->id);
+                return [$reservation, $import, false];
+            }
+            $import = $file ? $this->imports->createFromUpload($data, $file, $request->user()->id) : $this->imports->createFromPastedText($data, $data['raw_text'], $request->user()->id);
+            $meta = array_merge($import->meta ?? [], [
+                'assistant' => true, 'institution_id' => $request->user()->institution_id, 'assistant_request_id' => $reservation->id, 'assistant_fingerprint' => $fingerprint,
+                'question_count' => (int) $data['question_count'], 'assistant_mode' => $data['mode'], 'assistant_stage' => 'queued',
+                'instructions' => $data['mode'] === 'search' ? mb_substr($data['raw_text'], 0, 2000) : '',
+                'curriculum_year' => SyllabusEdition::where('subject_id', $data['subject_id'])->orderByDesc('academic_session')->value('academic_session') ?? now()->year,
+            ]);
+            if ($text !== null) {
+                $meta['extracted_text'] = $text;
+            }
+            $import->update(['meta' => $meta]);
+            $budget->attachImport($reservation, $import);
 
-        $settings = AISetting::current();
-        if ($settings->enable_queue) {
-            ProcessUploadedDocumentJob::dispatch($import);
-        } else {
-            ProcessUploadedDocumentJob::dispatchSync($import);
+            return [$reservation, $import, true];
+        });
+        if ($created) {
+            try {
+                if (AISetting::current()->enable_queue) {
+                    ProcessQuestionAssistantJob::dispatch($reservation->id)->afterCommit();
+                } else {
+                    ProcessQuestionAssistantJob::dispatchSync($reservation->id);
+                }
+            } catch (\Throwable $e) {
+                $budget->fail($reservation, 'Assistant processing could not start. Your request was refunded.');
+                report($e);
+            }
         }
 
-        return redirect()
-            ->route('builder.ai.status', $import)
-            ->with('success', 'Text submitted. AI is extracting questions.');
+        return redirect()->route('builder.ai.status', $import);
     }
 
-    public function generateForm(Request $request): Response|RedirectResponse
+    public function generateForm(Request $request): RedirectResponse
     {
-        $context = $this->resolveBuilderContext($request);
-        if ($context instanceof RedirectResponse) {
-            return $context;
-        }
-
-        return Inertia::render('PaperBuilder/AI/Generate', [
-            ...$context,
-            'boards' => CurriculumLookup::boards()->get(['id', 'name']),
-            'defaultLanguage' => strcasecmp((string) ($context['subject']['name_en'] ?? ''), 'Urdu') === 0
-                ? 'urdu'
-                : 'english',
-        ]);
+        return redirect()->route('builder.ai.paste', $request->query());
     }
 
-    public function storeGenerate(StoreTeacherAIGenerateRequest $request): RedirectResponse
+    public function storeGenerate(Request $request): RedirectResponse
     {
-        $this->assertTeacherScope($request, $request->integer('grade_id'), $request->integer('subject_id'));
+        abort(410, 'Smart Generate has been replaced. Submit through Question Assistant to apply school limits and sourced questions.');
+    }
 
-        $data = $request->validated();
-        $data['chapter_ids'] = array_values(array_map('intval', $data['chapter_ids']));
-
-        $subject = Subject::query()->find($data['subject_id']);
-        if ($subject && strcasecmp($subject->name_en, 'Urdu') === 0 && ($data['language'] ?? '') === 'english') {
-            $data['language'] = 'urdu';
+    public function cancel(Request $request, AIImport $import): RedirectResponse
+    {
+        $this->authorizeTeacherImport($request, $import);
+        $row = AssistantRequest::where('ai_import_id', $import->id)->firstOrFail();
+        app(AssistantBudgetService::class)->cancel($row);
+        if ($row->fresh()->status === 'canceled') {
+            $import->update(['status' => 'failed', 'error_message' => 'Canceled. Your school request was refunded.']);
         }
 
-        $data['content_sources'] = array_values(array_unique(array_filter(
-            $data['content_sources'] ?? [$data['content_source'] ?? 'exercise']
-        )));
-        $data['content_source'] = $data['content_sources'][0] ?? 'exercise';
-        if (in_array('past_paper', $data['content_sources'], true)) {
-            $data['content_source'] = 'past_paper';
-        } elseif (in_array('online_practice', $data['content_sources'], true)) {
-            $data['content_source'] = 'online_practice';
-        }
-
-        $data['book_type'] = match ($data['content_source']) {
-            'past_paper' => 'past_paper',
-            'online_practice' => 'additional_questions',
-            default => 'text_book',
-        };
-
-        $import = $this->imports->createFromGenerate($data, $request->user()->id);
-        ProcessGenerateQuestionsJob::dispatchFor($import);
-
-        return redirect()
-            ->route('builder.ai.status', $import)
-            ->with('success', 'AI is preparing your questions.');
+        return redirect()->route('builder.ai.status', $import);
     }
 
     public function extractPastPaperForm(Request $request): RedirectResponse
@@ -128,9 +161,7 @@ class TeacherAIController extends Controller
 
     public function storeExtractPastPaper(Request $request): RedirectResponse
     {
-        return redirect()
-            ->route('builder.ai.paste', $request->query())
-            ->with('success', 'Paste the past paper text and set source type to Past paper.');
+        abort(410, 'Submit text or a bounded upload through Question Assistant.');
     }
 
     public function status(Request $request, AIImport $import): Response
@@ -141,7 +172,8 @@ class TeacherAIController extends Controller
 
         return Inertia::render('PaperBuilder/AI/Status', [
             'aiImport' => $import,
-            'statusPayload' => $import->statusPayload(),
+            'statusPayload' => $this->assistantStatus($import),
+            'assistantRequest' => $this->assistantRow($import),
             'composeQuery' => $this->composeQuery($import),
         ]);
     }
@@ -150,7 +182,7 @@ class TeacherAIController extends Controller
     {
         $this->authorizeTeacherImport($request, $import);
 
-        return response()->json($import->statusPayload());
+        return response()->json($this->assistantStatus($import));
     }
 
     public function review(Request $request, AIImport $import): Response|RedirectResponse
@@ -161,6 +193,9 @@ class TeacherAIController extends Controller
             return redirect()->route('builder.ai.status', $import);
         }
 
+        if (($import->meta['assistant'] ?? false) && ($this->assistantRow($import)['status'] ?? '') !== 'completed') {
+            return redirect()->route('builder.ai.status', $import);
+        }
         $this->imports->constrainChapters($import);
 
         $questions = $import->questions()
@@ -181,6 +216,7 @@ class TeacherAIController extends Controller
                 'estimated_marks',
                 'difficulty',
                 'match_status',
+                'source_url', 'source_published_at',
             ]);
 
         $import->load(['grade:id,number,label_en', 'subject:id,name_en']);
@@ -188,6 +224,7 @@ class TeacherAIController extends Controller
         return Inertia::render('PaperBuilder/AI/Review', [
             'aiImport' => $import,
             'questions' => $questions,
+            'assistantRequest' => $this->assistantRow($import),
             'chapters' => CurriculumLookup::chapters($import->subject_id)
                 ->whereIn('id', $import->chapterIds() ?: [0])
                 ->get(['id', 'number', 'title_en']),
@@ -200,6 +237,7 @@ class TeacherAIController extends Controller
     public function searchBank(Request $request, AIImport $import)
     {
         $this->authorizeTeacherImport($request, $import);
+        abort_if($import->meta['assistant'] ?? false, 422, 'Insert only questions from the reviewed assistant preview.');
 
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:200'],
@@ -239,12 +277,16 @@ class TeacherAIController extends Controller
     public function storeManualQuestion(StoreTeacherAIManualQuestionRequest $request, AIImport $import)
     {
         $this->authorizeTeacherImport($request, $import);
+        abort_if($import->meta['assistant'] ?? false, 422, 'Insert only questions from the reviewed assistant preview.');
 
         $data = $request->validated();
         $allowedChapters = $import->chapterIds();
         abort_unless(in_array((int) $data['chapter_id'], $allowedChapters, true), 422, 'Invalid chapter.');
 
         $staging = AIImportQuestion::query()->create([
+            'submitted_by' => $request->user()->id,
+            'contributor_board_id' => $request->user()->institution?->board_id,
+            'contributed_at' => now(),
             'ai_import_id' => $import->id,
             'chapter_id' => (int) $data['chapter_id'],
             'match_status' => 'manual',
@@ -298,6 +340,7 @@ class TeacherAIController extends Controller
     public function addBankQuestionsToSelection(Request $request, AIImport $import)
     {
         $this->authorizeTeacherImport($request, $import);
+        abort_if($import->meta['assistant'] ?? false, 422, 'Insert only questions from the reviewed assistant preview.');
 
         $validated = $request->validate([
             'question_ids' => ['required', 'array', 'min:1'],
@@ -360,6 +403,9 @@ class TeacherAIController extends Controller
     public function addToPaper(AddTeacherAIQuestionsToPaperRequest $request, AIImport $import): RedirectResponse
     {
         $this->authorizeTeacherImport($request, $import);
+        if ($import->meta['assistant'] ?? false) {
+            abort_unless(($this->assistantRow($import)['status'] ?? '') === 'completed', 409, 'This assistant request is not available for insertion.');
+        }
 
         $stagingIds = array_values(array_map('intval', $request->validated('staging_ids')));
 
@@ -472,14 +518,54 @@ class TeacherAIController extends Controller
     protected function authorizeTeacherImport(Request $request, AIImport $import): void
     {
         $user = $request->user();
+        if ($import->meta['assistant'] ?? false) {
+            abort_unless($user && (int) $import->user_id === (int) $user->id && (int) ($import->meta['institution_id'] ?? 0) === (int) $user->institution_id, 403);
+            app(AssistantAccess::class)->assert($user, ['grade_id' => $import->grade_id, 'subject_id' => $import->subject_id, 'chapter_ids' => $import->chapterIds(), 'book_type' => $import->book_type]);
+
+            return;
+        }
 
         abort_unless(
             $user && (
                 (int) $import->user_id === (int) $user->id
-                || ($import->book_type === 'past_paper' && in_array($import->status, ['review', 'completed', 'importing', 'processing', 'uploaded'], true))
+                || ($user->institution_id && (int) $user->institution_id === (int) $import->user?->institution_id && $import->book_type === 'past_paper' && in_array($import->status, ['review', 'completed', 'importing', 'processing', 'uploaded'], true))
             ),
             403
         );
+        $this->assertTeacherScope($request, (int) $import->grade_id, (int) $import->subject_id);
+        if ($user->hasRole('teacher') && is_array($user->teacherPermission?->allowed_categories)) {
+            abort_unless(in_array($import->sourceForBookType(), $user->teacherPermission->allowed_categories, true), 403);
+        }
+    }
+
+    protected function assistantRow(AIImport $import): ?array
+    {
+        if (! ($import->meta['assistant'] ?? false)) {
+            return null;
+        }
+        $row = AssistantRequest::where('ai_import_id', $import->id)->first();
+        if ($row && $row->expires_at->isPast() && in_array($row->status, ['reserved', 'processing'], true)) {
+            app(AssistantBudgetService::class)->fail($row, 'The assistant request expired. Your request has been refunded.');
+            $row->refresh();
+        }
+
+        return $row?->only(['id', 'mode', 'status', 'error_message']);
+    }
+
+    protected function assistantStatus(AIImport $import): array
+    {
+        $payload = $import->statusPayload();
+        $row = $this->assistantRow($import);
+        if ($row) {
+            $payload['assistant_stage'] = $import->fresh()->meta['assistant_stage'] ?? 'queued';
+            $payload['assistant_request'] = $row;
+            if (in_array($row['status'], ['canceled', 'failed'], true)) {
+                $payload['status'] = $row['status'];
+                $payload['error_message'] = $row['error_message'];
+            }
+        }
+
+        return $payload;
     }
 
     protected function assertTeacherScope(Request $request, int $gradeId, int $subjectId): void

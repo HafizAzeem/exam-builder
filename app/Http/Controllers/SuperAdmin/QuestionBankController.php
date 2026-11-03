@@ -4,9 +4,11 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Imports\QuestionBankImport;
+use App\Models\Institution;
 use App\Models\McqOption;
 use App\Models\PastPaperTag;
 use App\Models\Question;
+use App\Models\User;
 use App\Services\QuestionImageImportService;
 use App\Services\QuestionJsonImportService;
 use App\Support\CurriculumLookup;
@@ -33,7 +35,10 @@ class QuestionBankController extends Controller
             ->get(['id', 'number', 'title_en', 'subject_id']);
 
         $q = Question::query()
-            ->with(['chapter.subject.grade', 'mcqOptions', 'pastPaperTag', 'parts'])
+            ->with(['chapter.subject.grade', 'mcqOptions', 'pastPaperTag', 'parts', 'institution:id,name', 'submitter:id,name', 'contributorBoard:id,name'])
+            ->when($request->filled('institution_id'), fn ($q) => $q->where('institution_id', $request->integer('institution_id')))
+            ->when($request->filled('submitted_by'), fn ($q) => $q->where('submitted_by', $request->integer('submitted_by')))
+            ->when($request->filled('contributor_board_id'), fn ($q) => $q->where('contributor_board_id', $request->integer('contributor_board_id')))
             ->whereNull('parent_question_id')
             ->when($request->filled('grade_id'), function ($query) use ($request) {
                 $query->whereHas('chapter.subject', fn ($s) => $s->where('grade_id', $request->integer('grade_id')));
@@ -59,7 +64,9 @@ class QuestionBankController extends Controller
             'allChapters' => $allChapters,
             'boards' => CurriculumLookup::boards()->get(['id', 'name']),
             'questions' => $q,
-            'filters' => $request->only(['grade_id', 'subject_id', 'chapter_id', 'type', 'source', 'search']),
+            'institutions' => Institution::orderBy('name')->get(['id', 'name']),
+            'contributors' => User::whereIn('id', Question::whereNotNull('submitted_by')->select('submitted_by'))->orderBy('name')->get(['id', 'name']),
+            'filters' => $request->only(['grade_id', 'subject_id', 'chapter_id', 'type', 'source', 'search', 'institution_id', 'submitted_by', 'contributor_board_id']),
         ]);
     }
 

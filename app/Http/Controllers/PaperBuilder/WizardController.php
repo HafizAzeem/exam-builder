@@ -9,6 +9,7 @@ use App\Models\SavedPaper;
 use App\Models\Subject;
 use App\Support\ActivityLogger;
 use App\Support\CurriculumLookup;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -251,7 +252,7 @@ class WizardController extends Controller
             'institution' => $institution,
             'useSystemQuestionBank' => (bool) config('exam.use_system_question_bank'),
             'pendingQuestionIds' => session()->pull('builder_pending_question_ids', []),
-            'aiToolsAllowed' => in_array(
+            'aiToolsAllowed' => (!$user->hasRole('teacher') || ($user->teacherPermission?->can_use_assistant ?? true)) && in_array(
                 (int) ($selectedGrade->number ?? 0),
                 config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]),
                 true
@@ -270,6 +271,8 @@ class WizardController extends Controller
         // Use the full request config — validated() only keeps explicitly ruled keys
         // (e.g. question_ids) and would strip exam_meta / layout / grade_id.
         $config = $request->input('config', []);
+        // Content snapshots must come from the server, never from a submitted payload.
+        unset($config['question_records']);
         $config = $this->enrichPaperConfig($config);
 
         $institution = Institution::find($request->user()->institution_id);
@@ -343,7 +346,7 @@ class WizardController extends Controller
             }
 
             $config['layout']['paper_content']['header'] = $header;
-            $config['layout']['header_template'] = 1;
+            $config['layout']['header_template'] = \App\Support\PaperTemplates::normalize($config['layout']['header_template'] ?? 1);
         }
 
         return $config;

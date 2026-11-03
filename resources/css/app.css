@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.searchable-popup {
+    position: fixed;
+    inset: auto;
+    z-index: 100000;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    color: #334155;
+    box-shadow: 0 16px 40px #0f172a26;
+    font: 400 14px/1.5 Figtree, sans-serif;
+}
+.searchable-input { width: 100%; flex-shrink: 0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px; margin-bottom: 6px; }
+.searchable-input:focus { outline: 2px solid #2563eb; outline-offset: -1px; }
+.searchable-options { min-height: 0; max-height: 240px; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 0; }
+.searchable-option { cursor: pointer; border-radius: 6px; padding: 8px 12px; overflow-wrap: anywhere; }
+.searchable-option[aria-selected="true"] { font-weight: 600; }
+.searchable-option-active { background: #eff6ff; color: #1e40af; }
+.searchable-empty { padding: 12px; color: #64748b; }

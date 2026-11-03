@@ -24,6 +24,8 @@ const verificationLinkSent = computed(
 <template>
     <GuestLayout>
         <Head title="Email Verification" />
+        <h1 class="mb-4 text-xl font-bold text-slate-950">Verify your email to continue</h1>
+        <p v-if="$page.props.flash?.error" class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">{{ $page.props.flash.error }}</p>
 
         <div class="mb-4 text-sm text-gray-600">
             Thanks for signing up! Before getting started, could you verify your
@@ -57,5 +59,6 @@ const verificationLinkSent = computed(
                 >
             </div>
         </form>
+        <div class="mt-6 flex flex-wrap justify-between gap-3 text-sm"><Link :href="route('profile.edit')" class="font-semibold text-blue-700 underline">Correct your email address</Link><a href="https://wa.me/923284177318" target="_blank" rel="noopener noreferrer" class="text-emerald-700 underline">Contact support</a></div>
     </GuestLayout>
 </template>

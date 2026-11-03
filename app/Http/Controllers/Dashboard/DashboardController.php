@@ -9,6 +9,7 @@ use App\Models\LoginSession;
 use App\Models\PastPaperTag;
 use App\Models\SavedPaper;
 use App\Models\User;
+use App\Support\SubscriptionCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -96,10 +97,11 @@ class DashboardController extends Controller
 
         return [
             'name' => $institution->name,
-            'expiry_date' => $institution->expiry_date?->format('d-m-Y'),
+            'expiry_date' => $institution->accessExpiry()?->format('d-m-Y H:i'),
             'license_type' => $institution->license_type,
-            'license_label' => $institution->license_type === 'full' ? 'Full Access' : 'Partial Access',
-            'is_active' => $institution->expiry_date?->isFuture() ?? false,
+            'license_label' => ! $institution->hasAccess() ? 'Expired' : ($institution->subscription_plan === 'trial' ? 'Free trial' : ($institution->license_type === 'full' ? 'Full Access' : 'Partial Access')),
+            'subscription_label' => $institution->subscription_plan === 'trial' ? 'Free trial' : ((SubscriptionCatalog::all()[$institution->subscription_plan]['label'] ?? null) ?? ucfirst($institution->license_type)),
+            'is_active' => $institution->hasAccess(),
             'logo_url' => $institution->logo_path
                 ? Storage::disk('public')->url($institution->logo_path)
                 : null,

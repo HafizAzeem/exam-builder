@@ -73,7 +73,7 @@ const profileHref = computed(() =>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-500">Package</span>
-                                    <span class="text-sm font-medium capitalize text-gray-900">{{ institution.license_type }}</span>
+                                    <span class="text-right text-sm font-medium text-gray-900">{{ institution.subscription_label }}</span>
                                 </div>
                                 <div v-if="institution.logo_url" class="flex justify-center pt-2">
                                     <img

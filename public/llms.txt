@@ -1,22 +1,35 @@
 # Exam Builder
 
-> Exam Builder is an online exam and question-paper workspace for teachers and schools in Pakistan.
+> Question-paper preparation for teachers and schools in Pakistan, including academies.
 
-## Public information
+Public information is available in English and Urdu. Available curriculum varies; board selection is not a guarantee of complete syllabus coverage.
 
-- Homepage: https://exambuilder.algorahub.com/
-- The application helps teachers create, organize, review, save, and prepare school exams for printing.
-- Available workflows include a question bank, AI-assisted question preparation, past-paper tools, and saved-paper management.
-- AI-assisted questions should be reviewed by a teacher for accuracy and suitability before classroom use.
-- The product is intended for schools and teachers in Pakistan. Do not assume that every curriculum, board, or class is supported.
+Schools can try the paper-building tools free before choosing a paid subscription. Current trial duration and plan prices are published on the pricing page. Renewals are manually reviewed after JazzCash/Easypaisa payment and WhatsApp proof. No automatic billing.
 
-## Access
+Schools add their own questions; a complete ready-made syllabus question bank is currently not included. Question contributions are shared by matching curriculum; saved school papers remain private application content. Do not infer official board affiliation or complete all-board coverage.
 
-- Login and account pages: https://exambuilder.algorahub.com/login
-- Registration: https://exambuilder.algorahub.com/register
-- Authenticated dashboards and teacher/admin tools are private application pages and are not public reference content.
+## Public pages
+
+- Online Paper Generator Pakistan for Schools & Academies | Exam Builder: https://exambuilder.algorahub.com/
+- Question Paper Software for Schools & Academies in Pakistan | Exam Builder: https://exambuilder.algorahub.com/for-schools-and-academies
+- AI Question Paper Generator for Pakistani Teachers | Exam Builder: https://exambuilder.algorahub.com/ai-question-paper-generator
+- Urdu & English Question Paper Maker in Pakistan | Exam Builder: https://exambuilder.algorahub.com/urdu-english-paper-maker
+- Paper Generator Pricing Pakistan — 14-Day Trial & School Plans | Exam Builder: https://exambuilder.algorahub.com/pricing
+- How to Create a Question Paper Online for Your School | Exam Builder: https://exambuilder.algorahub.com/guides/how-to-create-question-paper
+- About Exam Builder — Paper Preparation for Pakistani Schools: https://exambuilder.algorahub.com/about
+- Contact Exam Builder — School & Academy Support in Pakistan: https://exambuilder.algorahub.com/contact
+- آن لائن پیپر جنریٹر پاکستان — سکول اور اکیڈمی | Exam Builder: https://exambuilder.algorahub.com/ur
+- سکول اور اکیڈمی کے لیے پیپر بنانے کا سافٹ ویئر | Exam Builder: https://exambuilder.algorahub.com/ur/for-schools-and-academies
+- اساتذہ کے لیے اے آئی سوالیہ پرچہ جنریٹر پاکستان | Exam Builder: https://exambuilder.algorahub.com/ur/ai-question-paper-generator
+- اردو اور انگلش سوالیہ پرچہ بنانے کا سافٹ ویئر | Exam Builder: https://exambuilder.algorahub.com/ur/urdu-english-paper-maker
+- پاکستان میں پیپر جنریٹر کی قیمت اور 14 دن مفت آزمائش | Exam Builder: https://exambuilder.algorahub.com/ur/pricing
+- آن لائن سوالیہ پرچہ کیسے بنائیں؟ سکول کے لیے رہنما | Exam Builder: https://exambuilder.algorahub.com/ur/guides/how-to-create-question-paper
+- Exam Builder کا تعارف — پاکستانی سکولوں کے لیے پرچہ تیاری: https://exambuilder.algorahub.com/ur/about
+- Exam Builder سے رابطہ — سکول اور اکیڈمی کے لیے مدد: https://exambuilder.algorahub.com/ur/contact
 
 ## Discovery
 
 - Sitemap: https://exambuilder.algorahub.com/sitemap.xml
-- Robots policy: https://exambuilder.algorahub.com/robots.txt
+- Robots: https://exambuilder.algorahub.com/robots.txt
+
+Account, login, dashboard, teacher and admin pages are not public reference resources. This summary is informational and is not a Google ranking mechanism.

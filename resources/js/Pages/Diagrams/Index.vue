@@ -31,8 +31,8 @@ function saved(){studio.value=false;scope.value='mine';filter();}
             <p v-if="error" role="alert" class="mb-4 rounded bg-red-50 p-3 text-red-700">{{ error }}</p>
             <form class="mb-6 flex flex-wrap gap-3 rounded-xl border bg-white p-4" @submit.prevent="filter">
                 <input v-model="search" aria-label="Search diagrams" placeholder="Search shapes, circuits, clocks…" class="min-w-48 flex-1 rounded-lg border-slate-300" />
-                <select v-model="category" aria-label="Category" class="rounded-lg border-slate-300" @change="filter"><option value="">All categories</option><option v-for="c in categories" :key="c">{{ c }}</option></select>
-                <select v-model="scope" aria-label="Library" class="rounded-lg border-slate-300" @change="filter"><option value="shared">Shared library</option><option value="mine">My diagrams</option><option v-if="canReview" value="pending">Awaiting review</option></select>
+                <select v-searchable v-model="category" aria-label="Category" class="rounded-lg border-slate-300" @change="filter"><option value="">All categories</option><option v-for="c in categories" :key="c">{{ c }}</option></select>
+                <select v-searchable v-model="scope" aria-label="Library" class="rounded-lg border-slate-300" @change="filter"><option value="shared">Shared library</option><option value="mine">My diagrams</option><option v-if="canReview" value="pending">Awaiting review</option></select>
                 <button class="rounded-lg bg-slate-900 px-4 py-2 text-white">Search</button>
             </form>
             <div v-if="!diagrams.data.length" class="rounded-xl border border-dashed p-12 text-center text-slate-500">No diagrams found. Try another search or create your own.</div>

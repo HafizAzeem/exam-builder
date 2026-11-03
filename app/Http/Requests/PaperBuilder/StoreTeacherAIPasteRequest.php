@@ -20,6 +20,11 @@ class StoreTeacherAIPasteRequest extends FormRequest
         $allowedGrades = config('exam.teacher_ai_grade_numbers', [5, 6, 7, 8, 9, 10, 11, 12]);
 
         return [
+            'mode' => ['required', 'in:format,search,upload'],
+            'request_key' => ['required', 'uuid'],
+            'question_count' => ['required', 'integer', 'min:1', 'max:30'],
+            'confirm_context' => ['sometimes', 'boolean'],
+            'file' => ['required_if:mode,upload', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120', Rule::prohibitedIf($this->input('mode') !== 'upload')],
             'grade_id' => [
                 'required',
                 'integer',
@@ -32,8 +37,8 @@ class StoreTeacherAIPasteRequest extends FormRequest
             'board' => CurriculumLookup::activeBoardName($isPastPaper),
             'year' => ['nullable', 'integer', 'min:1990', 'max:2100', Rule::prohibitedIf(! $isPastPaper)],
             'session' => ['nullable', 'in:morning,evening', Rule::prohibitedIf(! $isPastPaper)],
-            'language' => ['required', 'string', 'max:50'],
-            'raw_text' => ['required', 'string', 'min:20', 'max:500000'],
+            'language' => ['required', 'in:english,urdu,both'],
+            'raw_text' => ['required_unless:mode,upload', 'nullable', 'string', 'max:20000'],
         ];
     }
 

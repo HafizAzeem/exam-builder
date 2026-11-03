@@ -81,4 +81,17 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_inertia_logout_navigates_to_the_home_page_with_a_full_page_reload(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->withHeader('X-Inertia', 'true')
+            ->post('/logout');
+
+        $this->assertGuest();
+        $response->assertStatus(409);
+        $response->assertHeader('X-Inertia-Location', url('/'));
+    }
 }

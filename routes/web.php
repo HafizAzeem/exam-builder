@@ -15,6 +15,8 @@ use App\Http\Controllers\PaperBuilder\TeacherAIController;
 use App\Http\Controllers\PaperBuilder\WizardController;
 use App\Http\Controllers\PastPaperController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicPageController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\AIImportController;
 use App\Http\Controllers\SuperAdmin\Curriculum\BoardController;
 use App\Http\Controllers\SuperAdmin\Curriculum\ChapterController;
@@ -23,15 +25,26 @@ use App\Http\Controllers\SuperAdmin\Curriculum\SubjectController;
 use App\Http\Controllers\SuperAdmin\Curriculum\TopicController;
 use App\Http\Controllers\SuperAdmin\ImportHistoryController;
 use App\Http\Controllers\SuperAdmin\PastPaperCollectorController;
+use App\Http\Controllers\SuperAdmin\PlanController;
 use App\Http\Controllers\SuperAdmin\PreferredQuestionSiteController;
 use App\Http\Controllers\SuperAdmin\QuestionBankController;
 use App\Http\Controllers\SuperAdmin\ReviewController;
+use App\Http\Controllers\SuperAdmin\SchoolController;
 use App\Http\Controllers\SuperAdmin\SettingsController;
+use App\Support\PublicSite;
+use App\Support\SchoolAccess;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => view('landing'))->name('home');
+Route::get('/', [PublicPageController::class, 'show'])->defaults('page', 'home')->defaults('locale', 'en')->name('home');
+foreach (PublicSite::PATHS as $publicKey => $publicSlug) {
+    if ($publicKey !== 'home') {
+        Route::get('/'.$publicSlug, [PublicPageController::class, 'show'])->defaults('page', $publicKey)->defaults('locale', 'en')->name('public.en.'.$publicKey);
+    }
+    Route::get('/ur'.($publicSlug ? '/'.$publicSlug : ''), [PublicPageController::class, 'show'])->defaults('page', $publicKey)->defaults('locale', 'ur')->name('public.ur.'.$publicKey);
+}
 
-Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(function () {
+Route::middleware(['auth', 'tenant', 'teacher.scope'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/saved-papers', [PaperController::class, 'index'])->name('saved-papers.index');
     Route::get('/paper-history', [PaperHistoryController::class, 'index'])->name('paper-history.index');
@@ -49,6 +62,7 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::get('/builder/ai/extract-past-paper', [TeacherAIController::class, 'extractPastPaperForm'])->name('builder.ai.extract-past-paper');
     Route::post('/builder/ai/extract-past-paper', [TeacherAIController::class, 'storeExtractPastPaper'])->name('builder.ai.extract-past-paper.store');
     Route::get('/builder/ai/{import}/status', [TeacherAIController::class, 'status'])->name('builder.ai.status');
+    Route::post('/builder/ai/{import}/cancel', [TeacherAIController::class, 'cancel'])->name('builder.ai.cancel');
     Route::get('/builder/ai/{import}/status.json', [TeacherAIController::class, 'statusJson'])->name('builder.ai.status.json');
     Route::get('/builder/ai/{import}/review', [TeacherAIController::class, 'review'])->name('builder.ai.review');
     Route::get('/builder/ai/{import}/search-bank', [TeacherAIController::class, 'searchBank'])->name('builder.ai.search-bank');
@@ -59,6 +73,10 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::post('/builder/ai/{import}/add-to-paper', [TeacherAIController::class, 'addToPaper'])->name('builder.ai.add-to-paper');
 
     Route::post('/questions', [SchoolQuestionBankController::class, 'store'])->name('questions.store');
+    Route::get('/questions', [SchoolQuestionBankController::class, 'index'])->name('questions.index');
+    Route::get('/questions/create', [SchoolQuestionBankController::class, 'index'])->name('questions.create');
+    Route::patch('/questions/{question}', [SchoolQuestionBankController::class, 'update'])->name('questions.update');
+    Route::delete('/questions/{question}', [SchoolQuestionBankController::class, 'destroy'])->name('questions.destroy');
 
     Route::prefix('api/builder')->group(function () {
         Route::get('/grades/{grade}/subjects', [QuestionSelectorController::class, 'subjects']);
@@ -88,6 +106,8 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
     Route::middleware('role:institution_admin')->prefix('admin')->group(function () {
         Route::get('/teachers', [TeacherController::class, 'index'])->name('admin.teachers');
         Route::post('/teachers', [TeacherController::class, 'store'])->name('admin.teachers.store');
+        Route::patch('/teachers/{teacher}', [TeacherController::class, 'update'])->name('admin.teachers.update');
+        Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('admin.teachers.destroy');
         Route::get('/profile', [InstituteProfileController::class, 'edit'])->name('admin.profile');
         Route::post('/profile', [InstituteProfileController::class, 'update'])->name('admin.profile.update');
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs');
@@ -96,6 +116,12 @@ Route::middleware(['auth', 'tenant', 'check.licence', 'teacher.scope'])->group(f
 });
 
 Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
+    Route::put('/plans', [PlanController::class, 'update'])->name('plans.update');
+    Route::get('/schools', [SchoolController::class, 'index'])->name('schools.index');
+    Route::post('/schools/{institution}/assistant-budget', [SchoolController::class, 'assistantBudget'])->name('schools.assistant-budget');
+    Route::post('/schools/{institution}/adjust', [SchoolController::class, 'adjust'])->name('schools.adjust');
+    Route::post('/schools/{institution}/verify-owner', [SchoolController::class, 'verifyOwner'])->name('schools.verify-owner');
     Route::get('/', [AIImportController::class, 'dashboard'])->name('ai-import.dashboard');
     Route::get('/ai-import', [AIImportController::class, 'dashboard'])->name('ai-import.index');
     Route::get('/ai-import/upload', [AIImportController::class, 'create'])->name('ai-import.create');
@@ -173,6 +199,8 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('super-admin')->name('su
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/subscription', [SubscriptionController::class, 'show'])->name('subscription.show');
+    Route::get('/access-status', fn (Request $request) => response()->json(SchoolAccess::status($request->user())))->name('access.status');
     Route::get('/diagrams', [DiagramController::class, 'index'])->name('diagrams.index');
     Route::post('/diagrams', [DiagramController::class, 'store'])->name('diagrams.store');
     Route::patch('/diagrams/{diagram}', [DiagramController::class, 'update'])->name('diagrams.update');

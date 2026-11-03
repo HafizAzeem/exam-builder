@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\Question;
 use App\Models\SavedPaper;
 use App\Models\Subject;
+use App\Support\PaperTemplates;
 use Illuminate\Support\Collection;
 
 class PaperExportService
@@ -26,13 +27,16 @@ class PaperExportService
         );
 
         $questionIds = $config['question_ids'] ?? [];
+        $layout['header_template'] = PaperTemplates::normalize($layout['header_template'] ?? 1);
 
-        $questions = Question::query()
-            ->with(['mcqOptions', 'pastPaperTag', 'parts'])
-            ->whereIn('id', $questionIds)
-            ->get()
-            ->sortBy(fn ($q) => array_search($q->id, $questionIds))
-            ->values();
+        $questions = array_key_exists('question_records', $config)
+            ? SavedQuestionSnapshot::questions($config['question_records'])
+            : Question::query()
+                ->with(['mcqOptions', 'pastPaperTag', 'parts'])
+                ->whereIn('id', $questionIds)
+                ->get()
+                ->sortBy(fn ($q) => array_search($q->id, $questionIds))
+                ->values();
 
         if (! empty($layout['paper_content'])) {
             $questions = $this->applyPaperContentToQuestions($questions, $layout['paper_content']);
@@ -53,7 +57,7 @@ class PaperExportService
             $examMeta = array_merge($examMeta, $this->examMetaFromPaperContent($layout['paper_content']['header']));
         }
 
-        $examMeta = $this->enrichExamMetaFromRelations($examMeta, $config);
+        $examMeta = $this->enrichExamMetaFromRelations($examMeta, $config, $questions);
 
         if (! empty($layout['paper_content']['header'])) {
             $layout['paper_content']['header'] = $this->fillPaperContentHeader(
@@ -300,7 +304,7 @@ class PaperExportService
      * @param  array<string, mixed>  $config
      * @return array<string, mixed>
      */
-    protected function enrichExamMetaFromRelations(array $examMeta, array $config): array
+    protected function enrichExamMetaFromRelations(array $examMeta, array $config, ?Collection $questions = null): array
     {
         if ($this->isBlank($examMeta['class'] ?? null) && ! empty($config['grade_id'])) {
             $grade = Grade::query()->find($config['grade_id']);
@@ -319,7 +323,7 @@ class PaperExportService
         if ($this->isBlank($examMeta['class'] ?? null) || $this->isBlank($examMeta['subject'] ?? null)) {
             $questionId = collect($config['question_ids'] ?? [])->first();
             if ($questionId) {
-                $question = Question::query()
+                $question = $questions?->first() ?? Question::query()
                     ->with(['chapter.subject.grade'])
                     ->find($questionId);
 

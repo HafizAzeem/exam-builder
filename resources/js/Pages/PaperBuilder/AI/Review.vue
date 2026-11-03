@@ -1,4 +1,6 @@
 <script setup>
+import { useTeacherActions } from '@/Composables/useTeacherActions';
+const can = useTeacherActions();
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Modal from '@/Components/Modal.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -7,6 +9,7 @@ import { computed, reactive, ref, watch } from 'vue';
 
 const props = defineProps({
     aiImport: { type: Object, required: true },
+    assistantRequest: { type: Object, default: null },
     questions: { type: Array, default: () => [] },
     chapters: { type: Array, default: () => [] },
     composeQuery: { type: Object, required: true },
@@ -82,7 +85,6 @@ const manual = reactive({
         option_b_ur: '',
         option_c_ur: '',
         option_d_ur: '',
-        correct_option: 'a',
     },
 });
 
@@ -163,6 +165,13 @@ const typeLabel = (type) => ({
     truefalse: 'T/F',
 }[type] || type);
 
+const safeSource = (value) => {
+    try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : null; } catch { return null; }
+};
+const questionSources = (q) => {
+    const sources = Array.isArray(q.sources) ? q.sources : (q.source_url ? [{ url: q.source_url, title: q.source_title, published_at: q.source_published_at }] : []);
+    return sources.map(source => typeof source === 'string' ? { url: source } : source).filter(source => safeSource(source.url));
+};
 const questionText = (q) => q.text_en || q.text_ur || '(empty)';
 
 const chapterTitle = (chapterId) => {
@@ -332,7 +341,7 @@ const submit = () => {
                     </button>
                     <span class="text-slate-500">{{ selectedCount }} selected</span>
                 </div>
-                <PrimaryButton type="button" :disabled="form.processing || selectedCount < 1" @click="submit">
+                <PrimaryButton v-if="can('can_generate_paper') && can('can_add_question')" type="button" :disabled="form.processing || selectedCount < 1" @click="submit">
                     {{ form.processing ? 'Adding…' : `Add ${selectedCount} to paper` }}
                 </PrimaryButton>
             </div>
@@ -340,6 +349,8 @@ const submit = () => {
 
         <div class="py-6">
             <div class="mx-auto max-w-4xl space-y-3 px-4 sm:px-6">
+                <p v-if="assistantRequest" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">Question Assistant preview · {{ localQuestions.length }} questions ready. Check wording, chapter matches and source relevance before adding them to your paper.</p>
+                <p v-if="assistantRequest && aiImport.meta?.assistant_warning" role="status" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ aiImport.meta.assistant_warning }}</p>
                 <p v-if="flashError" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ flashError }}</p>
 
                 <div
@@ -369,12 +380,13 @@ const submit = () => {
                             v-if="canSelect(q)"
                             v-model="selected[q.id]"
                             type="checkbox"
+                            :aria-label="`Select question: ${questionText(q)}`"
                             class="mt-1 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                         />
                         <div class="min-w-0 flex-1">
                             <div class="mb-1 flex flex-wrap items-center gap-2 text-xs font-medium">
                                 <span class="rounded bg-slate-100 px-2 py-0.5 text-slate-700">{{ typeLabel(q.type) }}</span>
-                                <select
+                                <select v-searchable
                                     class="rounded-md border-slate-300 py-0.5 text-xs text-slate-700"
                                     :value="q.chapter_id ?? ''"
                                     @change="changeChapter(q, $event.target.value)"
@@ -399,6 +411,10 @@ const submit = () => {
                                 <li>C. {{ q.mcq_options.option_c_en || q.mcq_options.option_c_ur }}</li>
                                 <li>D. {{ q.mcq_options.option_d_en || q.mcq_options.option_d_ur }}</li>
                             </ul>
+                            <div v-if="questionSources(q).length" class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                <span v-for="source in questionSources(q)" :key="source.url"><a :href="safeSource(source.url)" target="_blank" rel="noopener noreferrer" class="text-emerald-700 underline">{{ source.title || 'View source' }} ↗</a> · {{ source.published_at || source.date || 'Date unavailable' }}</span>
+                            </div>
+                            <p v-if="q.review_warning || q.needs_review" class="mt-2 rounded-lg bg-amber-50 p-2 text-xs text-amber-800">{{ q.review_warning || 'Check this question against the original material before using it.' }}</p>
                             <p v-if="q.is_duplicate" class="mt-2 text-xs text-amber-700">
                                 Check to reuse the bank copy on this paper, or Remove to skip it.
                             </p>
@@ -420,11 +436,11 @@ const submit = () => {
                 <h3 class="text-lg font-semibold text-slate-900">Search existing questions</h3>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <input v-model="searchQ" type="search" placeholder="Filter by text…" class="min-w-[12rem] flex-1 rounded-lg border-slate-300 text-sm" @keyup.enter="runSearch" />
-                    <select v-model="searchChapterId" class="rounded-lg border-slate-300 text-sm">
+                    <select v-searchable v-model="searchChapterId" class="rounded-lg border-slate-300 text-sm">
                         <option value="">All chapters</option>
                         <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
                     </select>
-                    <select v-model="searchType" class="rounded-lg border-slate-300 text-sm">
+                    <select v-searchable v-model="searchType" class="rounded-lg border-slate-300 text-sm">
                         <option value="">All types</option>
                         <option value="mcq">MCQ</option>
                         <option value="short">Short</option>
@@ -463,7 +479,7 @@ const submit = () => {
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                     <label class="text-sm">
                         <span class="font-medium text-slate-700">Type</span>
-                        <select v-model="manual.type" class="mt-1 w-full rounded-lg border-slate-300">
+                        <select v-searchable v-model="manual.type" class="mt-1 w-full rounded-lg border-slate-300">
                             <option value="mcq">MCQ</option>
                             <option value="short">Short</option>
                             <option value="long">Long</option>
@@ -473,7 +489,7 @@ const submit = () => {
                     </label>
                     <label class="text-sm">
                         <span class="font-medium text-slate-700">Chapter</span>
-                        <select v-model="manual.chapter_id" class="mt-1 w-full rounded-lg border-slate-300">
+                        <select v-searchable v-model="manual.chapter_id" class="mt-1 w-full rounded-lg border-slate-300">
                             <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.number }}. {{ c.title_en }}</option>
                         </select>
                     </label>
@@ -489,15 +505,6 @@ const submit = () => {
                         <label v-for="letter in ['a','b','c','d']" :key="letter" class="text-sm">
                             <span class="font-medium text-slate-700">Option {{ letter.toUpperCase() }} (EN)</span>
                             <input v-model="manual.mcq_options[`option_${letter}_en`]" class="mt-1 w-full rounded-lg border-slate-300" />
-                        </label>
-                        <label class="text-sm sm:col-span-2">
-                            <span class="font-medium text-slate-700">Correct option</span>
-                            <select v-model="manual.mcq_options.correct_option" class="mt-1 w-full rounded-lg border-slate-300">
-                                <option value="a">A</option>
-                                <option value="b">B</option>
-                                <option value="c">C</option>
-                                <option value="d">D</option>
-                            </select>
                         </label>
                     </template>
                 </div>

@@ -70,7 +70,7 @@ final class CurriculumLookup
 
     public static function boards(): Builder
     {
-        return Board::query()->active()->orderBy('sort_order')->orderBy('name');
+        return Board::query()->active()->dropdownOrder();
     }
 
     public static function defaultBoardName(): string

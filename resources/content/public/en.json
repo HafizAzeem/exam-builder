@@ -1,0 +1,302 @@
+{
+  "eyebrow": "For schools, academies and teachers in Pakistan",
+  "skip": "Skip to content",
+  "login": "Log in",
+  "trial_short": "Start free",
+  "trial": "Start your :trial_days-day free trial",
+  "trial_summary": ":trial_days days free to try the school paper-building tools",
+  "plan_summary": "Choose the subscription length that suits your school. No automatic charges.",
+  "view_pricing": "See plans and renewal",
+  "full_access": "Full application access for your school.",
+  "payment_heading": "Renew manually with JazzCash or Easypaisa",
+  "payment_instructions": "Send payment, then share your screenshot, school reference and chosen plan on WhatsApp. Your account is activated after manual review; sending a message does not automatically renew access.",
+  "whatsapp": "Chat on WhatsApp",
+  "coverage_heading": "Build your question bank with your school’s questions",
+  "coverage": "Your school adds its own questions to build a reusable question bank. A complete ready-made syllabus question bank is currently not included. Check your class and subject setup and review questions before printing. Exam Builder is an independent product, not an official examination-board service.",
+  "questions_heading": "Questions schools ask",
+  "explore": "Explore Exam Builder",
+  "image_alt": "Exam Builder product illustration showing school exam preparation tools",
+  "sample_heading": "A small example of a classroom test layout",
+  "sample_note": "This original English example illustrates a possible question mix. It is not an official board paper, a prediction, or a claim of syllabus alignment. Review the content and marks for your own class.",
+  "pages": {
+    "home": {
+      "nav": "Home",
+      "title": "Online Paper Generator Pakistan for Schools & Academies | Exam Builder",
+      "description": "Add your school’s questions, create papers, save and print. Start a :trial_days-day free trial of Exam Builder for schools and academies in Pakistan.",
+      "heading": "Online question paper generator for schools and academies in Pakistan",
+      "intro": "Add your school’s questions, organise them in a reusable question bank, and create papers for your classes. Edit, save and print your papers in one place.",
+      "sections": [
+        {
+          "heading": "From teaching material to a reviewed paper",
+          "text": "Choose your class, subject and chapters, then select questions your school has added. Check wording, answers and marks before saving and printing."
+        },
+        {
+          "heading": "A workspace for your school",
+          "text": "Create a school account, add an optional logo and manage teacher access. Contributed questions are shared by matching curriculum; your saved papers remain within the school’s access rules."
+        },
+        {
+          "heading": "Urdu and English paper preparation",
+          "text": "Prepare papers using the available language content and layout tools. Check translations, right-to-left text, question spacing and the print preview before classroom use."
+        },
+        {
+          "heading": "A free trial with manual renewal",
+          "text": "Try the paper-building tools for :trial_days days. Choose a paid subscription when you want to continue, with manual JazzCash or Easypaisa renewal."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Is the paper generator permanently free?",
+          "a": "No. The free offer is a :trial_days-day trial with full application access. Paid school plans follow the trial; no automatic subscription charge is taken."
+        },
+        {
+          "q": "Can I use questions without reviewing them?",
+          "a": "Teachers should check every question and answer against the current textbook and assessment objectives before printing."
+        }
+      ]
+    },
+    "schools": {
+      "nav": "Schools & academies",
+      "title": "Question Paper Software for Schools & Academies in Pakistan | Exam Builder",
+      "description": "Organize school and academy exam preparation with teacher accounts, a shared curriculum question bank, school branding and saved papers.",
+      "heading": "Paper preparation that fits a school or academy",
+      "intro": "When several teachers prepare weekly tests, unit assessments and term papers, a shared process helps. Exam Builder gives the school owner an account for managing access while teachers prepare papers using the available curriculum and tools.",
+      "sections": [
+        {
+          "heading": "Start with a school workspace",
+          "text": "The school owner signs up with a name, email, WhatsApp number and board. Add your school name and an optional logo, then start the :trial_days-day trial. The account opens directly on the dashboard."
+        },
+        {
+          "heading": "Add teachers and manage access",
+          "text": "Use the school’s teacher-management tools to create teacher accounts and set the available grade, subject or question-category permissions. A teacher’s workspace follows those permissions."
+        },
+        {
+          "heading": "Share questions, keep papers controlled",
+          "text": "Questions contributed to the shared bank can be reused by other schools selecting the same curriculum class and book. Contribution history records the originating school, user and board where available. Saved examination papers are not published as public search pages."
+        },
+        {
+          "heading": "Prepare for printing",
+          "text": "Use your school profile, selected questions and layout tools to prepare an exam. Check numbering, language, marks, spacing and page breaks in the preview before you print or distribute it."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Can an academy sign up?",
+          "a": "Yes. An academy owner can create a school workspace using the academy’s name and manage teachers through the same school-account flow."
+        },
+        {
+          "q": "What happens when access expires?",
+          "a": "Creating and editing papers and other protected tools are blocked until renewal. Existing saved papers remain available to authorized users for viewing and printing. Owners must also meet the email-verification requirement."
+        }
+      ]
+    },
+    "ai": {
+      "nav": "AI paper preparation",
+      "title": "AI Question Paper Generator for Pakistani Teachers | Exam Builder",
+      "description": "Use AI-assisted question preparation from teaching text and instructions. Review questions, select the right chapters and create a printable school paper.",
+      "heading": "AI-assisted question preparation, with the teacher in control",
+      "intro": "Use Exam Builder’s available AI workflows to prepare draft questions from teaching material or generation instructions. The goal is a useful starting point for a teacher-reviewed paper, not an unverified exam produced without oversight.",
+      "sections": [
+        {
+          "heading": "Choose the source and curriculum",
+          "text": "Start from the class, subject and chapters your assessment covers. Use the available paste-text, generation or past-paper extraction workflow. Input options depend on the workflow and permissions; check what is available in your account."
+        },
+        {
+          "heading": "Review the draft questions",
+          "text": "Check each proposed question for accuracy, syllabus relevance, language and difficulty. Review answer options carefully: a plausible-looking option or explanation can still be wrong. Edit or remove unsuitable material before importing it into the paper."
+        },
+        {
+          "heading": "Reuse the question bank carefully",
+          "text": "The review tools can identify or attach existing bank questions instead of inserting another copy. Reusing an existing question preserves its recorded contributor; new manual contributions retain the actual submitting teacher."
+        },
+        {
+          "heading": "Finish with a print review",
+          "text": "After selecting questions, check marks, ordering, diagrams, Urdu/English content and the paper layout. Keep the current textbook and teaching objectives as the authority for the final exam."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Does AI guarantee correct or official board questions?",
+          "a": "No. AI can produce errors and does not predict official examinations. Teachers must review generated questions and confirm any board-pattern or syllabus requirements independently."
+        }
+      ]
+    },
+    "languages": {
+      "nav": "Urdu & English",
+      "title": "Urdu & English Question Paper Maker in Pakistan | Exam Builder",
+      "description": "Prepare Urdu, English and dual-medium question papers using available language content, editable layouts and a print preview for your school.",
+      "heading": "Prepare Urdu and English question papers with care",
+      "intro": "Pakistani classrooms work in different mediums. Exam Builder supports paper-preparation workflows with Urdu and English question content and layout choices, so teachers can review a paper in the language their students study.",
+      "sections": [
+        {
+          "heading": "Select suitable question content",
+          "text": "Choose questions that already have the required language text where available. Do not assume every bank question has a complete Urdu and English version. Check terminology against the book used in your class."
+        },
+        {
+          "heading": "Review a dual-medium paper",
+          "text": "When using a dual-medium layout, compare both versions of each question. The meaning, quantities, options and marks should agree. A translation should not accidentally reveal an answer or change the difficulty."
+        },
+        {
+          "heading": "Check right-to-left text before printing",
+          "text": "Look at Urdu punctuation, mixed English terms, equation direction, numbering and line breaks in the print preview. Fonts and printer settings can affect how a final page appears."
+        },
+        {
+          "heading": "Keep school branding readable",
+          "text": "Add your school name and optional logo through the school profile. Review the header, class details, time and total marks along with the question text. A clean layout helps students understand the paper."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Does this mean the entire application is available in Urdu?",
+          "a": "These public information pages are available in English and Urdu. Paper-language capabilities depend on the available question text and layout settings; this does not promise that every account screen or question is translated."
+        },
+        {
+          "q": "Can I make an Urdu paper from any English question automatically?",
+          "a": "Do not assume an automatic translation is complete or correct. Use available Urdu content or review and edit a translation before including it in an assessment."
+        }
+      ]
+    },
+    "pricing": {
+      "nav": "Pricing",
+      "title": "Paper Generator Pricing Pakistan — :trial_days-Day Trial & School Plans | Exam Builder",
+      "description": "Try Exam Builder free for :trial_days days. Choose a school subscription and renew manually with JazzCash or Easypaisa. Your school supplies its own questions.",
+      "heading": "Simple pricing for a school’s paper-preparation workspace",
+      "intro": "Try the paper-building tools free for :trial_days days. Every paid plan includes the same core features. Choose your duration and renew manually, with no automatic charges.",
+      "sections": [],
+      "questions": [
+        {
+          "q": "Do all paid plans include the same tools?",
+          "a": "Yes. Every paid plan includes the core paper-building tools and teacher accounts, subject to teacher permissions. Your school adds its own questions; a complete ready-made question bank is currently not included."
+        },
+        {
+          "q": "Does sending a screenshot activate my school immediately?",
+          "a": "No. Contact support on WhatsApp with the screenshot, school reference and selected plan. Super admin reviews the payment and renews the school manually."
+        },
+        {
+          "q": "Will my saved papers be deleted when the trial ends?",
+          "a": "Expiry blocks creation and editing; it does not itself delete saved papers. Authorized accounts can view and print their saved papers, subject to email-verification and existing access rules."
+        }
+      ]
+    },
+    "guide": {
+      "nav": "How to create a paper",
+      "title": "How to Create a Question Paper Online for Your School | Exam Builder",
+      "description": "Follow a practical school-paper workflow: select class, subject and chapters, review questions, set marks and layout, then save and print.",
+      "heading": "How to create a question paper online",
+      "intro": "A good school test starts with what students were taught. This guide follows Exam Builder’s school-paper workflow and highlights the checks a teacher should make before an assessment reaches the classroom.",
+      "sections": [
+        {
+          "heading": "1. Set up your school account",
+          "text": "Register as the school owner, select your board and add the school name. A logo is optional. Verify the owner’s email, then add teacher accounts and permissions if other staff will prepare papers."
+        },
+        {
+          "heading": "2. Choose class, subject and chapters",
+          "text": "Open Generate Paper from the dashboard. Select the relevant class, subject or book and chapters from the available curriculum. Confirm that these match the textbook and edition your students use."
+        },
+        {
+          "heading": "3. Select and review questions",
+          "text": "Use available question-bank content, add your own questions or prepare a draft through the permitted AI workflow. Review every question and answer. Balance recall, understanding and application according to your lesson objectives."
+        },
+        {
+          "heading": "4. Check marks and exam details",
+          "text": "Confirm the question mix, total marks, time, class and subject. Check the instructions and any choice between questions. A paper with the right questions can still be confusing if instructions or mark totals are wrong."
+        },
+        {
+          "heading": "5. Preview the complete paper",
+          "text": "Inspect headings, numbering, diagrams, Urdu/English text, spacing and page breaks. Check that no question or answer option is cut off. Use your browser’s print preview to review the final page arrangement."
+        },
+        {
+          "heading": "6. Save, print and review the outcome",
+          "text": "Save the paper to return to it later. After using the test, note questions students misunderstood because of wording or layout and improve them for future assessments. Keep real school papers within authorized account access."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Should I select all chapters for a weekly test?",
+          "a": "Only include material relevant to that assessment. A weekly test and a term exam need different coverage, so begin with your teaching plan rather than choosing every available chapter."
+        },
+        {
+          "q": "Can I publish my school’s saved paper as a public sample?",
+          "a": "Saved papers are private application content. For public examples, create a separate, deliberately reviewed sample without real student information or confidential exam material."
+        }
+      ]
+    },
+    "about": {
+      "nav": "About",
+      "title": "About Exam Builder — Paper Preparation for Pakistani Schools",
+      "description": "Learn what Exam Builder does for Pakistani schools, academies and teachers: question preparation, shared curriculum content and printable exams.",
+      "heading": "Built around the work of Pakistani teachers",
+      "intro": "Exam Builder is an independent online application for preparing school and academy question papers. It brings question selection, AI-assisted preparation, school branding and saved-paper workflows into a single school workspace.",
+      "sections": [
+        {
+          "heading": "What the application is for",
+          "text": "The focus is preparing, reviewing, saving and printing question papers. It is not a claim to replace teacher judgment, school assessment policy or current examination-board instructions."
+        },
+        {
+          "heading": "Who it serves",
+          "text": "School owners, academy owners and teachers in Pakistan can use a school account. The public information is available in English and Urdu. Available curriculum and language content should be checked inside the application."
+        },
+        {
+          "heading": "How questions are shared",
+          "text": "School and teacher contributions may be available to other schools selecting the same curriculum book and class. Contributor tracking helps the administrator identify the source of new questions. Private saved papers are not public search resources."
+        },
+        {
+          "heading": "Here to help your school",
+          "text": "Need a hand with your account or preparing a paper? Visit the contact page to chat with us on WhatsApp."
+        }
+      ],
+      "questions": [
+        {
+          "q": "Is Exam Builder an official board website?",
+          "a": "No. It is an independent product. Check current syllabus, paper patterns and board instructions through the relevant official sources."
+        }
+      ]
+    },
+    "contact": {
+      "nav": "Contact",
+      "title": "Contact Exam Builder — School & Academy Support in Pakistan",
+      "description": "Get help with your Exam Builder account, question papers or subscription. Chat on WhatsApp for school and academy support.",
+      "heading": "How can we help?",
+      "intro": "Having an issue with Exam Builder or have an idea for a new feature? Send us a message on WhatsApp. We’d love to hear your feedback and suggestions.",
+      "sections": [
+        {
+          "heading": "Account & school setup",
+          "text": "Get help signing in, verifying your email, adding teachers or setting up your school profile."
+        },
+        {
+          "heading": "Papers & subscriptions",
+          "text": "Ask about creating and printing papers, available subjects or renewing your school’s access. Include your school name so we can help you get started."
+        }
+      ],
+      "questions": []
+    }
+  },
+  "hire": {
+    "eyebrow": "Work with me",
+    "heading": "Have an idea? Let’s build it.",
+    "text": "We build websites, web apps, mobile apps, AI applications and custom software. Share your idea, and let’s bring it to life.",
+    "name": "Hafiz Azeem · Full stack software engineer",
+    "button": "Hire me",
+    "message": "Hi, I would like to discuss an idea for a website, mobile app or custom software project."
+  },
+  "pricing_ui": {
+    "eyebrow": "Simple school pricing",
+    "heading": "One School plan. Choose your duration.",
+    "intro": "The same core paper-building tools in every paid plan. Choose how long your school needs access.",
+    "trial_note": "Add your questions, invite teachers and create your first paper. No payment required.",
+    "duration": "Billed once for :months calendar months",
+    "same_tools": "All core paper-building tools for your school.",
+    "features_heading": "Included in every paid plan",
+    "features": [
+      "Add and organise your own questions",
+      "Create and edit question papers",
+      "Save, print and reuse papers",
+      "Manage teacher accounts",
+      "Reuse questions for future exams",
+      "WhatsApp support"
+    ],
+    "own_heading": "Your questions. Your school’s papers.",
+    "own_text": "Build your question bank with questions added by your school, then use them to create and print papers. A complete ready-made syllabus question bank is currently not included.",
+    "no_charges": "Renew manually when you choose. No automatic charges.",
+    "duration_one": "Billed once for 1 calendar month"
+  }
+}

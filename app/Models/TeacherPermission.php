@@ -7,14 +7,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TeacherPermission extends Model
 {
+    public const ACTIONS = ['can_generate_paper', 'can_edit_paper', 'can_delete_paper', 'can_add_question', 'can_edit_question', 'can_delete_question'];
+
     protected $fillable = [
         'user_id',
+        'can_use_assistant',
+        ...self::ACTIONS,
         'allowed_grades',
         'allowed_subjects',
         'allowed_categories',
     ];
 
     protected $casts = [
+        'can_use_assistant' => 'boolean',
+        'can_generate_paper' => 'boolean',
+        'can_edit_paper' => 'boolean',
+        'can_delete_paper' => 'boolean',
+        'can_add_question' => 'boolean',
+        'can_edit_question' => 'boolean',
+        'can_delete_question' => 'boolean',
         'allowed_grades' => 'array',
         'allowed_subjects' => 'array',
         'allowed_categories' => 'array',
@@ -24,5 +35,17 @@ class TeacherPermission extends Model
     {
         return $this->belongsTo(User::class);
     }
-}
 
+    public function scopeQuestions($query): void
+    {
+        if (is_array($this->allowed_grades)) {
+            $query->whereHas('chapter.subject.grade', fn ($q) => $q->whereIn('number', $this->allowed_grades));
+        }
+        if (is_array($this->allowed_subjects)) {
+            $query->whereHas('chapter', fn ($q) => $q->whereIn('subject_id', $this->allowed_subjects));
+        }
+        if (is_array($this->allowed_categories)) {
+            $query->whereIn('source', $this->allowed_categories);
+        }
+    }
+}

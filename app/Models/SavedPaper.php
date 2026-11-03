@@ -2,11 +2,23 @@
 
 namespace App\Models;
 
+use App\Services\SavedQuestionSnapshot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SavedPaper extends Model
 {
+    protected static function booted(): void
+    {
+        static::creating(function (SavedPaper $paper) {
+            $config = $paper->config_snapshot ?? [];
+            if (! array_key_exists('question_records', $config)) {
+                $config['question_records'] = SavedQuestionSnapshot::capture($config['question_ids'] ?? []);
+                $paper->config_snapshot = $config;
+            }
+        });
+    }
+
     protected $fillable = [
         'institution_id',
         'user_id',
@@ -33,4 +45,3 @@ class SavedPaper extends Model
         return $this->belongsTo(User::class);
     }
 }
-

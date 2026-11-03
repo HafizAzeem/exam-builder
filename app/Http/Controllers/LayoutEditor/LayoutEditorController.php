@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\SavedPaper;
 use App\Services\PaperExportService;
 use App\Support\ActivityLogger;
+use App\Support\PaperTemplates;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -27,7 +28,7 @@ class LayoutEditorController extends Controller
         return Inertia::render('LayoutEditor/Editor', [
             'savedPaper' => $paper,
             'preview' => $this->paperExport->buildPreviewData($paper, $institution),
-            'headerTemplates' => [1],
+            'headerTemplates' => PaperTemplates::IDS,
         ]);
     }
 
@@ -41,7 +42,16 @@ class LayoutEditorController extends Controller
             'exam_meta' => ['sometimes', 'array'],
             'settings' => ['sometimes', 'array'],
             'layout_snapshot' => ['required', 'array'],
+            'layout_snapshot.template_meta' => ['sometimes', 'array'],
+            'layout_snapshot.template_meta.*' => ['nullable', 'string', 'max:200'],
         ]);
+
+        // Nested validation may omit unrelated layout keys; preserve the full
+        // existing layout contract (including edited paper_content and margins).
+        $validated['layout_snapshot'] = $request->input('layout_snapshot');
+        $validated['layout_snapshot']['header_template'] = PaperTemplates::normalize(
+            $validated['layout_snapshot']['header_template'] ?? 1,
+        );
 
         $config = $paper->config_snapshot ?? [];
 

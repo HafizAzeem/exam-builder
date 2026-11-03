@@ -162,7 +162,7 @@ const setStatusTab = (status) => {
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2 border-b border-gray-100 p-4">
-                        <select
+                        <select v-searchable
                             class="rounded-md border-gray-300 text-sm"
                             :value="filters.match_status || ''"
                             @change="applyFilters('match_status', $event.target.value)"
@@ -208,14 +208,14 @@ const setStatusTab = (status) => {
                     <div class="flex flex-wrap gap-3 border-b border-dashed border-gray-200 bg-gray-50 p-4 text-sm">
                         <div>
                             <label class="text-gray-500">Bulk chapter</label>
-                            <select v-model="bulkForm.chapter_id" class="mt-1 block rounded-md border-gray-300">
+                            <select v-searchable v-model="bulkForm.chapter_id" class="mt-1 block rounded-md border-gray-300">
                                 <option :value="null">—</option>
                                 <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.title_en }} (Chapter No: {{ c.number }})</option>
                             </select>
                         </div>
                         <div>
                             <label class="text-gray-500">Bulk topic</label>
-                            <select v-model="bulkForm.topic_id" class="mt-1 block rounded-md border-gray-300">
+                            <select v-searchable v-model="bulkForm.topic_id" class="mt-1 block rounded-md border-gray-300">
                                 <option :value="null">—</option>
                                 <option v-for="t in topicsFor(bulkForm.chapter_id)" :key="t.id" :value="t.id">{{ t.title_en }}</option>
                             </select>
@@ -282,7 +282,7 @@ const setStatusTab = (status) => {
                                     </td>
                                     <td class="px-3 py-3 align-top">
                                         <template v-if="editingId === q.id">
-                                            <select v-model="editForm.chapter_id" class="w-full rounded-md border-gray-300 text-sm" @change="editForm.topic_id = null">
+                                            <select v-searchable v-model="editForm.chapter_id" class="w-full rounded-md border-gray-300 text-sm" @change="editForm.topic_id = null">
                                                 <option :value="null">Select</option>
                                                 <option v-for="c in chapters" :key="c.id" :value="c.id">{{ c.title_en }} (Chapter No: {{ c.number }})</option>
                                             </select>
@@ -297,7 +297,7 @@ const setStatusTab = (status) => {
                                     </td>
                                     <td class="px-3 py-3 align-top">
                                         <template v-if="editingId === q.id">
-                                            <select v-model="editForm.topic_id" class="w-full rounded-md border-gray-300 text-sm">
+                                            <select v-searchable v-model="editForm.topic_id" class="w-full rounded-md border-gray-300 text-sm">
                                                 <option :value="null">Optional</option>
                                                 <option v-for="t in topicsFor(editForm.chapter_id)" :key="t.id" :value="t.id">{{ t.title_en }}</option>
                                             </select>
@@ -307,7 +307,7 @@ const setStatusTab = (status) => {
                                         </template>
                                     </td>
                                     <td class="px-3 py-3 align-top capitalize">
-                                        <select v-if="editingId === q.id" v-model="editForm.type" class="rounded-md border-gray-300 text-sm">
+                                        <select v-searchable v-if="editingId === q.id" v-model="editForm.type" class="rounded-md border-gray-300 text-sm">
                                             <option value="mcq">mcq</option>
                                             <option value="short">short</option>
                                             <option value="long">long</option>

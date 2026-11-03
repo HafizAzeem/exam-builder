@@ -59,13 +59,21 @@ class QuestionBankService
         }
 
         if ($boardName || $year) {
-            $query->whereHas('pastPaperTag', function ($q) use ($boardName, $year) {
-                if ($boardName) {
-                    $q->where('board_name', $boardName);
-                }
-                if ($year) {
-                    $q->where('year', $year);
-                }
+            $query->where(function ($scope) use ($boardName, $year) {
+                $scope->where(function ($ordinary) use ($boardName) {
+                    $ordinary->where('source', '!=', 'past_paper');
+                    if ($boardName) {
+                        $ordinary->where(function ($board) use ($boardName) {
+                            $board->whereNull('contributor_board_id')
+                                ->orWhereHas('contributorBoard', fn ($q) => $q->where('name', $boardName));
+                        });
+                    }
+                })->orWhere(function ($paper) use ($boardName, $year) {
+                    $paper->where('source', 'past_paper')->whereHas('pastPaperTag', function ($tag) use ($boardName, $year) {
+                        if ($boardName) $tag->where('board_name', $boardName);
+                        if ($year) $tag->where('year', $year);
+                    });
+                });
             });
         }
 

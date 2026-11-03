@@ -143,7 +143,7 @@ const submit = () => {
                     <div class="grid gap-4 sm:grid-cols-2">
                         <div>
                             <InputLabel value="Board" />
-                            <select v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <select v-searchable v-model="form.board" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">Any / general</option>
                                 <option v-for="b in boards" :key="b.id" :value="b.name">{{ b.name }}</option>
                             </select>
@@ -151,7 +151,7 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel value="Language" />
-                            <select v-model="form.language" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
+                            <select v-searchable v-model="form.language" class="mt-1 w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="english">English</option>
                                 <option value="urdu">Urdu</option>
                                 <option value="both">Both</option>

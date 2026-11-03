@@ -104,4 +104,23 @@ class DiagramLibraryTest extends TestCase
             ->where('preview.layout.paper_content.sections.0.questions.0.diagram.title', 'Triangle')
             ->where('preview.layout.paper_content.sections.0.questions.0.options.A.diagram.width', 180));
     }
+
+    public function test_multiple_diagrams_are_saved_and_available_when_reopening_and_printing_a_paper(): void
+    {
+        $institution = Institution::create(['name' => 'Multiple diagrams school', 'expiry_date' => now()->addYear()]);
+        $owner = User::factory()->create(['institution_id' => $institution->id]);
+        $paper = SavedPaper::create(['institution_id' => $institution->id, 'user_id' => $owner->id, 'title' => 'Five diagrams', 'config_snapshot' => ['question_ids' => []]]);
+        $diagrams = array_map(fn ($number) => ['title' => 'Figure '.$number, 'elements' => [], 'width' => 180], range(1, 5));
+        $content = ['header' => [], 'sections' => [['type' => 'long', 'questions' => [[
+            'id' => 123, 'type' => 'long', 'text_en' => 'Use the figures below.', 'diagram' => $diagrams,
+            'parts' => [['id' => 124, 'text_en' => 'Compare these figures.', 'diagram' => $diagrams]],
+        ]]]]];
+        $this->actingAs($owner)->patch(route('editor.update', $paper), ['layout_snapshot' => ['paper_content' => $content]])->assertRedirect();
+        foreach (['editor.show', 'editor.print'] as $route) {
+            $this->get(route($route, $paper))->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->has('preview.layout.paper_content.sections.0.questions.0.diagram', 5)
+                ->where('preview.layout.paper_content.sections.0.questions.0.diagram.4.title', 'Figure 5')
+                ->has('preview.layout.paper_content.sections.0.questions.0.parts.0.diagram', 5));
+        }
+    }
 }
